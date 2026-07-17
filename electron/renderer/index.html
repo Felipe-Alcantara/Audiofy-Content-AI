@@ -7,45 +7,113 @@
 </head>
 <body>
   <header>
-    <h1>🎙️ Audiofy Content AI</h1>
+    <div class="header-row">
+      <h1>🎙️ Audiofy Content AI</h1>
+      <nav id="tabs">
+        <button data-tab="chat" class="tab active">💬 Chat</button>
+        <button data-tab="content" class="tab">📚 Conteúdo</button>
+        <button data-tab="episodes" class="tab">🎧 Episódios</button>
+        <button data-tab="settings" class="tab">⚙️ Configurações</button>
+      </nav>
+    </div>
     <div id="running-banner" class="banner hidden">
       ⚡ Geração em andamento — consumindo créditos!
       <span id="running-detail"></span>
     </div>
   </header>
 
-  <main>
+  <!-- ══ Chat ══ -->
+  <main id="tab-chat" class="tab-page">
+    <section class="panel chat-panel">
+      <div class="chat-toolbar">
+        <span class="muted">Pesquise qualquer tema, avalie conteúdos e comande o Audiofy.
+          O assistente propõe ações executáveis com um clique.</span>
+        <button id="chat-clear" title="Limpa a conversa">🗑️ Limpar</button>
+      </div>
+      <div id="chat-messages"></div>
+      <div class="chat-input">
+        <textarea id="chat-text" rows="2"
+          placeholder="Ex.: pesquise bons artigos sobre computação quântica para virar episódio…"></textarea>
+        <button id="chat-send" class="primary">Enviar</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ══ Conteúdo ══ -->
+  <main id="tab-content" class="tab-page hidden">
     <section class="panel" id="panel-items">
       <div class="toolbar">
-        <input id="search" type="search" placeholder="Buscar por título, slug ou tag…" />
-        <button id="btn-sync" title="Atualiza os artigos da fonte">🔄 Sincronizar</button>
+        <select id="source-select" title="Fonte de conteúdo"></select>
+        <input id="search" type="search" placeholder="Buscar…" />
+        <button id="btn-sync" title="Atualiza a fonte">🔄</button>
+      </div>
+      <div id="add-content" class="add-content hidden">
+        <input id="add-url" type="url" placeholder="https://… (extrai o texto da página)" />
+        <button id="btn-add-url">➕ Adicionar URL</button>
+        <details>
+          <summary class="muted">…ou colar texto</summary>
+          <input id="add-title" type="text" placeholder="Título" />
+          <textarea id="add-text" rows="5" placeholder="Cole o conteúdo aqui"></textarea>
+          <button id="btn-add-text">➕ Adicionar texto</button>
+        </details>
       </div>
       <ul id="items"></ul>
     </section>
 
     <section class="panel" id="panel-detail">
       <div id="detail-empty" class="muted">Selecione um item à esquerda.</div>
-
       <div id="detail" class="hidden">
         <h2 id="detail-title"></h2>
         <p class="muted" id="detail-meta"></p>
         <p id="detail-estimate" class="estimate"></p>
         <div class="actions">
           <button id="btn-generate" class="primary">🎙️ Gerar episódio</button>
-          <button id="btn-abort" class="danger hidden">🛑 Abortar geração</button>
-          <button id="btn-play" class="hidden">▶️ Ouvir episódio</button>
-          <button id="btn-folder" class="hidden">📂 Abrir pasta</button>
+          <button id="btn-notebooklm" title="Pacote de custo zero na assinatura Google">
+            📓 NotebookLM</button>
+          <button id="btn-abort" class="danger hidden">🛑 Abortar</button>
+          <button id="btn-play" class="hidden">▶️ Ouvir</button>
+          <button id="btn-folder" class="hidden">📂 Pasta</button>
         </div>
-
         <div id="progress-box" class="hidden">
           <div class="progress-track"><div id="progress-fill"></div></div>
           <p id="progress-label" class="muted"></p>
           <p id="cost-label" class="cost"></p>
         </div>
       </div>
+    </section>
+  </main>
 
-      <h3>Episódios</h3>
+  <!-- ══ Episódios ══ -->
+  <main id="tab-episodes" class="tab-page hidden">
+    <section class="panel">
+      <h3>Todos os episódios</h3>
       <ul id="episodes"></ul>
+    </section>
+  </main>
+
+  <!-- ══ Configurações ══ -->
+  <main id="tab-settings" class="tab-page hidden">
+    <section class="panel">
+      <h3>🔑 Chaves do OpenRouter</h3>
+      <p class="muted">Guardadas localmente com permissão restrita, fora do Git.</p>
+      <ul id="keys-list"></ul>
+      <div class="toolbar">
+        <input id="key-name" type="text" placeholder="nome (ex.: pessoal)" />
+        <input id="key-value" type="password" placeholder="sk-or-…" />
+        <button id="btn-key-add">➕ Adicionar</button>
+        <button id="btn-balance">💰 Saldo</button>
+      </div>
+      <p id="balance-line" class="muted"></p>
+
+      <h3>👤 Perfis de geração</h3>
+      <ul id="profiles-list"></ul>
+
+      <h3>🧾 Configuração ativa</h3>
+      <pre id="settings-info" class="muted"></pre>
+
+      <h3>🎛️ Catálogo TTS / vozes</h3>
+      <button id="btn-load-catalog">Carregar catálogo</button>
+      <pre id="catalog-box" class="muted"></pre>
     </section>
   </main>
 

@@ -41,11 +41,16 @@ contra o texto original e registro de custo.
 conteúdo → matriz de cobertura → roteiro (N apresentadores) → auditoria → TTS → montagem
 ```
 
-O projeto nasceu como "Akita on Rails to Podcast" e evoluiu para um programa geral: os artigos
-do [AkitaOnRails](https://akitaonrails.com) são a primeira **fonte de conteúdo**, empacotada no
-módulo independente [akita-articles](https://github.com/Felipe-Alcantara/akita-articles).
-Novas fontes (outros blogs, feeds, pastas de arquivos) entram implementando um contrato pequeno,
-sem tocar no núcleo.
+**Qualquer conteúdo vira episódio**: cole um texto, aponte uma URL (o extrator puxa o texto
+principal da página) ou peça sugestões ao **chat de pesquisa** — um assistente que pesquisa
+qualquer tema (com busca na web quando roda pela CLI de assinatura) e propõe ações executáveis
+com um clique: adicionar conteúdo, buscar, gerar episódio, exportar para NotebookLM.
+
+O projeto nasceu como "Akita on Rails to Podcast"; hoje os artigos do
+[AkitaOnRails](https://akitaonrails.com) são apenas uma das fontes, empacotada no módulo
+independente [akita-articles](https://github.com/Felipe-Alcantara/akita-articles). Novas fontes
+(outros blogs, feeds, pastas de arquivos) entram implementando um contrato pequeno, sem tocar
+no núcleo.
 
 ## 🚀 Como usar
 
@@ -60,19 +65,19 @@ O menu interativo é a porta de entrada única:
 
 | Opção | O que faz |
 |---|---|
-| Instalar / Setup | verifica dependências, instala o módulo akita-articles, cria o `.env` |
-| Chaves & saldo | chaves **nomeadas** (pessoal, trabalho…), chave ativa, saldo/uso em US$ |
-| Perfis & modelos | presets de modelos + apresentadores; escolha empresa → modelo com preço |
-| Sincronizar fonte | baixa/atualiza os artigos |
-| Listar / Buscar | catálogo com busca por título, slug ou tag |
+| Chat de pesquisa | pesquise qualquer tema; o assistente propõe ações executáveis |
+| Adicionar conteúdo | por URL (extrai o texto da página) ou texto colado |
+| Trocar fonte | conteúdo próprio, Akita on Rails, ou qualquer fonte registrada |
+| Listar / Buscar | catálogo da fonte ativa, com busca |
 | Gerar episódio | ao vivo, com barra de progresso e custo em US$ |
 | Gerar em 2º plano | libera o terminal; `watch` acompanha |
-| Acompanhar geração | progresso e custo ao vivo de uma geração em andamento |
-| Abortar geração | cancela com segurança no próximo segmento |
-| Catálogo TTS/vozes | modelos de áudio do OpenRouter e vozes do Gemini |
-| Status | mostra **explicitamente** o que está consumindo créditos |
-| Abrir app desktop | interface Electron |
+| Acompanhar / Abortar | progresso e custo ao vivo; cancela com segurança |
 | Exportar p/ NotebookLM | episódio de **custo zero** dentro da assinatura Google |
+| Chaves & saldo | chaves **nomeadas** (pessoal, trabalho…), chave ativa, saldo/uso em US$ |
+| Perfis & modelos | presets de modelos + apresentadores; escolha empresa → modelo com preço |
+| Catálogo TTS/vozes | modelos de áudio do OpenRouter e vozes do Gemini |
+| Sincronizar / Status / Setup | fonte atualizada; o que está gastando créditos; instalação |
+| Abrir app desktop | interface Electron com **todas** essas funções |
 
 Atalhos de linha de comando: `list`, `search <termos>`, `generate <n|id> [--bg]`,
 `watch <id>`, `abort <id>`, `sync`, `status`, `setup`, `catalog`.
@@ -87,10 +92,20 @@ Falhou no meio? Rodar de novo retoma de onde parou sem regenerar (nem repagar) o
 cd electron && npm install && npm start
 ```
 
-(ou opção "Abrir app desktop" no menu). A interface lista e busca artigos, mostra estimativa
-de custo antes de gerar, exibe **banner de alerta enquanto qualquer geração estiver consumindo
-créditos**, barra de progresso e custo ao vivo, botão de abortar e player dos episódios prontos.
-Toda a lógica continua no backend Python — o app fala com ele pela bridge JSON
+(ou opção "Abrir app desktop" no menu). O app tem **paridade completa com a CLI**, em quatro
+abas:
+
+- **💬 Chat** — o assistente de pesquisa: qualquer tema, com ações executáveis em um clique
+  (adicionar URL, buscar, gerar, exportar NotebookLM);
+- **📚 Conteúdo** — seletor de fonte, busca, adicionar por URL ou texto colado, estimativa de
+  custo, gerar, NotebookLM;
+- **🎧 Episódios** — todos os episódios com estado, progresso, custo, abortar, ouvir e abrir
+  pasta;
+- **⚙️ Configurações** — chaves nomeadas (adicionar/ativar/remover), saldo em US$, perfis,
+  configuração ativa e catálogo TTS/vozes.
+
+Um banner global alerta **sempre que qualquer geração estiver consumindo créditos**. Toda a
+lógica continua no backend Python — o app fala com ele pela bridge JSON
 (`python3 -m audiofy.bridge`), a mesma interface disponível para qualquer automação.
 
 ## 🧩 Fontes de conteúdo
@@ -101,6 +116,7 @@ e devolve `ContentItem`s com texto e atribuição. O registro em `src/audiofy/so
 
 | Fonte | Módulo | Estado |
 |---|---|---|
+| Conteúdo próprio (URL ou texto colado) | embutida (`sources/custom.py`) | ✅ funcional |
 | Akita on Rails | [akita-articles](https://github.com/Felipe-Alcantara/akita-articles) | ✅ funcional |
 
 ## 🔑 Chaves, perfis e modelos

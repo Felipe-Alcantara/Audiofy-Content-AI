@@ -172,3 +172,37 @@ piloto; menu e status smoke-testados.
 `codex exec -`) podem mudar entre versões; a falha é explícita (stderr no erro) e o fallback
 é voltar o perfil para a API. TTS alternativos (Voxtral/Kokoro) ainda não foram ouvidos em
 pt-BR — testar num artigo curto antes de adotar.
+
+---
+
+## 2026-07-17 — Chat de pesquisa, fonte genérica e app Electron com paridade total
+
+**O que mudou** (pedido do usuário: o Electron deve ter todas as funções da CLI, ganhar um
+chat de pesquisa além do Akita, e o Akita deixa de ser o foco):
+
+- **Fonte genérica `custom`** (`sources/custom.py`, fonte padrão do menu): qualquer conteúdo
+  vira episódio — texto colado ou URL (extrator de texto principal em HTML puro, sem
+  dependências, priorizando `<article>/<main>` e descartando nav/script/rodapé). Itens em
+  `data/inbox/*.md` com frontmatter. Atribuição genérica com aviso de direitos.
+- **Chat de pesquisa** (`chat.py`, aba própria no app e opção 1 da CLI): sessões persistidas
+  em `data/chat/`, histórico na janela de prompt, provedor = CLI de assinatura (no Claude Code
+  com `--allowedTools WebSearch`, pesquisa web real a custo zero) ou API. Protocolo de ações
+  em blocos ```acao (adicionar_url, buscar, gerar, exportar_notebooklm) que a interface
+  executa com um clique — geração sempre confirma custo antes.
+- **Bridge completa**: chat/chat-history/chat-clear, add-url/add-text (stdin), keys-*
+  (list/add/activate/remove), balance, profiles-list/activate, settings-info; `main.js` do
+  Electron passou a suportar stdin nas chamadas.
+- **App Electron reconstruído em 4 abas** (Chat, Conteúdo, Episódios, Configurações) com
+  paridade total com a CLI: seletor de fonte, adicionar URL/texto, estimativa, gerar, abortar,
+  NotebookLM, episódios com estado/custo, chaves nomeadas com saldo, perfis e catálogo.
+- **CLI reorganizada**: chat como opção 1, fonte ativa visível e trocável (padrão `custom`),
+  adicionar conteúdo por URL/texto, 17 opções no total.
+
+**Validação:** 57 testes verdes (12 novos: fonte custom e chat); extração de URL testada
+contra página real do blog; chat testado ao vivo via claude-code (resposta correta, custo
+zero); bridge smoke-testada em todos os comandos novos; sintaxe do Electron verificada.
+
+**Risco que sobrou:** o extrator de HTML é heurístico — páginas muito dinâmicas (JS) ou fora
+do padrão `<article>` podem render texto insuficiente (o erro instrui a colar o texto);
+o protocolo de ações depende de o modelo emitir JSON válido no bloco ```acao (ações inválidas
+são ignoradas silenciosamente, por design).

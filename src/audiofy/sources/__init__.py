@@ -8,8 +8,10 @@ from __future__ import annotations
 
 from .akita import AkitaSource
 from .base import ContentSource
+from .custom import CustomSource
 
 _SOURCES: list[ContentSource] = [
+    CustomSource(),
     AkitaSource(),
 ]
 

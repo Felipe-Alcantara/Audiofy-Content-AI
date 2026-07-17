@@ -116,3 +116,49 @@ h3 { margin: 18px 0 8px; font-size: 14px; color: var(--muted); }
 .cost { font-size: 18px; font-weight: 700; color: var(--ok); margin-top: 6px; }
 
 .hidden { display: none !important; }
+
+/* ── Abas ── */
+.header-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+#tabs { display: flex; gap: 6px; }
+.tab { background: transparent; border: 1px solid transparent; color: var(--muted); }
+.tab.active { color: var(--text); border-color: var(--border); background: var(--panel); }
+
+.tab-page { flex: 1; display: grid; gap: 14px; padding: 14px 20px 20px; min-height: 0; }
+#tab-content { grid-template-columns: 1fr 1fr; }
+#tab-chat, #tab-episodes, #tab-settings { grid-template-columns: 1fr; }
+
+/* ── Chat ── */
+.chat-panel { display: flex; flex-direction: column; }
+.chat-toolbar { display: flex; justify-content: space-between; gap: 10px;
+  align-items: center; margin-bottom: 8px; }
+#chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+  gap: 8px; padding: 6px 2px; min-height: 0; }
+.msg { max-width: 78%; padding: 10px 14px; border-radius: 12px; white-space: pre-wrap; }
+.msg.user { align-self: flex-end; background: var(--accent); }
+.msg.assistant { align-self: flex-start; background: var(--bg);
+  border: 1px solid var(--border); }
+.msg.system { align-self: center; background: transparent; color: var(--muted);
+  font-size: 12.5px; border: 1px dashed var(--border); }
+.action-chip { align-self: flex-start; border-color: var(--warn); color: var(--warn); }
+.chat-input { display: flex; gap: 8px; margin-top: 10px; }
+.chat-input textarea { flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; color: var(--text); resize: vertical;
+  font: inherit; }
+
+/* ── Conteúdo próprio ── */
+.add-content { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;
+  padding: 10px; border: 1px dashed var(--border); border-radius: 10px; }
+.add-content input[type="url"], .add-content input[type="text"],
+.add-content textarea { background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; color: var(--text); width: 100%;
+  font: inherit; }
+.add-content details { display: flex; flex-direction: column; gap: 8px; }
+.add-content details > * { margin-top: 8px; }
+
+/* ── Configurações ── */
+#keys-list li, #profiles-list li { display: flex; gap: 12px; align-items: center;
+  padding: 6px 8px; cursor: default; }
+select { background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 10px; color: var(--text); }
+pre { background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; overflow-x: auto; font-size: 12.5px; }

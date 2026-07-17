@@ -3,11 +3,13 @@
 
 Uso:
     python3 start_app.py             # menu interativo (recomendado)
-    python3 start_app.py list|sync|status|setup|catalog
+    python3 start_app.py list|sync|status|setup|catalog|chat|keys|profiles
     python3 start_app.py search <termos>
+    python3 start_app.py add-url <url>
     python3 start_app.py generate <item-id | número da listagem> [--bg]
     python3 start_app.py watch <item-id>
     python3 start_app.py abort <item-id>
+    python3 start_app.py notebooklm <item-id>
 """
 
 from __future__ import annotations
@@ -26,7 +28,7 @@ from audiofy.config import EPISODES_DIR, Settings  # noqa: E402
 from audiofy.runtime.status import GenerationTracker  # noqa: E402
 from audiofy.sources import get_source  # noqa: E402
 
-SOURCE_KEY = "akita"  # fonte padrão do menu; outras fontes via bridge/registro
+SOURCE_KEY = "custom"  # fonte ativa do menu (trocável); "custom" = qualquer conteúdo
 
 BOLD, DIM, GREEN, YELLOW, RED, CYAN, RESET = (
     "\033[1m", "\033[2m", "\033[92m", "\033[93m", "\033[91m", "\033[96m", "\033[0m"
@@ -443,6 +445,104 @@ def do_abort(selector: str) -> None:
     _ok("Abort solicitado — efetiva no próximo segmento (nada é corrompido).")
 
 
+def do_switch_source() -> None:
+    """Troca a fonte ativa do menu."""
+    global SOURCE_KEY
+    from audiofy.sources import available_sources
+    sources = available_sources()
+    for index, source in enumerate(sources, 1):
+        marker = f" {GREEN}● ativa{RESET}" if source.key == SOURCE_KEY else ""
+        print(f"  {index}. {source.name} {DIM}({source.description}){RESET}{marker}")
+    choice = input("Fonte: ").strip()
+    if choice.isdigit() and 1 <= int(choice) <= len(sources):
+        SOURCE_KEY = sources[int(choice) - 1].key
+        _ok(f"Fonte ativa: {SOURCE_KEY}")
+
+
+def do_add_url(url: str) -> None:
+    """Adiciona uma página como conteúdo próprio (fonte 'custom')."""
+    from audiofy.sources.custom import CustomSource
+    try:
+        item_id = CustomSource().add_url(url)
+        _ok(f"Conteúdo adicionado: {item_id} (fonte 'custom')")
+    except Exception as error:  # noqa: BLE001 — rede/extração reportadas ao usuário
+        _fail(str(error))
+
+
+def do_add_text() -> None:
+    """Adiciona conteúdo colado no terminal (finalize com uma linha só com '.')."""
+    from audiofy.sources.custom import CustomSource
+    title = input("Título: ").strip()
+    if not title:
+        return
+    print("Cole o texto (finalize com uma linha contendo só '.'):")
+    lines: list[str] = []
+    while (line := input()) != ".":
+        lines.append(line)
+    if lines:
+        item_id = CustomSource().add_text(title, "\n".join(lines))
+        _ok(f"Conteúdo adicionado: {item_id} (fonte 'custom')")
+
+
+def _run_chat_action(action: dict) -> None:
+    global SOURCE_KEY
+    kind = action.get("tipo")
+    if kind == "adicionar_url":
+        do_add_url(action.get("url", ""))
+    elif kind == "buscar":
+        hits = get_source(action.get("fonte", SOURCE_KEY)).search(action.get("termos", ""))
+        for item in hits[:10]:
+            print(f"  {item.item_id}  {DIM}{item.title}{RESET}")
+    elif kind == "gerar":
+        previous, SOURCE_KEY = SOURCE_KEY, action.get("fonte", SOURCE_KEY)
+        try:
+            do_generate(action.get("item_id", ""))
+        finally:
+            SOURCE_KEY = previous
+    elif kind == "exportar_notebooklm":
+        from audiofy.export import export_notebooklm_pack
+        item = get_source(action.get("fonte", SOURCE_KEY)).get_item(action.get("item_id", ""))
+        _ok(f"Pacote NotebookLM: {export_notebooklm_pack(item)}")
+    else:
+        _warn(f"Ação desconhecida: {kind}")
+
+
+def do_chat() -> None:
+    """Chat de pesquisa: qualquer tema, com ações executáveis (Enter vazio sai)."""
+    from audiofy.chat import ChatSession
+    session = ChatSession("principal")
+    settings = Settings()
+    provider = settings.text_provider if settings.text_provider not in ("", "openrouter") \
+        else f"API ({settings.text_model})"
+    print(f"\n{BOLD}💬 Chat de pesquisa{RESET} {DIM}— via {provider}; "
+          f"'limpar' zera a conversa; Enter vazio sai.{RESET}")
+    while True:
+        try:
+            message = input(f"\n{BOLD}Você:{RESET} ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print()
+            return
+        if not message:
+            return
+        if message.lower() == "limpar":
+            session.clear()
+            _ok("Conversa limpa.")
+            continue
+        print(f"{DIM}… pesquisando{RESET}")
+        try:
+            text, actions = session.send(message, settings)
+        except Exception as error:  # noqa: BLE001 — falha de provedor vai ao usuário
+            _fail(str(error))
+            continue
+        print(f"\n{CYAN}{BOLD}Audiofy:{RESET} {text}")
+        for index, action in enumerate(actions, 1):
+            print(f"  {YELLOW}[{index}]{RESET} ⚡ {action.get('descricao', action['tipo'])}")
+        if actions:
+            choice = input("Executar ação (número, Enter pula): ").strip()
+            if choice.isdigit() and 1 <= int(choice) <= len(actions):
+                _run_chat_action(actions[int(choice) - 1])
+
+
 def do_notebooklm(selector: str) -> None:
     """Prepara o pacote NotebookLM (caminho de custo zero na assinatura Google)."""
     ensure_synced()
@@ -499,56 +599,71 @@ def menu() -> None:
         print(f"""
 {BOLD}{CYAN}╔══════════════════════════════════════════════════════════╗
 ║              🎙️  Audiofy Content AI                        ║
-╚══════════════════════════════════════════════════════════╝{RESET}{alert}
-  {BOLD}1{RESET} — 🛠️  Instalar / Setup     {DIM}dependências, akita-articles, .env{RESET}
-  {BOLD}2{RESET} — 🔑 Chaves & saldo        {DIM}chaves nomeadas, ativa, saldo em US${RESET}
-  {BOLD}3{RESET} — 👤 Perfis & modelos      {DIM}presets de modelos e apresentadores{RESET}
-  {BOLD}4{RESET} — 🔄 Sincronizar fonte     {DIM}atualiza os artigos do Akita{RESET}
-  {BOLD}5{RESET} — 📚 Listar itens          {DIM}digite o número para gerar direto{RESET}
-  {BOLD}6{RESET} — 🔍 Buscar                {DIM}por título, slug ou tag{RESET}
-  {BOLD}7{RESET} — 🎙️  Gerar episódio       {DIM}ao vivo, com barra e custo em US${RESET}
-  {BOLD}8{RESET} — 🚀 Gerar em 2º plano     {DIM}libera o terminal; watch acompanha{RESET}
-  {BOLD}9{RESET} — 👀 Acompanhar geração    {DIM}progresso e custo ao vivo{RESET}
- {BOLD}10{RESET} — 🛑 Abortar geração       {DIM}para no próximo segmento{RESET}
- {BOLD}11{RESET} — 🎛️  Catálogo TTS/vozes   {DIM}modelos e vozes para configurar{RESET}
- {BOLD}12{RESET} — 📊 Status                {DIM}mostra o que está gastando créditos{RESET}
- {BOLD}13{RESET} — 🖥️  Abrir app desktop    {DIM}interface Electron (npm start){RESET}
- {BOLD}14{RESET} — 📓 Exportar p/ NotebookLM {DIM}episódio de custo zero na assinatura{RESET}
+╚══════════════════════════════════════════════════════════╝{RESET}
+  {DIM}Fonte ativa: {SOURCE_KEY}{RESET}{alert}
+  {BOLD}1{RESET} — 💬 Chat de pesquisa      {DIM}qualquer tema, com ações executáveis{RESET}
+  {BOLD}2{RESET} — ➕ Adicionar conteúdo    {DIM}por URL ou texto colado{RESET}
+  {BOLD}3{RESET} — 🧭 Trocar fonte          {DIM}conteúdo próprio, Akita on Rails…{RESET}
+  {BOLD}4{RESET} — 📚 Listar itens          {DIM}digite o número para gerar direto{RESET}
+  {BOLD}5{RESET} — 🔍 Buscar                {DIM}na fonte ativa{RESET}
+  {BOLD}6{RESET} — 🎙️  Gerar episódio       {DIM}ao vivo, com barra e custo em US${RESET}
+  {BOLD}7{RESET} — 🚀 Gerar em 2º plano     {DIM}libera o terminal; watch acompanha{RESET}
+  {BOLD}8{RESET} — 👀 Acompanhar geração    {DIM}progresso e custo ao vivo{RESET}
+  {BOLD}9{RESET} — 🛑 Abortar geração       {DIM}para no próximo segmento{RESET}
+ {BOLD}10{RESET} — 📓 Exportar p/ NotebookLM {DIM}episódio de custo zero na assinatura{RESET}
+ {BOLD}11{RESET} — 🔑 Chaves & saldo        {DIM}chaves nomeadas, ativa, saldo em US${RESET}
+ {BOLD}12{RESET} — 👤 Perfis & modelos      {DIM}presets de modelos e apresentadores{RESET}
+ {BOLD}13{RESET} — 🎛️  Catálogo TTS/vozes   {DIM}modelos e vozes para configurar{RESET}
+ {BOLD}14{RESET} — 🔄 Sincronizar fonte     {DIM}atualiza a fonte ativa{RESET}
+ {BOLD}15{RESET} — 📊 Status                {DIM}mostra o que está gastando créditos{RESET}
+ {BOLD}16{RESET} — 🛠️  Instalar / Setup     {DIM}dependências, módulos, .env{RESET}
+ {BOLD}17{RESET} — 🖥️  Abrir app desktop    {DIM}interface Electron completa{RESET}
   {BOLD}0{RESET} — 🚪 Sair
 """)
         choice = input(f"{BOLD}Opção:{RESET} ").strip()
         if choice == "1":
-            do_setup()
+            do_chat()
         elif choice == "2":
-            do_keys()
+            mode = input("URL (u) ou texto colado (t)? ").strip().lower()
+            if mode == "u":
+                if url := input("URL: ").strip():
+                    do_add_url(url)
+            elif mode == "t":
+                do_add_text()
         elif choice == "3":
-            do_profiles()
+            do_switch_source()
         elif choice == "4":
-            do_sync()
-        elif choice == "5":
             do_list()
-        elif choice == "6":
+        elif choice == "5":
             if query := input("Buscar por: ").strip():
                 do_search(query)
-        elif choice in ("7", "8"):
+        elif choice in ("6", "7"):
             selector = input("Número da listagem ou id do item: ").strip()
             if selector:
-                do_generate(selector, background=choice == "8")
-        elif choice == "9":
+                do_generate(selector, background=choice == "7")
+        elif choice == "8":
             if selector := input("Id do item (ou número): ").strip():
                 do_watch(selector)
-        elif choice == "10":
+        elif choice == "9":
             if selector := input("Id do item (ou número): ").strip():
                 do_abort(selector)
-        elif choice == "11":
-            do_catalog()
-        elif choice == "12":
-            do_status()
-        elif choice == "13":
-            do_desktop()
-        elif choice == "14":
+        elif choice == "10":
             if selector := input("Número da listagem ou id do item: ").strip():
                 do_notebooklm(selector)
+        elif choice == "11":
+            do_keys()
+        elif choice == "12":
+            do_profiles()
+        elif choice == "13":
+            do_catalog()
+        elif choice == "14":
+            do_sync()
+        elif choice == "15":
+            do_status()
+        elif choice == "16":
+            do_setup()
+        elif choice == "17":
+            do_desktop()
         elif choice in ("0", "q"):
             if _running_generations():
                 _warn("Atenção: ainda há geração em segundo plano consumindo créditos.")
@@ -581,6 +696,10 @@ def main() -> None:
         do_abort(args[1])
     elif args[0] == "notebooklm" and len(args) >= 2:
         do_notebooklm(args[1])
+    elif args[0] == "chat":
+        do_chat()
+    elif args[0] == "add-url" and len(args) >= 2:
+        do_add_url(args[1])
     else:
         print(__doc__)
         sys.exit(2)

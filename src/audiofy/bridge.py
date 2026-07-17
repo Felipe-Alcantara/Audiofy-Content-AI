@@ -113,6 +113,28 @@ def _cmd_abort(item_id: str) -> dict:
     return {"aborted": True, "note": "abort é cooperativo; efetiva no próximo segmento"}
 
 
+def _cmd_settings_info() -> dict:
+    """Resumo de configuração para a interface: perfil, provedor, CLIs, apresentadores."""
+    from .providers.subscription import SUBSCRIPTION_CLIS
+    settings = Settings()
+    return {
+        "profile": settings.profile_name,
+        "text_provider": settings.text_provider or "openrouter",
+        "text_model": settings.text_model,
+        "audit_model": settings.audit_model,
+        "tts_model": settings.tts_model,
+        "presenters": [
+            {"speaker": p.speaker, "voice": p.voice, "style": p.style}
+            for p in settings.presenters
+        ],
+        "has_key": bool(settings.api_key),
+        "subscription_clis": [
+            {"key": c.key, "name": c.name, "available": c.is_available()}
+            for c in SUBSCRIPTION_CLIS
+        ],
+    }
+
+
 def _cmd_tts_catalog() -> dict:
     from .providers.openrouter import GEMINI_VOICES, list_tts_models
     return {
@@ -151,6 +173,65 @@ def main() -> None:
             from .export import export_notebooklm_pack
             item = get_source(rest[0]).get_item(rest[1])
             result = {"pack": str(export_notebooklm_pack(item))}
+        elif command == "add-url" and rest:
+            from .sources.custom import CustomSource
+            item_id = CustomSource().add_url(rest[0])
+            result = {"item_id": item_id, "source": "custom"}
+        elif command == "add-text":
+            from .sources.custom import CustomSource
+            payload = json.loads(sys.stdin.read())
+            item_id = CustomSource().add_text(
+                payload["title"], payload["text"], payload.get("url", ""))
+            result = {"item_id": item_id, "source": "custom"}
+        elif command == "chat":
+            from .chat import ChatSession
+            message = sys.stdin.read().strip()
+            if not message:
+                raise ValueError("mensagem vazia (envie pelo stdin)")
+            session = ChatSession(rest[0] if rest else "principal")
+            text, actions = session.send(message, Settings())
+            result = {"reply": text, "actions": actions}
+        elif command == "chat-history":
+            from .chat import ChatSession
+            result = {"messages": ChatSession(rest[0] if rest else "principal").messages}
+        elif command == "chat-clear":
+            from .chat import ChatSession
+            ChatSession(rest[0] if rest else "principal").clear()
+            result = {"cleared": True}
+        elif command == "settings-info":
+            result = _cmd_settings_info()
+        elif command == "keys-list":
+            from .config import key_store
+            store = key_store()
+            result = {"active": store.active_name(),
+                      "keys": [{"name": k.name, "masked": k.masked}
+                               for k in store.list_keys()]}
+        elif command == "keys-add" and rest:
+            from .config import key_store
+            key_store().add(rest[0], sys.stdin.read().strip())
+            result = {"added": rest[0]}
+        elif command == "keys-activate" and rest:
+            from .config import key_store
+            key_store().set_active(rest[0])
+            result = {"active": rest[0]}
+        elif command == "keys-remove" and rest:
+            from .config import key_store
+            key_store().remove(rest[0])
+            result = {"removed": rest[0]}
+        elif command == "balance":
+            from .providers.openrouter import check_api_key
+            ok_flag, detail = check_api_key(Settings())
+            result = {"valid": ok_flag, "detail": detail}
+        elif command == "profiles-list":
+            from dataclasses import asdict as _asdict
+            from .config import profile_store
+            store = profile_store()
+            result = {"active": store.active().name,
+                      "profiles": [_asdict(p) for p in store.list_profiles()]}
+        elif command == "profiles-activate" and rest:
+            from .config import profile_store
+            profile_store().set_active(rest[0])
+            result = {"active": rest[0]}
         else:
             raise ValueError(f"Comando inválido: {' '.join(args)}\n{__doc__}")
         _emit({"ok": True, **result})
