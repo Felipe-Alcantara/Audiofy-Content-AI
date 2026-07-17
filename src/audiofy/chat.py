@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Callable
 
 from .config import DATA_DIR, Settings
+from .security import validate_identifier
 
 CHAT_DIR = DATA_DIR / "chat"
 
@@ -44,6 +45,27 @@ Tipos disponíveis:
 Nunca invente item_id: use os que a conversa apresentou. Fora dos blocos ```acao, escreva
 texto normal."""
 
+_ACTION_FIELDS = {
+    "adicionar_url": ("url",),
+    "buscar": ("fonte", "termos"),
+    "gerar": ("fonte", "item_id"),
+    "exportar_notebooklm": ("fonte", "item_id"),
+}
+
+
+def _valid_action(data: object) -> bool:
+    if not isinstance(data, dict) or data.get("tipo") not in _ACTION_FIELDS:
+        return False
+    description = data.get("descricao")
+    if description is not None and not isinstance(description, str):
+        return False
+    return all(
+        isinstance(data.get(field), str)
+        and bool(data[field].strip())
+        and len(data[field]) <= 4096
+        for field in _ACTION_FIELDS[data["tipo"]]
+    )
+
 
 def parse_actions(reply: str) -> tuple[str, list[dict]]:
     """Separa o texto da resposta e as ações estruturadas."""
@@ -51,7 +73,7 @@ def parse_actions(reply: str) -> tuple[str, list[dict]]:
     for block in re.findall(r"```acao\s*\n(.*?)\n\s*```", reply, re.DOTALL):
         try:
             data = json.loads(block)
-            if isinstance(data, dict) and data.get("tipo"):
+            if _valid_action(data):
                 actions.append(data)
         except json.JSONDecodeError:
             continue
@@ -62,6 +84,7 @@ def parse_actions(reply: str) -> tuple[str, list[dict]]:
 class ChatSession:
     def __init__(self, session_id: str = "principal",
                  chat_dir: Path | None = None) -> None:
+        session_id = validate_identifier(session_id, "ID da sessão", max_length=64)
         self.path = (chat_dir or CHAT_DIR) / f"{session_id}.json"
         self.messages: list[dict] = []
         if self.path.is_file():
@@ -88,6 +111,10 @@ class ChatSession:
              call_provider: Callable[[str, str, Settings], str] | None = None,
              ) -> tuple[str, list[dict]]:
         """Envia uma mensagem e retorna (texto da resposta, ações propostas)."""
+        if not isinstance(message, str) or not message.strip():
+            raise ValueError("A mensagem não pode ser vazia.")
+        if len(message) > 50_000:
+            raise ValueError("A mensagem excede o limite de 50.000 caracteres.")
         history = self._transcript()
         user_prompt = (f"Histórico da conversa:\n{history}\n\nUsuário: {message}"
                        if history else message)

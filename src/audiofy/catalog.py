@@ -79,8 +79,9 @@ def vendors(models: list[Model]) -> list[str]:
 
 
 def models_of(models: list[Model], vendor: str,
-              modality: str | None = None) -> list[Model]:
+              modality: str | tuple[str, ...] | None = None) -> list[Model]:
     hits = [m for m in models if m.vendor == vendor]
     if modality:
-        hits = [m for m in hits if modality in m.output_modalities]
+        modalities = (modality,) if isinstance(modality, str) else modality
+        hits = [m for m in hits if set(modalities) & set(m.output_modalities)]
     return hits

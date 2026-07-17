@@ -35,6 +35,12 @@ class ParseActionsTest(unittest.TestCase):
         self.assertEqual(actions, [])
         self.assertEqual(text, "Texto.")
 
+    def test_acao_desconhecida_ou_incompleta_e_ignorada(self):
+        reply = ('```acao\n{"tipo": "apagar_tudo"}\n```\n'
+                 '```acao\n{"tipo": "gerar", "fonte": "akita"}\n```')
+        _, actions = parse_actions(reply)
+        self.assertEqual(actions, [])
+
 
 class ChatSessionTest(unittest.TestCase):
     def setUp(self):
@@ -69,6 +75,17 @@ class ChatSessionTest(unittest.TestCase):
         session.send("Oi", None, call_provider=self._fake_provider("Olá"))
         session.clear()
         self.assertEqual(ChatSession("t", chat_dir=self.chat_dir).messages, [])
+
+    def test_id_de_sessao_nao_permite_path_traversal(self):
+        with self.assertRaisesRegex(ValueError, "ID da sessão"):
+            ChatSession("../../outra-pasta", chat_dir=self.chat_dir)
+
+    def test_mensagem_vazia_ou_excessiva_e_rejeitada(self):
+        session = ChatSession("t", chat_dir=self.chat_dir)
+        with self.assertRaises(ValueError):
+            session.send("", None, call_provider=self._fake_provider("não chamado"))
+        with self.assertRaises(ValueError):
+            session.send("x" * 50_001, None, call_provider=self._fake_provider("não chamado"))
 
 
 if __name__ == "__main__":

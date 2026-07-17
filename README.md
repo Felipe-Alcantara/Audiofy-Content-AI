@@ -3,8 +3,8 @@
 <div align="center">
 
 ![Status](https://img.shields.io/badge/status-MVP-green?style=for-the-badge)
-![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Electron](https://img.shields.io/badge/Electron-33-47848F?style=for-the-badge&logo=electron&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Electron](https://img.shields.io/badge/Electron-41-47848F?style=for-the-badge&logo=electron&logoColor=white)
 ![OpenRouter](https://img.shields.io/badge/OpenRouter-API-6C47FF?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
@@ -24,6 +24,8 @@
 - [🧩 Fontes de conteúdo](#-fontes-de-conteúdo)
 - [🎛️ Apresentadores e vozes](#️-apresentadores-e-vozes)
 - [💰 Custo em tempo real](#-custo-em-tempo-real)
+- [🛡️ Segurança](#️-segurança)
+- [✅ Qualidade e testes](#-qualidade-e-testes)
 - [📁 Estrutura](#-estrutura)
 - [⚠️ Limites atuais](#-limites-atuais)
 - [🤝 Contribuições](#-contribuições)
@@ -54,14 +56,16 @@ no núcleo.
 
 ## 🚀 Como usar
 
-Requisitos: Python 3.10+, `git`, `ffmpeg`, biblioteca `requests` e uma chave do
+Requisitos: Python 3.10+, `git`, `ffmpeg` e uma chave do
 [OpenRouter](https://openrouter.ai/keys) com créditos. Para o app desktop: Node.js.
 
 ```bash
 python3 start_app.py
 ```
 
-O menu interativo é a porta de entrada única:
+O menu interativo, colorido e navegável por setas é a porta de entrada principal. Na primeira
+execução, ele prepara automaticamente `questionary` e `rich`; a opção **Instalar / Setup**
+instala as demais dependências declaradas em `requirements.txt` e diagnostica o ambiente.
 
 | Opção | O que faz |
 |---|---|
@@ -79,7 +83,8 @@ O menu interativo é a porta de entrada única:
 | Sincronizar / Status / Setup | fonte atualizada; o que está gastando créditos; instalação |
 | Abrir app desktop | interface Electron com **todas** essas funções |
 
-Atalhos de linha de comando: `list`, `search <termos>`, `generate <n|id> [--bg]`,
+Para automações e integrações, continuam disponíveis os comandos secundários `list`,
+`search <termos>`, `generate <n|id> [--bg] [--force]`,
 `watch <id>`, `abort <id>`, `sync`, `status`, `setup`, `catalog`.
 
 Cada episódio fica em `data/episodes/<item>/` com artefatos auditáveis (`coverage.json`,
@@ -97,16 +102,28 @@ abas:
 
 - **💬 Chat** — o assistente de pesquisa: qualquer tema, com ações executáveis em um clique
   (adicionar URL, buscar, gerar, exportar NotebookLM);
-- **📚 Conteúdo** — seletor de fonte, busca, adicionar por URL ou texto colado, estimativa de
-  custo, gerar, NotebookLM;
+- **📚 Conteúdo** — seletor e prontidão da fonte, busca, adicionar por URL ou texto colado,
+  estimativa de custo, geração normal ou forçada e NotebookLM;
 - **🎧 Episódios** — todos os episódios com estado, progresso, custo, abortar, ouvir e abrir
   pasta;
-- **⚙️ Configurações** — chaves nomeadas (adicionar/ativar/remover), saldo em US$, perfis,
-  configuração ativa e catálogo TTS/vozes.
+- **⚙️ Configurações** — chaves nomeadas (adicionar/ativar/remover), saldo em US$,
+  criar/editar/ativar/remover perfis, escolha provedor + empresa + modelo com preços,
+  apresentadores, setup compartilhado e catálogo TTS/vozes.
 
 Um banner global alerta **sempre que qualquer geração estiver consumindo créditos**. Toda a
-lógica continua no backend Python — o app fala com ele pela bridge JSON
+lógica continua no backend Python. Uma faixa de configuração permanece visível em todas as abas
+e mostra o perfil, o provedor/modelo efetivo das etapas de texto e o modelo TTS — inclusive quando
+uma variável `AUDIOFY_*` está sobrescrevendo o perfil ativo. Para o Codex, o modelo global definido
+em `~/.codex/config.toml` também é identificado (somente esse campo é lido). A interface reorganiza
+navegação, cartões e formulários ao redimensionar a janela até sua largura mínima de 360 px.
+O app fala com o backend pela bridge JSON
 (`python3 -m audiofy.bridge`), a mesma interface disponível para qualquer automação.
+
+O processo Electron roda com `contextIsolation`, sandbox e uma Content Security Policy
+restritiva. A bridge aceita somente os comandos públicos usados pela interface, limita argumentos
+e volume de dados, trata timeout/falha de processo e só abre arquivos localizados dentro do projeto.
+O desktop fixa Electron 41.7.1, última correção dessa linha compatível com Node 18+, com lockfile
+reproduzível e `npm audit` sem vulnerabilidades conhecidas.
 
 ## 🧩 Fontes de conteúdo
 
@@ -128,7 +145,8 @@ Padrões portados do [Openia](https://github.com/Felipe-Alcantara/Openia):
   `OPENROUTER_API_KEY` (inclusive via `.env`) tem prioridade, para CI/sessões temporárias.
   O menu mostra o **saldo e o uso em US$** da chave ativa.
 - **Perfis** — presets nomeados de modelos + apresentadores. Embutidos: `padrao` (qualidade),
-  `economico` (tudo no modelo barato) e `narrador-unico` (audiolivro). Crie os seus pelo menu;
+  `economico` (tudo no modelo barato), `narrador-unico` (audiolivro), `assinatura`
+  (Claude Code) e `assinatura-codex` (Codex CLI). Crie e edite os seus pelo menu ou pelo app;
   variáveis `AUDIOFY_*` continuam tendo prioridade sobre o perfil ativo.
 - **Escolha de modelo em dois passos** — empresa → modelo, com preço por milhão de tokens em
   cada linha, vindo da API ao vivo com cache local de 24h.
@@ -144,7 +162,8 @@ instalada na máquina, sob a assinatura do usuário, em vez da API:
 | `gemini-cli` | Google |
 | `codex` | OpenAI |
 
-Ative com o perfil embutido `assinatura` ou `AUDIOFY_TEXT_PROVIDER=claude-code`. O TTS continua
+Ative com o perfil embutido `assinatura` (Claude Code), `assinatura-codex` (OpenAI Codex) ou
+com `AUDIOFY_TEXT_PROVIDER=claude-code`. O TTS continua
 via API (assinaturas não expõem TTS programável) — o custo do episódio cai para só a voz
 (~US$ 0,39 no Gemini TTS; centavos em modelos alternativos). O caminho de custo **totalmente
 zero** é o modo NotebookLM (menu "Exportar p/ NotebookLM"): o Audiofy prepara a fonte e as
@@ -181,6 +200,40 @@ TTS). O menu **Catálogo TTS/vozes** lista os modelos de áudio disponíveis no 
 O Status (CLI e app) sempre deixa explícito se algo está rodando em segundo plano gastando
 créditos — e o abort para a geração no próximo segmento, sem corromper artefatos.
 
+## 🛡️ Segurança
+
+- Segredos ficam em `.env` ou `.audiofy/keys.json` (`0600` em sistemas POSIX), ambos ignorados
+  pelo Git; a interface nunca devolve a chave sem máscara. Históricos em `data/chat/` e conteúdo
+  pessoal em `data/inbox/` também não entram no versionamento.
+- A importação por URL aceita somente HTTP(S) público, sem credenciais incorporadas. Destinos
+  locais, privados ou reservados são rejeitados, inclusive após redirecionamento; downloads são
+  limitados a 5 MiB.
+- IDs usados em arquivos, nomes de sessão, perfis e ações propostas pelo modelo são validados na
+  fronteira antes de persistir ou executar.
+- Operações com custo ou destrutivas exigem confirmação; o abort é cooperativo e preserva os
+  artefatos já concluídos.
+- O Electron usa CSP, sandbox, navegação bloqueada, allowlist de IPC e confinamento de caminhos.
+
+## ✅ Qualidade e testes
+
+```bash
+# Backend, regras de negócio e regressões
+PYTHONPATH=src python3 -m unittest discover -s tests -v
+
+# Lint Python
+ruff check start_app.py src tests
+
+# Sintaxe e contratos de segurança do Electron
+npm --prefix electron run check
+
+# Auditoria das dependências do desktop
+npm --prefix electron audit
+```
+
+A suíte cobre perfis, chaves, fontes, parsing, chat, setup, status/abort, bridge, modelo efetivo
+do Codex, proteção contra path traversal/SSRF e os limites do IPC Electron. Responsividade foi
+verificada visualmente em 600 px e 380 px, incluindo Chat e Configurações.
+
 ## 📁 Estrutura
 
 ```text
@@ -194,6 +247,9 @@ Audiofy-Content-AI/
 │       ├── prompts.py           # Prompts montados para N apresentadores
 │       ├── pipeline.py          # Cobertura → roteiro → auditoria → áudio
 │       ├── bridge.py            # Interface JSON (Electron e automações)
+│       ├── setup.py             # Diagnóstico e instalação compartilhados
+│       ├── security.py          # Validações de IDs e URLs públicas
+│       ├── tui.py               # Menu navegável questionary + Rich
 │       ├── 📁 providers/        # OpenRouter: chat+custo, TTS, catálogo
 │       ├── 📁 sources/          # Contrato + registro de fontes (akita)
 │       └── 📁 runtime/          # status.json, custo acumulado, abort
@@ -201,6 +257,7 @@ Audiofy-Content-AI/
 ├── 📁 tests/                    # python3 -m unittest discover -s tests
 ├── 📁 data/                     # Episódios e clone da fonte
 ├── start_app.py                 # Menu interativo — porta de entrada
+├── requirements.txt             # Dependências Python declaradas
 ├── IA.md                        # Linha do tempo de decisões
 └── README.md
 ```
@@ -214,15 +271,14 @@ Audiofy-Content-AI/
 - O custo do TTS é aproximado pelo uso da conta (ver acima); o valor exato consta no painel do
   OpenRouter.
 - Nomes de modelos e vozes mudam com o catálogo do OpenRouter; tudo é configurável via `.env`.
+- A importação por URL não acessa intranets ou serviços locais; nesses casos, cole o texto
+  manualmente para preservar a fronteira de segurança.
 
 ## 🤝 Contribuições
 
 Ideias que o projeto adoraria receber:
 
 - **Novas fontes de conteúdo** (outros blogs, feeds RSS, pastas de Markdown, Notion);
-- **Modo NotebookLM** — caminho manual/barato para episódios simples, complementando o pipeline;
-- **Módulo de chat** — conversar com o programa para checar módulos, baixar conteúdo, inserir
-  dados e configurar (no espírito do [Openia](https://github.com/Felipe-Alcantara/Openia));
 - **Planejamento editorial em lote** — inserir muitos dados e gerar pauta de episódios/tópicos;
 - STT + auditoria automática do MP3 final (fase 4 do plano técnico);
 - Métricas de cobertura semântica reproduzíveis.
@@ -237,6 +293,8 @@ não comercial, atribuição, mesma licença), como detalhado no
 ## 👤 Autor
 
 **Felipe Martin**
+
+- GitHub: [@Felipe-Alcantara](https://github.com/Felipe-Alcantara)
 
 ---
 

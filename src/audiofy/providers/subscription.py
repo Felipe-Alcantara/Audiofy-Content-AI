@@ -12,10 +12,12 @@ instância de `SubscriptionCli`; o núcleo só conhece `chat_json`.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
 from dataclasses import dataclass
+from pathlib import Path
 
 _TIMEOUT_SECONDS = 900
 
@@ -74,6 +76,35 @@ def get_cli(key: str) -> SubscriptionCli:
 
 def available_clis() -> list[SubscriptionCli]:
     return [cli for cli in SUBSCRIPTION_CLIS if cli.is_available()]
+
+
+def _codex_configured_model() -> str | None:
+    """Lê apenas o modelo global do Codex, sem carregar/expor outros campos.
+
+    O projeto ainda suporta Python 3.10, portanto a leitura deliberadamente
+    pequena evita depender de ``tomllib`` (Python 3.11+). O modelo global fica
+    antes da primeira tabela TOML; modelos de perfis não são efetivos porque o
+    Audiofy não passa ``--profile`` ao executar o Codex.
+    """
+    codex_home = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
+    config_path = codex_home / "config.toml"
+    try:
+        contents = config_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
+        return None
+    top_level = re.split(r"(?m)^\s*\[", contents, maxsplit=1)[0]
+    match = re.search(
+        r"(?m)^\s*model\s*=\s*(['\"])([^'\"\r\n]+)\1\s*(?:#.*)?$",
+        top_level,
+    )
+    return match.group(2).strip() if match else None
+
+
+def configured_model(provider_key: str) -> str | None:
+    """Retorna o modelo efetivo configurado para uma CLI, quando detectável."""
+    if provider_key == "codex":
+        return _codex_configured_model()
+    return None
 
 
 def _extract_json(text: str):

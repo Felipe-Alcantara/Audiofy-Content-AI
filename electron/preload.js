@@ -5,5 +5,4 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("audiofy", {
   bridge: (args, stdinData) => ipcRenderer.invoke("bridge", args, stdinData),
   openPath: (target) => ipcRenderer.invoke("open-path", target),
-  openExternal: (url) => ipcRenderer.invoke("open-external", url),
 });

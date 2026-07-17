@@ -5,20 +5,51 @@
 const $ = (id) => document.getElementById(id);
 const bridge = (args, stdin) => window.audiofy.bridge(args, stdin);
 
+async function openProjectPath(target) {
+  const error = await window.audiofy.openPath(target);
+  if (error) alert(error);
+}
+
+function makeElement(tag, className = "", text = "") {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text) element.textContent = text;
+  return element;
+}
+
 let currentSource = "custom";
 let selectedItem = null;
 let pollTimer = null;
+let sourcesByKey = new Map();
 
 // ── Abas ──────────────────────────────────────────────────────────────────
 
-document.querySelectorAll("#tabs .tab").forEach((button) => {
-  button.onclick = () => {
-    document.querySelectorAll("#tabs .tab").forEach((b) => b.classList.remove("active"));
-    document.querySelectorAll(".tab-page").forEach((p) => p.classList.add("hidden"));
-    button.classList.add("active");
-    $(`tab-${button.dataset.tab}`).classList.remove("hidden");
-    if (button.dataset.tab === "settings") loadSettings();
-    if (button.dataset.tab === "episodes") refreshStatus();
+const tabButtons = [...document.querySelectorAll("#tabs .tab")];
+
+function activateTab(button, moveFocus = false) {
+  for (const candidate of tabButtons) {
+    const active = candidate === button;
+    candidate.classList.toggle("active", active);
+    candidate.setAttribute("aria-selected", String(active));
+    candidate.tabIndex = active ? 0 : -1;
+    const page = $(`tab-${candidate.dataset.tab}`);
+    page.classList.toggle("hidden", !active);
+    page.setAttribute("aria-hidden", String(!active));
+  }
+  if (moveFocus) button.focus();
+  if (button.dataset.tab === "settings") loadSettings();
+  if (button.dataset.tab === "episodes") refreshStatus();
+}
+
+tabButtons.forEach((button, index) => {
+  button.onclick = () => activateTab(button);
+  button.onkeydown = (event) => {
+    const direction = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+    if (!direction && event.key !== "Home" && event.key !== "End") return;
+    event.preventDefault();
+    const targetIndex = event.key === "Home" ? 0 : event.key === "End"
+      ? tabButtons.length - 1 : (index + direction + tabButtons.length) % tabButtons.length;
+    activateTab(tabButtons[targetIndex], true);
   };
 });
 
@@ -57,19 +88,22 @@ async function runAction(action, button) {
       addChatMessage("system", lines || "Nada encontrado.");
     }
   } else if (action.tipo === "gerar") {
-    const detail = await bridge(["item", action.fonte, action.item_id]);
+    const source = action.fonte || currentSource;
+    const detail = await bridge(["item", source, action.item_id]);
     const estimate = detail.ok ? ` (~US$ ${detail.estimated_cost_usd.toFixed(2)})` : "";
     if (!confirm(`Gerar episódio de "${action.item_id}"${estimate}? Consome créditos.`)) {
       button.disabled = false;
       return;
     }
-    result = await bridge(["generate", action.fonte, action.item_id]);
+    result = await bridge(["generate", source, action.item_id]);
     if (result.ok && result.started) {
       addChatMessage("system", "✔ Geração iniciada — acompanhe na aba Episódios.");
       refreshStatus();
+    } else if (result.ok) {
+      addChatMessage("system", `✖ ${result.reason || "a geração não foi iniciada"}`);
     }
   } else if (action.tipo === "exportar_notebooklm") {
-    result = await bridge(["notebooklm", action.fonte, action.item_id]);
+    result = await bridge(["notebooklm", action.fonte || currentSource, action.item_id]);
     if (result.ok) addChatMessage("system", `✔ Pacote NotebookLM: ${result.pack}`);
   } else {
     result = { ok: false, error: `ação desconhecida: ${action.tipo}` };
@@ -111,6 +145,9 @@ $("chat-clear").onclick = async () => {
 async function loadChatHistory() {
   const result = await bridge(["chat-history", "principal"]);
   if (!result.ok) return;
+  if (Array.isArray(result.sources)) {
+    sourcesByKey = new Map(result.sources.map((source) => [source.key, source]));
+  }
   for (const message of result.messages) {
     addChatMessage(message.role === "user" ? "user" : "assistant", message.content);
   }
@@ -121,15 +158,30 @@ async function loadChatHistory() {
 async function loadSources() {
   const result = await bridge(["sources"]);
   if (!result.ok) return;
+  sourcesByKey = new Map(result.sources.map((source) => [source.key, source]));
   const select = $("source-select");
   select.innerHTML = "";
   for (const source of result.sources) {
     const option = document.createElement("option");
     option.value = source.key;
-    option.textContent = source.name;
+    option.textContent = `${source.name}${source.ready ? "  ·  pronta" : "  ·  requer sync"}`;
+    option.title = source.description;
     select.appendChild(option);
   }
   select.value = currentSource;
+  renderSourceStatus();
+}
+
+function renderSourceStatus(message = "") {
+  const source = sourcesByKey.get(currentSource);
+  const status = $("source-status");
+  if (message) {
+    status.textContent = message;
+    return;
+  }
+  status.textContent = source
+    ? `${source.ready ? "✓ Fonte pronta" : "⚠ Fonte ainda não sincronizada"} · ${source.description}`
+    : "";
 }
 
 $("source-select").onchange = () => {
@@ -138,6 +190,7 @@ $("source-select").onchange = () => {
   selectedItem = null;
   $("detail").classList.add("hidden");
   $("detail-empty").classList.remove("hidden");
+  renderSourceStatus();
   loadItems();
 };
 
@@ -147,17 +200,17 @@ async function loadItems(query = "") {
   const list = $("items");
   list.innerHTML = "";
   if (!result.ok) {
-    list.innerHTML = `<li class="muted">Erro: ${result.error}</li>`;
+    list.appendChild(makeElement("li", "muted", `Erro: ${result.error}`));
     return;
   }
   if (!result.items.length) {
-    list.innerHTML = `<li class="muted">Nenhum item — adicione conteúdo acima
-      ou peça sugestões no Chat.</li>`;
+    list.appendChild(makeElement("li", "muted",
+      "Nenhum item — adicione conteúdo acima ou peça sugestões no Chat."));
   }
   for (const item of result.items) {
     const row = document.createElement("li");
-    row.innerHTML =
-      `<span class="date">${item.published_at}</span><span>${item.title}</span>`;
+    row.appendChild(makeElement("span", "date", item.published_at));
+    row.appendChild(makeElement("span", "item-title", item.title));
     row.onclick = () => selectItem(item, row);
     list.appendChild(row);
   }
@@ -182,8 +235,14 @@ async function selectItem(item, row) {
 
 $("btn-sync").onclick = async () => {
   $("btn-sync").disabled = true;
-  await bridge(["sync", currentSource]);
+  renderSourceStatus("… sincronizando fonte");
+  const result = await bridge(["sync", currentSource]);
   $("btn-sync").disabled = false;
+  if (!result.ok) {
+    renderSourceStatus(`✖ ${result.error}`);
+    return;
+  }
+  await loadSources();
   loadItems($("search").value.trim());
 };
 
@@ -225,14 +284,19 @@ $("btn-add-text").onclick = async () => {
 
 $("btn-generate").onclick = async () => {
   if (!selectedItem) return;
+  const force = $("generate-force").checked;
   const confirmed = confirm(
     `Gerar episódio de "${selectedItem.title}"?\n\n` +
     `Custo estimado: ~US$ ${selectedItem.estimated_cost_usd.toFixed(2)} ` +
-    `(consome créditos do OpenRouter).`
+    `(consome créditos do OpenRouter).` +
+    (force ? "\n\nA cobertura, o roteiro e a auditoria serão regenerados." : "")
   );
   if (!confirmed) return;
-  const result = await bridge(["generate", selectedItem.source, selectedItem.item_id]);
+  const args = ["generate", selectedItem.source, selectedItem.item_id];
+  if (force) args.push("--force");
+  const result = await bridge(args);
   if (!result.ok || !result.started) alert(`Não iniciou: ${result.reason || result.error}`);
+  else $("generate-force").checked = false;
   refreshStatus();
 };
 
@@ -240,7 +304,7 @@ $("btn-notebooklm").onclick = async () => {
   if (!selectedItem) return;
   const result = await bridge(["notebooklm", selectedItem.source, selectedItem.item_id]);
   if (result.ok) {
-    window.audiofy.openPath(result.pack);
+    openProjectPath(result.pack);
   } else {
     alert(result.error);
   }
@@ -291,29 +355,35 @@ function renderSelectedStatus(episodes) {
     const percent = progress.total
       ? Math.round((100 * progress.current) / progress.total) : 0;
     $("progress-fill").style.width = `${percent}%`;
+    $("progress-track").setAttribute("aria-valuenow", String(percent));
     $("progress-label").textContent =
       `Etapa: ${status.stage} — ${progress.current || 0}/${progress.total || "?"} (${percent}%)`;
     $("cost-label").textContent = `💰 US$ ${status.cost_usd.toFixed(4)} até agora`;
+  } else {
+    $("progress-fill").style.width = "0%";
+    $("progress-track").setAttribute("aria-valuenow", "0");
   }
-  $("btn-play").onclick = () => window.audiofy.openPath(status.mp3);
-  $("btn-folder").onclick = () => status && window.audiofy.openPath(status.dir);
+  $("btn-play").onclick = () => openProjectPath(status.mp3);
+  $("btn-folder").onclick = () => status && openProjectPath(status.dir);
 }
 
 function renderEpisodes(episodes) {
   const list = $("episodes");
-  list.innerHTML = episodes.length ? "" : `<li class="muted">Nenhum episódio ainda.</li>`;
+  list.innerHTML = "";
+  if (!episodes.length) list.appendChild(makeElement("li", "muted", "Nenhum episódio ainda."));
   for (const episode of episodes) {
     const row = document.createElement("li");
     const cost = episode.cost_usd ? ` · US$ ${episode.cost_usd.toFixed(4)}` : "";
     const progress = episode.state === "rodando" && episode.progress.total
       ? ` · ${episode.progress.current}/${episode.progress.total}` : "";
-    row.innerHTML =
-      `<span class="state-${episode.state}">●</span> ${episode.episode_id}` +
-      `<span class="muted">${episode.state}${progress}${cost}</span>`;
+    row.appendChild(makeElement("span", `state-${episode.state}`, "●"));
+    row.appendChild(makeElement("span", "episode-title", episode.episode_id));
+    row.appendChild(makeElement("span", "muted", `${episode.state}${progress}${cost}`));
     if (episode.state === "rodando") {
       const abortButton = document.createElement("button");
       abortButton.textContent = "🛑";
       abortButton.title = "Abortar";
+      abortButton.setAttribute("aria-label", `Abortar ${episode.episode_id}`);
       abortButton.onclick = () => bridge(["abort", episode.episode_id]).then(refreshStatus);
       row.appendChild(abortButton);
     }
@@ -321,13 +391,15 @@ function renderEpisodes(episodes) {
       const play = document.createElement("button");
       play.textContent = "▶️";
       play.title = "Ouvir";
-      play.onclick = () => window.audiofy.openPath(episode.mp3);
+      play.setAttribute("aria-label", `Ouvir ${episode.episode_id}`);
+      play.onclick = () => openProjectPath(episode.mp3);
       row.appendChild(play);
     }
     const folder = document.createElement("button");
     folder.textContent = "📂";
     folder.title = "Abrir pasta";
-    folder.onclick = () => window.audiofy.openPath(episode.dir);
+    folder.setAttribute("aria-label", `Abrir pasta de ${episode.episode_id}`);
+    folder.onclick = () => openProjectPath(episode.dir);
     row.appendChild(folder);
     list.appendChild(row);
   }
@@ -335,25 +407,98 @@ function renderEpisodes(episodes) {
 
 // ── Configurações ─────────────────────────────────────────────────────────
 
+let modelsCatalog = null; // {text_models, tts_models, gemini_voices}
+let settingsInfo = null;
+
+function configChip(label, value, className = "") {
+  const chip = makeElement("span", `config-chip ${className}`.trim());
+  chip.appendChild(makeElement("strong", "", `${label}:`));
+  chip.appendChild(makeElement("span", "model-id", value));
+  return chip;
+}
+
+function renderActiveConfig(info) {
+  const strip = $("active-config-strip");
+  strip.innerHTML = "";
+  strip.appendChild(makeElement("span", "config-strip-label", "Configuração ativa"));
+  strip.appendChild(configChip("Perfil", info.profile));
+  if (info.overrides.length) {
+    const override = configChip("Override", info.overrides.join(", "), "warn");
+    override.title = "Variáveis de ambiente têm prioridade sobre o perfil ativo";
+    strip.appendChild(override);
+  }
+
+  if (info.text_provider === "openrouter") {
+    strip.appendChild(configChip("Texto", `OpenRouter · ${info.text_model}`));
+  } else {
+    const cli = info.subscription_clis.find((item) => item.key === info.text_provider);
+    const availability = cli && !cli.available ? " · CLI não encontrada" : "";
+    const model = info.subscription_model || (cli && cli.configured_model) || "modelo padrão da CLI";
+    strip.appendChild(configChip("Texto",
+      `${cli ? cli.name : info.text_provider} · ${model}${availability}`,
+      cli && !cli.available ? "warn" : ""));
+  }
+
+  strip.appendChild(configChip("TTS", `${info.tts_model}${info.has_key ? "" : " · sem chave"}`,
+    info.has_key ? "" : "warn"));
+}
+
+async function loadActiveConfig() {
+  const info = await bridge(["settings-info"]);
+  if (info.ok) {
+    settingsInfo = info;
+    renderActiveConfig(info);
+  } else {
+    $("active-config-strip").textContent = `✖ Não foi possível carregar os modelos: ${info.error}`;
+  }
+  return info;
+}
+
+function renderSetup(setup) {
+  const list = $("setup-list");
+  list.innerHTML = "";
+  for (const check of setup.checks) {
+    const row = document.createElement("li");
+    row.appendChild(makeElement("span", `badge ${check.ok ? "ok" : "warn"}`,
+      check.ok ? "✓" : "✗"));
+    const detail = makeElement("div", "row-main");
+    detail.appendChild(makeElement("span", "row-title", check.name));
+    if (!check.ok) detail.appendChild(makeElement("span", "muted small", check.hint));
+    row.appendChild(detail);
+    if (!check.required) row.appendChild(makeElement("span", "badge", "opcional"));
+    list.appendChild(row);
+  }
+  $("setup-message").textContent = setup.ready
+    ? "✓ Ambiente pronto para gerar episódios."
+    : "Há itens obrigatórios que precisam de atenção.";
+}
+
 async function loadSettings() {
   const keys = await bridge(["keys-list"]);
   if (keys.ok) {
     const list = $("keys-list");
-    list.innerHTML = keys.keys.length ? "" : `<li class="muted">Nenhuma chave no cofre.</li>`;
+    list.innerHTML = "";
+    if (!keys.keys.length) list.appendChild(makeElement("li", "muted", "Nenhuma chave no cofre."));
     for (const key of keys.keys) {
       const row = document.createElement("li");
       const active = key.name === keys.active;
-      row.innerHTML = `<span>${key.name}</span><span class="muted">${key.masked}</span>` +
-        (active ? `<span class="state-concluido">● ativa</span>` : "");
+      const detail = makeElement("div", "row-main");
+      detail.appendChild(makeElement("span", "row-title", key.name));
+      detail.appendChild(makeElement("span", "muted mono", key.masked));
+      row.appendChild(detail);
+      if (active) row.appendChild(makeElement("span", "badge ok", "ativa"));
       if (!active) {
         const activate = document.createElement("button");
         activate.textContent = "ativar";
+        activate.className = "ghost";
         activate.onclick = () =>
           bridge(["keys-activate", key.name]).then(loadSettings);
         row.appendChild(activate);
       }
       const remove = document.createElement("button");
       remove.textContent = "🗑️";
+      remove.className = "ghost";
+      remove.setAttribute("aria-label", `Remover chave ${key.name}`);
       remove.onclick = () => {
         if (confirm(`Remover a chave "${key.name}"?`)) {
           bridge(["keys-remove", key.name]).then(loadSettings);
@@ -371,32 +516,68 @@ async function loadSettings() {
     for (const profile of profiles.profiles) {
       const row = document.createElement("li");
       const active = profile.name === profiles.active;
-      row.innerHTML =
-        `<span>${profile.name}</span><span class="muted">${profile.description}</span>` +
-        (active ? `<span class="state-concluido">● ativo</span>` : "");
+      const provider = profile.text_provider === "openrouter"
+        ? "API" : `assinatura ${profile.text_provider}`;
+      const detail = makeElement("div", "row-main");
+      detail.appendChild(makeElement("span", "row-title", profile.name));
+      if (profile.description) {
+        detail.appendChild(makeElement("span", "muted small", profile.description));
+      }
+      detail.appendChild(makeElement("span", "muted small",
+        `texto: ${provider} · tts: ${profile.tts_model} · ${profile.presenters_spec}`));
+      row.appendChild(detail);
+      if (active) row.appendChild(makeElement("span", "badge ok", "ativo"));
       if (!active) {
         const activate = document.createElement("button");
         activate.textContent = "ativar";
+        activate.className = "ghost";
         activate.onclick = () =>
           bridge(["profiles-activate", profile.name]).then(loadSettings);
         row.appendChild(activate);
+      }
+      const edit = makeElement("button", "ghost", "editar");
+      edit.onclick = () => openProfileForm(profile);
+      row.appendChild(edit);
+      if (profile.custom) {
+        const remove = document.createElement("button");
+        remove.textContent = "🗑️";
+        remove.className = "ghost";
+        remove.setAttribute("aria-label", `Remover perfil ${profile.name}`);
+        remove.onclick = () => {
+          if (confirm(`Remover o perfil "${profile.name}"?`)) {
+            bridge(["profiles-remove", profile.name]).then(loadSettings);
+          }
+        };
+        row.appendChild(remove);
       }
       list.appendChild(row);
     }
   }
 
-  const info = await bridge(["settings-info"]);
+  const info = await loadActiveConfig();
   if (info.ok) {
     const clis = info.subscription_clis
-      .map((c) => `${c.key}${c.available ? "" : " (não instalada)"}`).join(", ");
+      .map((c) => `${c.key}${c.configured_model ? ` (${c.configured_model})` : ""}` +
+        `${c.available ? " ✓" : " ✗"}`).join("  ");
+    const textModel = info.text_provider === "openrouter"
+      ? info.text_model
+      : info.subscription_model || "modelo padrão da CLI";
+    const auditModel = info.text_provider === "openrouter" ? info.audit_model : textModel;
     $("settings-info").textContent =
-      `perfil ativo:  ${info.profile}\n` +
-      `texto via:     ${info.text_provider}\n` +
-      `modelos:       roteiro=${info.text_model} | auditoria=${info.audit_model}\n` +
-      `tts:           ${info.tts_model}\n` +
-      `apresentadores: ${info.presenters.map((p) => `${p.speaker}:${p.voice}`).join(", ")}\n` +
-      `CLIs de assinatura: ${clis}`;
+      `perfil ativo:   ${info.profile}\n` +
+      `texto via:      ${info.text_provider}\n` +
+      `roteiro:        ${textModel}\n` +
+      `auditoria:      ${auditModel}\n` +
+      `tts:            ${info.tts_model}\n` +
+      `chave:          ${info.has_key ? `configurada (${info.key_source || "ativa"})` : "não configurada"}\n` +
+      `overrides:      ${info.overrides.length ? info.overrides.join(", ") : "nenhum"}\n` +
+      `apresentadores: ${info.presenters
+        .map((p) => `${p.speaker}:${p.voice}${p.style ? ":" + p.style : ""}`).join(", ")}\n` +
+      `assinaturas:    ${clis}`;
   }
+
+  const setup = await bridge(["setup-check"]);
+  if (setup.ok) renderSetup(setup);
 }
 
 $("btn-key-add").onclick = async () => {
@@ -419,6 +600,32 @@ $("btn-balance").onclick = async () => {
   $("balance-line").textContent = result.ok ? result.detail : `✖ ${result.error}`;
 };
 
+$("btn-setup-check").onclick = async () => {
+  $("setup-message").textContent = "… verificando ambiente";
+  const result = await bridge(["setup-check"]);
+  if (result.ok) renderSetup(result);
+  else $("setup-message").textContent = `✖ ${result.error}`;
+};
+
+$("btn-setup-install").onclick = async () => {
+  if (!confirm("Instalar dependências Python ausentes e criar o .env, se necessário?")) return;
+  const button = $("btn-setup-install");
+  button.disabled = true;
+  $("setup-message").textContent = "… preparando o ambiente; isso pode levar alguns minutos";
+  const result = await bridge(["setup-install"]);
+  button.disabled = false;
+  if (!result.ok) {
+    $("setup-message").textContent = `✖ ${result.error}`;
+    return;
+  }
+  renderSetup(result);
+  if (result.actions.length) {
+    $("setup-message").textContent = result.actions
+      .map((action) => `${action.ok ? "✓" : "✗"} ${action.name}: ${action.detail}`)
+      .join(" · ");
+  }
+};
+
 $("btn-load-catalog").onclick = async () => {
   $("catalog-box").textContent = "carregando…";
   const result = await bridge(["tts-catalog"]);
@@ -426,11 +633,219 @@ $("btn-load-catalog").onclick = async () => {
     $("catalog-box").textContent = `✖ ${result.error}`;
     return;
   }
-  const models = result.models.map((m) => `${m.id}`).join("\n");
+  const models = result.models.length
+    ? result.models.map((model) => model.id).join("\n")
+    : "Nenhum modelo carregado.";
   const voices = Object.entries(result.gemini_voices)
     .map(([voice, style]) => `${voice} (${style})`).join(", ");
+  const warning = result.catalog_error ? `Aviso: ${result.catalog_error}\n\n` : "";
   $("catalog-box").textContent =
-    `Modelos TTS:\n${models}\n\nVozes Gemini:\n${voices}`;
+    `${warning}Modelos TTS:\n${models}\n\nVozes Gemini:\n${voices}`;
+};
+
+// ── Editor de perfil ──────────────────────────────────────────────────────
+
+function fillModelSelect(select, models, current) {
+  select.innerHTML = "";
+  const knownIds = new Set(models.map((model) => model.id));
+  if (current && !knownIds.has(current)) {
+    const currentOption = document.createElement("option");
+    currentOption.value = current;
+    currentOption.textContent = `${current} — configuração atual`;
+    select.appendChild(currentOption);
+  }
+  let vendor = "";
+  let group = null;
+  for (const model of models) {
+    if (model.vendor !== vendor) {
+      vendor = model.vendor;
+      group = document.createElement("optgroup");
+      group.label = vendor;
+      select.appendChild(group);
+    }
+    const option = document.createElement("option");
+    option.value = model.id;
+    option.textContent = `${model.id} — ${model.price_line}`;
+    group.appendChild(option);
+  }
+  if (current) select.value = current;
+}
+
+function configureModelPicker(vendorSelect, modelSelect, models, current) {
+  const currentVendor = current && current.includes("/") ? current.split("/", 1)[0] : "";
+  const vendors = [...new Set([
+    ...models.map((model) => model.vendor),
+    ...(currentVendor ? [currentVendor] : []),
+  ])].sort();
+  vendorSelect.innerHTML = "";
+  for (const vendor of vendors) {
+    const option = document.createElement("option");
+    option.value = vendor;
+    option.textContent = vendor;
+    vendorSelect.appendChild(option);
+  }
+  vendorSelect.value = currentVendor || vendors[0] || "";
+
+  const renderModels = (selectedModel = "") => {
+    const matches = models.filter((model) => model.vendor === vendorSelect.value);
+    fillModelSelect(modelSelect, matches, selectedModel);
+  };
+  vendorSelect.onchange = () => renderModels();
+  renderModels(current);
+}
+
+function addPresenterRow(speaker = "", voice = "Kore", style = "") {
+  const voices = modelsCatalog ? Object.entries(modelsCatalog.gemini_voices) : [];
+  const row = document.createElement("div");
+  row.className = "presenter-row";
+  const speakerInput = makeElement("input", "pf-speaker");
+  speakerInput.type = "text";
+  speakerInput.placeholder = "nome";
+  speakerInput.value = speaker;
+  const voiceSelect = makeElement("select", "pf-voice");
+  if (voice && !voices.some(([name]) => name === voice)) {
+    const option = document.createElement("option");
+    option.value = voice;
+    option.textContent = `${voice} (configuração atual)`;
+    voiceSelect.appendChild(option);
+  }
+  for (const [name, tone] of voices) {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = `${name} (${tone})`;
+    voiceSelect.appendChild(option);
+  }
+  voiceSelect.value = voice;
+  const styleInput = makeElement("input", "pf-style");
+  styleInput.type = "text";
+  styleInput.placeholder = "tom (opcional)";
+  styleInput.value = style;
+  row.append(speakerInput, voiceSelect, styleInput);
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.textContent = "✕";
+  remove.className = "ghost";
+  remove.setAttribute("aria-label", `Remover apresentador ${speaker || "sem nome"}`);
+  remove.onclick = () => row.remove();
+  row.appendChild(remove);
+  $("pf-presenters").appendChild(row);
+}
+
+function presentersFromSpec(spec) {
+  return spec.split(",").map((chunk) => {
+    const [speaker = "", voice = "Kore", style = ""] = chunk.trim().split(":");
+    return { speaker: speaker.trim(), voice: voice.trim(), style: style.trim() };
+  }).filter((presenter) => presenter.speaker && presenter.voice);
+}
+
+async function openProfileForm(profile = null) {
+  $("pf-error").textContent = "";
+  $("profile-form").classList.remove("hidden");
+  $("btn-profile-new").disabled = true;
+  $("profile-form-title").textContent = profile ? `Editar perfil: ${profile.name}` : "Novo perfil";
+  $("pf-name").value = profile ? profile.name : "";
+  $("pf-name").readOnly = Boolean(profile);
+  $("pf-description").value = profile ? profile.description : "";
+
+  const providerSelect = $("pf-provider");
+  providerSelect.innerHTML = "";
+  const openrouter = document.createElement("option");
+  openrouter.value = "openrouter";
+  openrouter.textContent = "OpenRouter (API, custo por token)";
+  providerSelect.appendChild(openrouter);
+  for (const cli of settingsInfo ? settingsInfo.subscription_clis : []) {
+    const option = document.createElement("option");
+    option.value = cli.key;
+    option.textContent = `${cli.name} — custo US$ 0` +
+      (cli.available ? "" : " (não instalada)");
+    option.disabled = !cli.available;
+    providerSelect.appendChild(option);
+  }
+  providerSelect.onchange = () =>
+    $("pf-api-models").classList.toggle("hidden", providerSelect.value !== "openrouter");
+
+  if (!modelsCatalog) {
+    $("pf-error").textContent = "carregando catálogo de modelos…";
+    const result = await bridge(["models-list"]);
+    if (!result.ok) {
+      $("pf-error").textContent = `✖ catálogo indisponível: ${result.error}`;
+      return;
+    }
+    modelsCatalog = result;
+    $("pf-error").textContent = result.catalog_error
+      ? `⚠ Catálogo remoto indisponível; mantendo os modelos atuais: ${result.catalog_error}`
+      : "";
+  }
+  const base = profile || settingsInfo || {};
+  providerSelect.value = base.text_provider || "openrouter";
+  $("pf-api-models").classList.toggle("hidden", providerSelect.value !== "openrouter");
+  configureModelPicker($("pf-text-vendor"), $("pf-text-model"),
+    modelsCatalog.text_models, base.text_model);
+  configureModelPicker($("pf-audit-vendor"), $("pf-audit-model"),
+    modelsCatalog.text_models, base.audit_model);
+  configureModelPicker($("pf-tts-vendor"), $("pf-tts-model"),
+    modelsCatalog.tts_models, base.tts_model);
+
+  $("pf-presenters").innerHTML = "";
+  const presenters = profile
+    ? presentersFromSpec(profile.presenters_spec)
+    : settingsInfo && settingsInfo.presenters.length
+      ? settingsInfo.presenters
+      : [{ speaker: "apresentador_a", voice: "Kore", style: "curioso" }];
+  for (const presenter of presenters) {
+    addPresenterRow(presenter.speaker, presenter.voice, presenter.style);
+  }
+}
+
+function closeProfileForm() {
+  $("profile-form").classList.add("hidden");
+  $("btn-profile-new").disabled = false;
+  $("pf-name").readOnly = false;
+}
+
+$("btn-profile-new").onclick = () => openProfileForm();
+$("pf-cancel").onclick = closeProfileForm;
+$("pf-add-presenter").onclick = () => addPresenterRow();
+
+$("profile-form").onsubmit = async (event) => {
+  event.preventDefault();
+  const rows = [...document.querySelectorAll(".presenter-row")];
+  const spec = rows.map((row) => {
+    const speaker = row.querySelector(".pf-speaker").value.trim();
+    const voice = row.querySelector(".pf-voice").value;
+    const style = row.querySelector(".pf-style").value.trim();
+    return style ? `${speaker}:${voice}:${style}` : `${speaker}:${voice}`;
+  }).filter((chunk) => !chunk.startsWith(":")).join(", ");
+  const provider = $("pf-provider").value;
+  const payload = {
+    name: $("pf-name").value.trim(),
+    description: $("pf-description").value.trim(),
+    text_provider: provider,
+    text_model: provider === "openrouter" ? $("pf-text-model").value : "(assinatura)",
+    audit_model: provider === "openrouter" ? $("pf-audit-model").value : "(assinatura)",
+    tts_model: $("pf-tts-model").value,
+    presenters_spec: spec,
+    activate: true,
+  };
+  if (!payload.name || !spec) {
+    $("pf-error").textContent = "✖ preencha o nome e pelo menos um apresentador";
+    return;
+  }
+  if (!payload.tts_model || (provider === "openrouter" &&
+      (!payload.text_model || !payload.audit_model))) {
+    $("pf-error").textContent = "✖ selecione os modelos obrigatórios";
+    return;
+  }
+  const submit = $("profile-form").querySelector("button[type='submit']");
+  submit.disabled = true;
+  const result = await bridge(["profiles-save"], JSON.stringify(payload));
+  submit.disabled = false;
+  if (result.ok) {
+    closeProfileForm();
+    loadSettings();
+  } else {
+    $("pf-error").textContent = `✖ ${result.error}`;
+  }
 };
 
 // ── Boot ──────────────────────────────────────────────────────────────────
@@ -439,3 +854,4 @@ $("add-content").classList.toggle("hidden", currentSource !== "custom");
 loadSources().then(loadItems);
 loadChatHistory();
 refreshStatus();
+loadActiveConfig();

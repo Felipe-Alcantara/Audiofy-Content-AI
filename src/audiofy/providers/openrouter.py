@@ -176,7 +176,9 @@ def check_api_key(settings: Settings) -> tuple[bool, str]:
 
 def list_tts_models(settings: Settings) -> list[dict[str, str]]:
     """Modelos com saída de áudio disponíveis no catálogo do OpenRouter."""
-    body = _request(settings, "GET", "/models?output_modalities=audio").json()
+    # O catálogo distingue modelos que sintetizam fala (``speech``) de modelos
+    # multimodais/musicais que apenas declaram saída ``audio``.
+    body = _request(settings, "GET", "/models?output_modalities=speech").json()
     models = []
     for model in body.get("data", []):
         pricing = model.get("pricing", {})

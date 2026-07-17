@@ -75,7 +75,7 @@ def _default_settings() -> dict:
 @dataclass
 class Settings:
     api_key: str = ""
-    profile_name: str = "padrao"
+    profile_name: str = ""
     text_provider: str = ""  # "openrouter" ou CLI de assinatura
     text_model: str = ""
     audit_model: str = ""

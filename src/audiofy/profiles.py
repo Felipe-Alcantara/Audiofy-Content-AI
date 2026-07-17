@@ -11,8 +11,9 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
-from .presenters import DEFAULT_SPEC
+from .presenters import DEFAULT_SPEC, parse_presenters
 
 
 @dataclass(frozen=True)
@@ -62,7 +63,62 @@ BUILTIN_PROFILES: list[Profile] = [
         description="Texto pela CLI de assinatura (custo zero); só o TTS paga API",
         text_provider="claude-code",
     ),
+    Profile(
+        name="assinatura-codex",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model="google/gemini-3.1-flash-tts-preview",
+        presenters_spec=DEFAULT_SPEC,
+        description="Texto pelo Codex CLI (assinatura OpenAI); só o TTS usa a API",
+        text_provider="codex",
+    ),
 ]
+
+
+def profile_from_payload(payload: dict[str, Any]) -> Profile:
+    """Valida dados externos e cria um perfil pronto para persistência."""
+    from .providers.subscription import SUBSCRIPTION_CLIS
+
+    name = str(payload.get("name", "")).strip()
+    if (not name or len(name) > 64 or name in {".", ".."}
+            or any(character in name for character in "/\\\r\n\0")):
+        raise ValueError(
+            "O nome do perfil é obrigatório, deve ter até 64 caracteres e não pode "
+            "conter barras ou quebras de linha."
+        )
+    presenters_spec = str(payload.get("presenters_spec", "")).strip()
+    provider = str(payload.get("text_provider", "openrouter")).strip() or "openrouter"
+    allowed_providers = {"openrouter", *(cli.key for cli in SUBSCRIPTION_CLIS)}
+    if provider not in allowed_providers:
+        raise ValueError(f"Provedor de texto desconhecido: {provider}")
+    if not presenters_spec:
+        raise ValueError("É preciso informar pelo menos um apresentador.")
+    parse_presenters(presenters_spec)
+
+    tts_model = str(payload.get("tts_model", "")).strip()
+    if not tts_model or len(tts_model) > 300:
+        raise ValueError("O modelo TTS é obrigatório.")
+    if provider == "openrouter":
+        text_model = str(payload.get("text_model", "")).strip()
+        audit_model = str(payload.get("audit_model", "")).strip()
+        if (not text_model or not audit_model
+                or len(text_model) > 300 or len(audit_model) > 300):
+            raise ValueError("Os modelos de roteiro e auditoria são obrigatórios.")
+    else:
+        text_model = audit_model = "(assinatura)"
+
+    description = str(payload.get("description", "")).strip()
+    if len(description) > 300:
+        raise ValueError("A descrição pode ter no máximo 300 caracteres.")
+    return Profile(
+        name=name,
+        text_model=text_model,
+        audit_model=audit_model,
+        tts_model=tts_model,
+        presenters_spec=presenters_spec,
+        description=description,
+        text_provider=provider,
+    )
 
 
 class ProfileStore:
@@ -103,6 +159,10 @@ class ProfileStore:
                 return profile
         raise LookupError(f"Perfil '{name}' não existe.")
 
+    def is_custom(self, name: str) -> bool:
+        """Informa se o perfil foi persistido pelo usuário (inclusive overrides)."""
+        return name in self._custom
+
     def active(self) -> Profile:
         try:
             return self.get(self._active)
@@ -118,6 +178,7 @@ class ProfileStore:
 
     def save(self, profile: Profile) -> None:
         """Cria/atualiza um perfil customizado (pode sombrear um embutido)."""
+        profile = profile_from_payload(asdict(profile))
         self._custom[profile.name] = profile
         self._flush()
 

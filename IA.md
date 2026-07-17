@@ -206,3 +206,83 @@ zero); bridge smoke-testada em todos os comandos novos; sintaxe do Electron veri
 do padrão `<article>` podem render texto insuficiente (o erro instrui a colar o texto);
 o protocolo de ações depende de o modelo emitir JSON válido no bloco ```acao (ações inválidas
 são ignoradas silenciosamente, por design).
+
+---
+
+## 2026-07-17 — Paridade real do Electron, perfil Codex e interface Felixo
+
+**O que mudou:** uma auditoria entre as 16 funções operacionais do menu e a interface revelou
+que a entrega anterior ainda não expunha criação/edição de perfis, setup, regeneração forçada
+e parte do status. A paridade foi completada sem duplicar regra de negócio:
+
+- **Perfis completos no Electron:** criar, editar, ativar e remover customizados; provedor de
+  texto OpenRouter/assinatura; seleção empresa → modelo com preço; 1..N apresentadores e
+  validação central em `profiles.profile_from_payload`. Perfis embutidos agora incluem
+  `assinatura-codex`, que usa o Codex CLI para texto e OpenRouter apenas para TTS.
+- **Setup compartilhado** em `audiofy.setup`: diagnóstico sem efeitos colaterais, instalação
+  explícita de dependências Python e criação de `.env`; CLI e Electron consomem a mesma rotina.
+- **`--force` ponta a ponta:** CLI em segundo plano, bridge, subprocesso e pipeline preservam a
+  escolha; o app explica que cobertura, roteiro e auditoria serão refeitos antes de confirmar.
+- **Catálogo resiliente:** a consulta TTS usa a modalidade `speech`; sem chave/rede, as 30 vozes
+  locais e os modelos atuais continuam disponíveis no editor, com aviso em vez de tela vazia.
+- **Status e segurança de UI:** prontidão da fonte, origem da chave, setup obrigatório/opcional,
+  feedback de sincronização e estados de loading. Uma faixa global mostra perfil, provedor/modelo
+  de texto efetivo e TTS em todas as abas, deixando visíveis overrides por `AUDIOFY_*`. Conteúdo
+  externo e nomes configuráveis não são mais interpolados via `innerHTML`.
+- **Correção de perfil efetivo:** `Settings.profile_name` deixou de nascer preenchido como
+  `padrao`; agora recebe o nome resolvido do `ProfileStore`. Antes, ativar `assinatura-codex`
+  alterava corretamente o provedor, mas a interface continuava rotulando o perfil como `padrao`.
+- **Modelo Codex observável:** o backend lê exclusivamente o campo global `model` de
+  `~/.codex/config.toml` (ou `$CODEX_HOME/config.toml`) e a interface mostra o valor efetivo na
+  faixa global e no diagnóstico. Tabelas de perfis Codex não são confundidas com o modelo global.
+- **Frontend Felixo:** tokens zinc/roxo, cards, badges, foco visível, grid responsivo, estados de
+  hover/disabled, contraste, scrollbar e `prefers-reduced-motion`, adaptados ao desktop Audiofy.
+  Removido o `min-width: 720px` que quebrava a janela estreita; navegação, chat, listas e
+  formulários têm breakpoints em 700/480 px, com mínimo nativo de 360 × 480 px.
+
+**Validação:** testes unitários ampliados para bridge, setup, perfis e `--force`; bridge
+smoke-testada nos catálogos e perfis; JavaScript validado por sintaxe e IDs do DOM; Electron
+aberto no ambiente gráfico e inspecionado visualmente em Chat e Configurações nas larguras de
+600 px e 380 px.
+
+**Risco que sobrou:** modelos e preços dependem do esquema vivo do OpenRouter; o editor preserva
+o valor atual quando o catálogo não responde, mas novos modelos só aparecem após nova consulta.
+
+---
+
+## 2026-07-17 — Auditoria integral do Felixo System Design
+
+**O que mudou:** a entrega foi revisada contra o guia mínimo e os contratos completos de
+frontend, backend, README e `start_app.py`, cobrindo desvios que não apareciam em uma validação
+apenas visual ou sintática:
+
+- **Porta de entrada conforme o padrão:** o menu numérico cru foi substituído por uma TUI
+  navegável por setas com `questionary` + `rich`, cabeçalho de estado, descrições por ação,
+  seleção de fontes/chaves/perfis/modelos e confirmações explícitas. As dependências foram
+  declaradas em `requirements.txt`, diagnosticadas pelo setup e têm bootstrap mínimo.
+- **Electron endurecido:** CSP, sandbox, bloqueio de navegação/janelas, allowlist e aridade dos
+  comandos IPC, limites de entrada/saída, timeout/falha previsíveis e abertura de arquivos
+  confinada ao diretório real do projeto (inclusive contra escape por symlink).
+- **Dependência Electron segura:** a versão 33 apresentou vulnerabilidades de alta severidade no
+  `npm audit`. A linha foi atualizada e fixada em 41.7.1, última correção compatível com Node 18+;
+  o lockfile regenerado ficou com zero vulnerabilidades conhecidas.
+- **Fronteiras de dados:** IDs de arquivo/sessão protegidos contra path traversal; títulos não
+  injetam frontmatter; perfis têm limites; ações do chat seguem esquema conhecido. A importação
+  aceita somente HTTP(S) público, revalida redirecionamentos, bloqueia rede privada/credenciais
+  e limita a resposta a 5 MiB. `data/chat/` e `data/inbox/` foram ignorados para impedir commit
+  acidental de conversas ou conteúdo pessoal; episódios permanecem versionáveis por decisão prévia.
+- **Acessibilidade:** tabs com papéis ARIA, `aria-selected`, navegação por setas/Home/End,
+  painéis associados, campos rotulados, histórico como log ao vivo e progresso semântico.
+- **Contrato corrigido:** `chat-history` agora devolve as fontes esperadas pelo renderer, e
+  `loadSources` também atualiza o registro local; antes, a inicialização podia falhar ao acessar
+  `result.sources` inexistente. O seletor TTS da CLI passou a aceitar `speech`/`audio`, e Status
+  exibe o modelo efetivo das CLIs de assinatura.
+
+**Validação:** 88 testes Python e 3 testes Node verdes; instalação e `pip check` aprovados em venv
+limpo; Ruff, `git diff --check`, `npm audit` zerado, sintaxe de todos os processos Electron e
+smoke test real da TUI aprovados. O Electron 41 com sandbox/CSP foi reinspecionado visualmente em
+600 px e 380 px.
+
+**Risco que sobrou:** o bloqueio de URLs privadas impede importar páginas de intranet por design;
+o caminho seguro é colar o texto. O catálogo remoto e os flags das CLIs continuam integrações
+externas sujeitas a mudança, com erros controlados e valores atuais preservados quando possível.

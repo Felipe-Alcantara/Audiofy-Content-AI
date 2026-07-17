@@ -13,14 +13,18 @@ import unicodedata
 from datetime import date
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urljoin
 
 from ..config import DATA_DIR
+from ..security import validate_identifier, validate_public_url
 from .base import ContentItem, ContentSource, ItemSummary
 
 _INBOX_DIR = DATA_DIR / "inbox"
 _SKIP_TAGS = {"script", "style", "nav", "header", "footer", "aside", "noscript",
               "form", "svg", "iframe"}
 _BLOCK_TAGS = {"p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote", "pre"}
+_MAX_CONTENT_BYTES = 5 * 1024 * 1024
+_MAX_REDIRECTS = 5
 
 
 def slugify(text: str) -> str:
@@ -90,6 +94,14 @@ class CustomSource(ContentSource):
 
     def add_text(self, title: str, text: str, url: str = "") -> str:
         """Guarda um conteúdo colado e retorna o item_id."""
+        title = " ".join(str(title).split())
+        url = " ".join(str(url).split())
+        if not title or len(title) > 300:
+            raise ValueError("O título é obrigatório e pode ter no máximo 300 caracteres.")
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError("O conteúdo não pode ser vazio.")
+        if len(text.encode("utf-8")) > _MAX_CONTENT_BYTES:
+            raise ValueError("O conteúdo excede o limite de 5 MiB.")
         self.inbox_dir.mkdir(parents=True, exist_ok=True)
         today = date.today().isoformat()
         base = f"{today}-{slugify(title)}"
@@ -105,18 +117,49 @@ class CustomSource(ContentSource):
     def add_url(self, url: str) -> str:
         """Baixa uma página, extrai o texto principal e guarda como item."""
         import requests
-        response = requests.get(
-            url, timeout=60,
-            headers={"User-Agent": "Mozilla/5.0 (Audiofy Content AI)"},
-        )
-        response.raise_for_status()
-        title, text = extract_main_text(response.text)
+        current = validate_public_url(url)
+        headers = {"User-Agent": "Mozilla/5.0 (Audiofy Content AI)"}
+        for redirect_count in range(_MAX_REDIRECTS + 1):
+            response = requests.get(
+                current, timeout=60, headers=headers, allow_redirects=False, stream=True,
+            )
+            response.raise_for_status()
+            if response.is_redirect or response.is_permanent_redirect:
+                location = response.headers.get("location")
+                response.close()
+                if not location:
+                    raise ValueError("A página redirecionou sem informar o destino.")
+                if redirect_count == _MAX_REDIRECTS:
+                    raise ValueError("A página excedeu o limite de redirecionamentos.")
+                current = validate_public_url(urljoin(current, location))
+                continue
+            try:
+                declared = int(response.headers.get("content-length", 0) or 0)
+            except (TypeError, ValueError):
+                declared = 0
+            if declared > _MAX_CONTENT_BYTES:
+                response.close()
+                raise ValueError("A página excede o limite de 5 MiB.")
+            body = bytearray()
+            for chunk in response.iter_content(64 * 1024):
+                body.extend(chunk)
+                if len(body) > _MAX_CONTENT_BYTES:
+                    response.close()
+                    raise ValueError("A página excede o limite de 5 MiB.")
+            encoding = response.encoding or "utf-8"
+            response.close()
+            try:
+                html = body.decode(encoding, errors="replace")
+            except LookupError:
+                html = body.decode("utf-8", errors="replace")
+            break
+        title, text = extract_main_text(html)
         if len(text) < 200:
             raise ValueError(
                 "Não consegui extrair texto suficiente dessa página; "
                 "cole o conteúdo manualmente."
             )
-        return self.add_text(title or url, text, url=url)
+        return self.add_text(title or current, text, url=current)
 
     # ── Contrato ContentSource ───────────────────────────────────────────
 
@@ -158,6 +201,7 @@ class CustomSource(ContentSource):
         ]
 
     def get_item(self, item_id: str) -> ContentItem:
+        item_id = validate_identifier(item_id, "ID do conteúdo")
         path = self.inbox_dir / f"{item_id}.md"
         if not path.is_file():
             raise LookupError(f"Conteúdo '{item_id}' não existe em {self.inbox_dir}.")

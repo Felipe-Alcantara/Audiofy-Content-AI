@@ -9,7 +9,6 @@ irmão `../akita-articles` também é aceito.
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
 from ..config import PROJECT_ROOT
 from .base import ContentItem, ContentSource, ItemSummary

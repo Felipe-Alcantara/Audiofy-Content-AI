@@ -4,14 +4,16 @@
   "description": "Interface desktop do Audiofy Content AI",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "test": "node --test tests/*.test.js",
+    "check": "node --check main.js && node --check preload.js && node --check renderer/renderer.js && npm test"
   },
   "author": "Felipe Martin",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "41.7.1"
   },
   "allowScripts": {
-    "electron@33.4.11": true
+    "electron@41.7.1": true
   }
 }

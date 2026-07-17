@@ -12,3 +12,7 @@ __pycache__/
 # Node/Electron
 electron/node_modules/
 data/source/akitaonrails.github.io/
+
+# Conteúdo local/pessoal inserido pela interface
+data/chat/
+data/inbox/

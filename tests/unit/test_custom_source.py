@@ -7,6 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+from audiofy.security import validate_public_url  # noqa: E402
 from audiofy.sources.custom import CustomSource, extract_main_text, slugify  # noqa: E402
 
 HTML = """<html><head><title>Página de Teste — Blog</title></head><body>
@@ -73,6 +74,41 @@ class CustomSourceTest(unittest.TestCase):
         first = self.source.add_text("Mesmo Título", "a")
         second = self.source.add_text("Mesmo Título", "b")
         self.assertNotEqual(first, second)
+
+    def test_titulo_nao_injeta_novo_campo_no_frontmatter(self):
+        item_id = self.source.add_text("Título\ndate: 1999-01-01", "corpo")
+        item = self.source.get_item(item_id)
+        self.assertEqual(item.title, "Título date: 1999-01-01")
+
+    def test_item_id_nao_permite_escapar_da_caixa_de_entrada(self):
+        with self.assertRaisesRegex(ValueError, "ID do conteúdo"):
+            self.source.get_item("../../segredo")
+
+
+class PublicUrlValidationTest(unittest.TestCase):
+    @staticmethod
+    def _resolver_for(ip):
+        return lambda *_args, **_kwargs: [(2, 1, 6, "", (ip, 443))]
+
+    def test_aceita_https_publico(self):
+        url = validate_public_url(
+            "https://example.com/artigo", resolver=self._resolver_for("93.184.216.34"),
+        )
+        self.assertEqual(url, "https://example.com/artigo")
+
+    def test_rejeita_esquema_local_e_credenciais(self):
+        with self.assertRaises(ValueError):
+            validate_public_url("file:///etc/passwd", resolver=self._resolver_for("8.8.8.8"))
+        with self.assertRaises(ValueError):
+            validate_public_url(
+                "https://user:secret@example.com", resolver=self._resolver_for("8.8.8.8"),
+            )
+
+    def test_rejeita_destino_de_rede_privada(self):
+        with self.assertRaisesRegex(ValueError, "rede local"):
+            validate_public_url(
+                "http://localhost/admin", resolver=self._resolver_for("127.0.0.1"),
+            )
 
 
 if __name__ == "__main__":
