@@ -1,0 +1,494 @@
+{
+  "items": [
+    {
+      "id": "C001",
+      "kind": "opiniao",
+      "criticality": "critica",
+      "statement": "O autor não ia escrever artigos para cada projetinho open source que faz, pois a maioria resolve problemas muito específicos do seu dia-a-dia e um artigo dedicado seria desproporcional.",
+      "evidence": "Eu não ia escrever artigo pra cada projetinho open source que eu faço. A maioria resolve um probleminha muito específico do MEU dia-a-dia, e artigo dedicado ficaria desproporcional."
+    },
+    {
+      "id": "C002",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "Os projetinhos open source do autor foram se acumulando.",
+      "evidence": "Só que os projetinhos foram acumulando, e olhando pra trás percebi que já são vários que nunca apareceram por aqui."
+    },
+    {
+      "id": "C003",
+      "kind": "argumento",
+      "criticality": "critica",
+      "statement": "O autor decidiu fazer um artigo mencionando a maioria dos projetos acumulados de uma vez, em vez de um artigo para cada um.",
+      "evidence": "Então resolvi fazer diferente: um artigo só, mencionando a maioria de uma vez."
+    },
+    {
+      "id": "C004",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O padrão de criação dos projetos do autor é esbarrar em uma pequena fricção do cotidiano e resolvê-la com um agente de IA.",
+      "evidence": "O padrão se repete em todos: eu esbarro numa pequena fricção do cotidiano, daquelas que a gente normalmente engole porque consertar custaria um fim de semana inteiro, e em vez de engolir eu abro um agente de IA e resolvo."
+    },
+    {
+      "id": "C005",
+      "kind": "argumento",
+      "criticality": "importante",
+      "statement": "O custo de transformar irritação em ferramenta despencou, invertendo o cálculo de custo-benefício, e agora vale a pena consertar quase tudo.",
+      "evidence": "O custo de transformar irritação em ferramenta despencou tanto que o cálculo inverteu. Hoje vale a pena consertar quase tudo."
+    },
+    {
+      "id": "C006",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "Todos os projetos mencionados estão disponíveis no GitHub do autor, com binários, releases e instruções de instalação.",
+      "evidence": "Tudo que aparece abaixo está no [meu GitHub](https://github.com/akitaonrails), com binários, releases e instruções de instalação."
+    },
+    {
+      "id": "C007",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O artigo lista os seguintes projetos: clock-tui (com google-calendar-tui e ghpending), github-visualize, frank_geary, frank_scanlation (mencionando FrankYomik e FRANK MANGA+), frank_lyrics, frank_type, distrobox-gaming e aitrepreneur-docker.",
+      "evidence": "Nesse post: [clock-tui](#clock-tui-um-relógio-de-mesa-que-virou-painel) (com os widgets [google-calendar-tui](#clock-tui-um-relógio-de-mesa-que-virou-painel) e [ghpending](#clock-tui-um-relógio-de-mesa-que-virou-painel)), [github-visualize](#github-visualize-inútil-mas-bonito), [frank_geary](#frank-geary-email-do-jeito-que-eu-queria), [frank_scanlation](#mangá-em-japonês-frankyomik-frank-manga-e-frank-scanlation), [frank_lyrics](#frank-lyrics-decorando-música-linha-por-linha), [frank_type](#frank-type-treino-de-digitação-com-prosa-de-verdade), [distrobox-gaming](#distrobox-gaming-uma-biblioteca-de-como-instalar-jogos-no-linux) e [aitrepreneur-docker](#aitrepreneur-docker-comfyui-sem-sujar-o-sistema)."
+    },
+    {
+      "id": "C008",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O autor queria algo mais útil do que um wallpaper em seu monitor secundário vertical, começando com um relógio de mesa.",
+      "evidence": "O caso de uso é simples: eu tenho um monitor secundário vertical, e queria algo mais útil ali do que um wallpaper, alguma coisa que eu pudesse só bater o olho e ter informação relevante. Mas tudo começou porque eu só queria um relógio de mesa."
+    },
+    {
+      "id": "C009",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O autor fez um fork de um programa open source antigo de relógio em terminal, o clock-tui original, que estava parado, e continuou o trabalho no [clock-tui](https://github.com/akitaonrails/clock-tui).",
+      "evidence": "Achei um programinha open source antigo de relógio em terminal, o clock-tui original, que estava parado havia tempos, e decidi fazer um fork e continuar o trabalho: o [clock-tui](https://github.com/akitaonrails/clock-tui)."
+    },
+    {
+      "id": "C010",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O autor modernizou o clock-tui, deixando-o mais bonito, atualizando dependências de Rust e adicionando suporte a widgets de comando com refresh independente.",
+      "evidence": "Deixei ele mais bonito, modernizei as dependências de Rust, e a mudança mais importante: adicionei suporte a **widgets de comando**. O relógio fica no topo e embaixo entram painéis que rodam qualquer comando que imprima texto, cada um com refresh independente."
+    },
+    {
+      "id": "C011",
+      "kind": "exemplo",
+      "criticality": "importante",
+      "statement": "Um widget criado pelo autor para o clock-tui é o [google-calendar-tui](https://github.com/akitaonrails/google-calendar-tui), que exibe uma agenda read-only do Google Calendar no terminal, usando contas do GNOME Online Accounts sem configuração de OAuth.",
+      "evidence": "[google-calendar-tui](https://github.com/akitaonrails/google-calendar-tui): uma agenda read-only do Google Calendar no terminal, usando as contas que já estão no GNOME Online Accounts (zero configuração de OAuth). Bato o olho e sei meus compromissos do dia."
+    },
+    {
+      "id": "C012",
+      "kind": "exemplo",
+      "criticality": "importante",
+      "statement": "Outro widget criado pelo autor é o [ghpending](https://github.com/akitaonrails/ghpending), que lista issues e pull requests abertos em todos os repositórios que ele acompanha, permitindo identificar novas atividades rapidamente.",
+      "evidence": "[ghpending](https://github.com/akitaonrails/ghpending): lista issues e pull requests abertos em todos os repositórios que eu acompanho. Agora que eu tenho dezenas de projetos open source, é assim que eu percebo em segundos quando chega PR ou issue nova, sem abrir o GitHub."
+    },
+    {
+      "id": "C013",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O autor adicionou suporte a temas no clock-tui, como 'evangelion' (roxo e lavanda) e 'nerv' (vermelho, âmbar e verde), que podem ser alternados em runtime e são injetados nos widgets via variável de ambiente.",
+      "evidence": "E hoje eu passei o dia adicionando suporte a temas, porque alguém no X comentou que o visual dava pra lembrar Evangelion. Desafio aceito: agora tem o tema `evangelion` (roxo e lavanda) e o tema `nerv` (vermelho, âmbar e verde, inspirado nas telas de alerta da série), alternando em runtime com `Shift+T`. O tema é injetado nos widgets via variável de ambiente, então os painéis acompanham a paleta."
+    },
+    {
+      "id": "C014",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "A instalação do clock-tui no Arch Linux é feita via `yay -S clock-tui-bin`, e os widgets `ghpending` e `google-calendar-tui` também possuem binários no AUR (`yay -S ghpending-bin` e `yay -S google-calendar-tui-bin`), além de binários prontos nas releases do GitHub e `brew install` para macOS para `ghpending`.",
+      "evidence": "Instalação no Arch: `yay -S clock-tui-bin`. Os widgets: `yay -S ghpending-bin` (também tem `brew install` via `akitaonrails/tap` no macOS) e `yay -S google-calendar-tui-bin`. Todos têm binários prontos nas releases do GitHub pra quem não usa Arch."
+    },
+    {
+      "id": "C015",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O [github-visualize](https://github.com/akitaonrails/github-visualize) nasceu da inspiração em animações de gráficos vistas em um artigo sobre a reescrita do TypeScript do Bun em Rust.",
+      "evidence": "Esse nasceu por causa do artigo do Jarred Sumner sobre reescrever o TypeScript do Bun em Rust, sobre o qual eu [postei recentemente](/2026/07/09/resposta-sobre-bun-em-rust-que-andrew-kelly-deveria-ter-feito/). Não sei qual ferramenta ele usou pra ilustrar o post, mas eu gostei demais das animações dos gráficos."
+    },
+    {
+      "id": "C016",
+      "kind": "opiniao",
+      "criticality": "contextual",
+      "statement": "O github-visualize é inútil, mas bonito, e a beleza é um motivo suficiente para o autor criar uma cópia.",
+      "evidence": "É inútil? É. Mas é bonito, e beleza é motivo suficiente pra fazer uma cópia."
+    },
+    {
+      "id": "C017",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O github-visualize é um dashboard self-hosted que monitora repositórios do GitHub do autor e faz replay do progresso com visualizações animadas, como timeline de commits, heat map de commits e corrida de CI.",
+      "evidence": "O [github-visualize](https://github.com/akitaonrails/github-visualize) é um dashboard self-hosted que monitora meus repositórios do GitHub e faz replay do progresso deles com visualizações animadas: timeline de commits com linhas adicionadas e deletadas em escala logarítmica, heat map de commits por dia e hora, corrida de CI até o verde."
+    },
+    {
+      "id": "C018",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O autor planeja usar as visualizações do github-visualize em slides de apresentação ou para ilustrar posts futuros no blog.",
+      "evidence": "Agora eu adiciono qualquer repositório meu e tenho visualizações bonitas de produtividade, atividade, commits e builds. Talvez eu use em slides de apresentação, ou pra ilustrar posts futuros aqui no blog."
+    },
+    {
+      "id": "C019",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "A instalação do github-visualize é feita via imagem pública no Docker Hub (`akitaonrails/github-visualize`), sendo um container único com SQLite num volume.",
+      "evidence": "Instalação: imagem pública no Docker Hub como [`akitaonrails/github-visualize`](https://hub.docker.com/r/akitaonrails/github-visualize), container único com SQLite num volume, sem banco externo nem Redis."
+    },
+    {
+      "id": "C020",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O autor escolheu o Geary, do GNOME, como seu cliente de email principal por sua interface limpa e direta, comparável ao Mail da Apple.",
+      "evidence": "Eu decidi usar o Geary, do GNOME, como meu cliente de email principal. É o que chega mais perto da interface do Mail padrão da Apple: limpo, direto, sem cerimônia."
+    },
+    {
+      "id": "C021",
+      "kind": "opiniao",
+      "criticality": "contextual",
+      "statement": "O autor considera o Thunderbird inchado e muito feio, e o Mailspring inchado e pesado.",
+      "evidence": "Eu sei, existe o Thunderbird, mas eu o acho inchado e muito feio. Existe o Mailspring, que eu acho inchado e pesado."
+    },
+    {
+      "id": "C022",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O fluxo de email do autor é simples: varrer a inbox, taggear, arquivar e responder.",
+      "evidence": "Meu fluxo de email é curto: varrer a inbox, taggear, arquivar e responder. Nada além disso."
+    },
+    {
+      "id": "C023",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O Geary tinha dois problemas principais para o autor: a impossibilidade de recolher a primeira coluna em um monitor vertical e o autocompletar de destinatários ineficaz no compositor.",
+      "evidence": "O Geary é quase perfeito, mas tinha dois problemas grandes pra mim. Primeiro: no meu monitor vertical, sobra muito menos espaço horizontal, e o Geary tem 3 colunas fixas. A primeira coluna, que só lista contas e pastas/tags, eu não preciso ver o tempo todo, mas não existia jeito de recolher. Segundo, e mais grave: o campo de destinatário do compositor na prática não autocompletava nada (o Geary até tem o mecanismo, mas com um filtro de visibilidade de contatos tão restritivo que nunca sugeria ninguém). Eu tinha que digitar o endereço na mão ou copiar e colar de outro email. Em 2026."
+    },
+    {
+      "id": "C024",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "A primeira solução do autor para os problemas do Geary foram dois módulos GTK externos, que exigiam compilar o Geary do source e recompilá-lo a cada atualização.",
+      "evidence": "Minha primeira solução foram dois módulos GTK externos injetados no Geary, um pra cada problema (ambos obsoletos agora). Funcionavam, mas exigiam instalar o Geary compilado do source, e a cada `yay -Syu` lá ia ele recompilar tudo de novo."
+    },
+    {
+      "id": "C025",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O autor criou o [Frank Geary](https://github.com/akitaonrails/frank_geary) fazendo um fork do Geary, adicionando as funcionalidades de recolher a barra lateral e autocompletar destinatários consultando contatos de emails existentes.",
+      "evidence": "Cansei e fiz o que deveria ter feito desde o início: forkei o Geary e criei o [Frank Geary](https://github.com/akitaonrails/frank_geary), que adiciona as duas funcionalidades direto no código. A barra lateral agora recolhe, e o destinatário autocompleta consultando os contatos dos emails existentes."
+    },
+    {
+      "id": "C026",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O autor manterá o Frank Geary rebaseando frequentemente do upstream.",
+      "evidence": "Vou manter o fork rebaseando do upstream com frequência."
+    },
+    {
+      "id": "C027",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O Frank Geary possui pacotes no AUR (`yay -S frank-geary-bin` para binário e `yay -S frank-geary` para compilar do source) que substituem o `geary` do sistema.",
+      "evidence": "E a melhor parte: agora tem pacote no AUR, então instalar é assim: ```sh yay -S frank-geary-bin    # binário pronto (x86_64), da release do GitHub yay -S frank-geary        # ou compilando do source ``` Os dois pacotes substituem o `geary` do sistema (fazem provide/conflict nele), então a troca é limpa e as atualizações chegam como qualquer outro pacote."
+    },
+    {
+      "id": "C028",
+      "kind": "ressalva",
+      "criticality": "contextual",
+      "statement": "Após instalar ou atualizar o Frank Geary, é necessário rodar `geary --quit` para garantir que nenhum processo antigo esteja em execução, caso a opção de vigiar email novo esteja ligada.",
+      "evidence": "Um detalhe depois de instalar ou atualizar: quando a opção de vigiar email novo está ligada, o Geary continua rodando em background como serviço D-Bus, então roda um `geary --quit` pra garantir que nenhum processo antigo ficou no ar."
+    },
+    {
+      "id": "C029",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O autor tem um amor por mangá japonês e já havia postado sobre o FrankYomik.",
+      "evidence": "Quem acompanha o blog sabe do meu amor por mangá japonês. Eu já [postei sobre o FrankYomik](/2026/03/05/meu-primeiro-fracasso-com-vibe-code-e-como-consertei-frank-yomik/), que nasceu pra eu conseguir ler os mangás originais em japonês que eu compro na Amazon do Japão."
+    },
+    {
+      "id": "C030",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "Mangás adultos não possuem 'furigana', dificultando a leitura de kanjis raros para o autor.",
+      "evidence": "O problema: mangá voltado pra público adulto (não, não é pornô! estou falando de temas como negócios ou assuntos militares) não tem 'furigana', que são as legendinhas em kana impressas ao lado dos kanji difíceis, indicando a leitura. Mangá shounen tem furigana em tudo, então dá pra ler com vocabulário de estudante. Os adultos assumem que você já sabe ler os kanji raros. Eu não sei."
+    },
+    {
+      "id": "C031",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O [FrankYomik](https://github.com/akitaonrails/FrankYomik) resolve o problema do furigana adicionando-o em tempo real sobre a página do mangá, utilizando um modelo para detectar balões de fala, manga-ocr para extrair texto e furigana (ou tradução via LLM local), tudo rodando no hardware do autor.",
+      "evidence": "O [FrankYomik](https://github.com/akitaonrails/FrankYomik) resolve isso adicionando furigana em cima da página, em tempo real: um modelo detecta os balões de fala, o manga-ocr extrai o texto e o furigana (ou uma tradução completa, via LLM local no Ollama) é renderizado por cima, tudo rodando no meu próprio hardware."
+    },
+    {
+      "id": "C032",
+      "kind": "ressalva",
+      "criticality": "importante",
+      "statement": "O FrankYomik funciona on-the-fly, sobre a imagem legitimamente aberta, sem baixar ou redistribuir páginas, evitando infração de direitos autorais.",
+      "evidence": "E o detalhe importante: on-the-fly, por cima da imagem que eu já tenho aberto legitimamente, sem baixar nem redistribuir página nenhuma, então sem infringir copyright ou licença."
+    },
+    {
+      "id": "C033",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O autor paga a assinatura do Manga Plus, mas o aplicativo oficial da Shueisha só permite leitura em dispositivos móveis, o que é inconveniente para um monitor grande.",
+      "evidence": "Depois veio o [FRANK MANGA+](https://github.com/akitaonrails/frank_mangaplus), sobre o qual eu [também já postei](/2026/05/30/manga-plus-shueisha-desktop-frank-manga-plus/). Eu pago a assinatura do Manga Plus, o app oficial da Shueisha, mas ele só deixa ler no celular (Android/iOS). Num tablet pequeno até vai, mas eu tenho um monitor Samsung Odyssey OLED de 32\" parado na minha frente."
+    },
+    {
+      "id": "C034",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O autor construiu o [FRANK MANGA+](https://github.com/akitaonrails/frank_mangaplus), um leitor desktop em Tauri que roda em Linux, macOS e Windows, permitindo usar a própria assinatura fora do app oficial.",
+      "evidence": "Descobri como usar a minha própria assinatura fora do app e construí um leitor desktop em Tauri: roda em Linux, macOS e Windows, o tier gratuito funciona direto e assinante cola o próprio secret pra liberar os capítulos premium."
+    },
+    {
+      "id": "C035",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "A instalação do FRANK MANGA+ é feita via AppImage, `.deb` e `.dmg` nas releases do GitHub, ou `yay -S mangaplus-reader-bin` no Arch.",
+      "evidence": "Instalação: AppImage, `.deb` e `.dmg` nas [releases](https://github.com/akitaonrails/frank_mangaplus/releases/latest), ou `yay -S mangaplus-reader-bin` no Arch."
+    },
+    {
+      "id": "C036",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O autor lê 'scanlations' da comunidade, que estão espalhadas por vários sites como o MangaDex, e sentia a necessidade de centralizá-las.",
+      "evidence": "E finalmente, eu também leio as eventuais 'scanlations' da comunidade: fãs escaneiam as páginas do mangá original japonês e traduzem (hoje em dia a maioria usa IA no processo, existem até modelos treinados pra reconhecer os balões de fala, e eu usei um desses no próprio FrankYomik). Essas scanlations ficam espalhadas por vários sites diferentes, tipo o MangaDex."
+    },
+    {
+      "id": "C037",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O autor havia feito uma extensão de Chrome para embelezar sites de scanlation, mas se cansou de ter dezenas de abas abertas.",
+      "evidence": "Primeiro eu fiz uma extensão de Chrome pra embelezar esses sites (hoje obsoleta), mas cansei de viver com dezenas de abas no Brave só pra sites de scanlation."
+    },
+    {
+      "id": "C038",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O autor construiu o [FRANK Scanlation](https://github.com/akitaonrails/frank_scanlation), um aplicativo desktop que concentra scanlations favoritas em um só lugar, com biblioteca, progresso de leitura e checagem de capítulos novos.",
+      "evidence": "Então construí o [FRANK Scanlation](https://github.com/akitaonrails/frank_scanlation), na mesma linha do FRANK MANGA+: um app desktop que concentra todas as minhas scanlations favoritas num lugar só, com biblioteca, progresso de leitura por título e checagem de capítulos novos."
+    },
+    {
+      "id": "C039",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "As janelas de leitura do FRANK Scanlation carregam o próprio site e injetam um leitor com spreads de página dupla e navegação por teclado, usando heurísticas para detectar imagens e numeração de capítulos em qualquer URL.",
+      "evidence": "As janelas de leitura carregam o próprio site e injetam um leitor decente por cima, com spreads de página dupla e navegação por teclado. Nada é hardcoded pra site nenhum: são heurísticas que detectam sequências de imagens e numeração de capítulos em qualquer URL."
+    },
+    {
+      "id": "C040",
+      "kind": "opiniao",
+      "criticality": "contextual",
+      "statement": "O FRANK Scanlation se tornou o jeito preferido do autor de ler mangás que não estão disponíveis na Amazon ou Shueisha.",
+      "evidence": "Virou meu jeito preferido de ler os mangás que não existem pra comprar na Amazon nem na Shueisha."
+    },
+    {
+      "id": "C041",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "A instalação do FRANK Scanlation é feita via AppImage, `.deb` e `.rpm` (e build de macOS) nas releases do GitHub.",
+      "evidence": "Instalação: AppImage, `.deb` e `.rpm` (e build de macOS) nas [releases do GitHub](https://github.com/akitaonrails/frank_scanlation/releases)."
+    },
+    {
+      "id": "C042",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O autor já havia postado sobre o Frank Karaoke, um aplicativo para adicionar pontuação no YouTube para karaokê.",
+      "evidence": "Eu já [postei sobre o Frank Karaoke](/2026/04/05/transformando-youtube-num-app-de-karaoke-frank-karaoke/), um appzinho pra adicionar pontuação em cima do YouTube e curtir karaokê com família e amigos."
+    },
+    {
+      "id": "C043",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O autor gosta de aprender músicas novas e o processo de decorar letras exige repetir a mesma linha várias vezes, o que é difícil no player do YouTube.",
+      "evidence": "Mas tem um caso de uso irmão: eu gosto de aprender música nova (abertura de anime nova, por exemplo), e o processo de decorar letra é repetir a MESMA linha várias vezes. No player do YouTube isso é um inferno: fica caçando no dedo o ponto exato da timeline pra voltar, erra por dois segundos, volta demais, passa do ponto."
+    },
+    {
+      "id": "C044",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O autor criou o [Frank Lyrics](https://github.com/akitaonrails/frank_lyrics), uma extensão de Chrome que descobre o timing de cada linha da letra usando marcadores do LRCLIB e injeta controles na página do YouTube para repetir a linha exata.",
+      "evidence": "Pra resolver isso criei o [Frank Lyrics](https://github.com/akitaonrails/frank_lyrics), uma extensão de Chrome simples que descobre o timing correto de cada linha da letra usando os marcadores públicos do [LRCLIB](https://lrclib.net/) e injeta controles na própria página do YouTube."
+    },
+    {
+      "id": "C045",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O LRCLIB é uma biblioteca aberta e comunitária de letras sincronizadas com timestamps (formato LRC), com API pública e gratuita.",
+      "evidence": "O LRCLIB, pra quem não conhece, é uma biblioteca aberta e comunitária de letras sincronizadas: cada linha vem com timestamp (o formato LRC clássico dos players de música), com API pública, gratuita e sem chave."
+    },
+    {
+      "id": "C046",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "A instalação do Frank Lyrics envolve baixar o `.zip` das releases, descompactar, ativar o modo desenvolvedor em `chrome://extensions` e fazer 'Load unpacked' da pasta.",
+      "evidence": "Instalação: baixa o `.zip` das [releases](https://github.com/akitaonrails/frank_lyrics/releases), descompacta, abre `chrome://extensions`, liga o modo desenvolvedor e faz 'Load unpacked' apontando pra pasta."
+    },
+    {
+      "id": "C047",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O autor gosta de teclados e treina no MonkeyType, mas não gosta de digitar palavras aleatórias.",
+      "evidence": "Quem me acompanha há tempo sabe que eu amo meus teclados. Tem vídeos no canal Akitando sobre isso e [posts aqui no blog sobre meus teclados favoritos](/2024/10/24/meus-teclados-modernos-favoritos/). E de tempos em tempos eu gosto de treinar no MonkeyType. Mas eu não gosto de digitar palavras aleatórias."
+    },
+    {
+      "id": "C048",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O TypeRacer resolve o problema de palavras aleatórias usando textos públicos, mas obriga o autor a esperar outros jogadores, o que ele detesta.",
+      "evidence": "O TypeRacer resolve isso usando textos públicos de verdade, só que ele me obriga a esperar outros jogadores na sala (eu detesto jogos multiplayer)."
+    },
+    {
+      "id": "C049",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O autor queria uma experiência single player de treino de digitação com prosa de verdade e a estética do MonkeyType.",
+      "evidence": "Ou seja: eu queria uma experiência single player, com prosa de verdade, mas com a estética do MonkeyType, que eu prefiro."
+    },
+    {
+      "id": "C050",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O autor criou o [Frank Type](https://github.com/akitaonrails/frank_type), um mini-clone de treinadores de digitação em Rails 8 que usa trechos normalizados de prosa em domínio público.",
+      "evidence": "Então criei o [Frank Type](https://github.com/akitaonrails/frank_type), um mini-clone dos dois: um treinador de digitação em Rails 8 que usa trechos normalizados de prosa em domínio público em vez de listas de palavras aleatórias."
+    },
+    {
+      "id": "C051",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O Frank Type é local-first, sem cadastro, e armazena histórico de sessões, tempos e gráficos de perfil no local storage do navegador, incluindo um heat map de dígrafos.",
+      "evidence": "É local-first e sem cadastro: histórico de sessões, tempos e gráficos de perfil ficam no local storage do navegador. Tem até heat map de dígrafos pra mostrar quais combinações de teclas te atrasam."
+    },
+    {
+      "id": "C052",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "A instalação do Frank Type é feita via container Docker (`akitaonrails/frank_type`), com um comando `curl` para levantar o serviço em `http://localhost:3200`.",
+      "evidence": "Instalação: é um container Docker publicado como `akitaonrails/frank_type`. Um comando levanta em `http://localhost:3200`: ```bash curl -fsSL https://raw.githubusercontent.com/akitaonrails/frank_type/master/bin/docker-run.sh | bash ```"
+    },
+    {
+      "id": "C053",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O autor joga no mesmo PC que trabalha, mas se recusa a misturar pacotes de emulador e soluções de Wine com seu ambiente de desenvolvimento.",
+      "evidence": "Eu jogo no mesmo PC em que trabalho, mas me recuso a misturar pacote de emulador e gambiarra de Wine com meu ambiente de desenvolvimento."
+    },
+    {
+      "id": "C054",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "A solução do autor foi isolar os jogos dentro de um [distrobox](https://github.com/89luca89/distrobox), e o [distrobox-gaming](https://github.com/akitaonrails/distrobox-gaming) é um repositório de playbooks Ansible que constrói essa box Arch do zero.",
+      "evidence": "A solução foi isolar os jogos inteiros dentro de um [distrobox](https://github.com/89luca89/distrobox) (containers que se integram ao desktop como se fossem nativos), e o [distrobox-gaming](https://github.com/akitaonrails/distrobox-gaming) é o repositório de playbooks Ansible que constrói essa box Arch do zero: ES-DE de frontend, emuladores standalone, cores do RetroArch, configs por jogo. Meu Arch/Omarchy host fica limpo."
+    },
+    {
+      "id": "C055",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "A regra do autor é que todo jogo novo instalado deve se tornar uma receita Ansible reproduzível, documentando truques e hacks no código.",
+      "evidence": "A regra que eu me impus: todo jogo novo que eu instalo tem que virar receita Ansible reproduzível. Confesso que ainda não testei a reconstrução completa do zero, mas a ideia é essa: qualquer truque ou hack necessário fica documentado no código em vez de perdido no histórico do shell."
+    },
+    {
+      "id": "C056",
+      "kind": "exemplo",
+      "criticality": "contextual",
+      "statement": "O autor instala abandonware antigo como a série Colin McRae Rally, Sega Rally Revo e OutRun 2006 Coast 2 Coast, cada um com suas particularidades de Wine, patches e configurações.",
+      "evidence": "E truque é o que não falta, porque eu ando instalando abandonware antigo: a série Colin McRae Rally (da versão de PS1 com patch de 60 fps até o DiRT de 2007), Sega Rally Revo, OutRun 2006 Coast 2 Coast, entre outros. Cada um com suas manhas de Wine, seus patches e suas configurações."
+    },
+    {
+      "id": "C057",
+      "kind": "conclusao",
+      "criticality": "importante",
+      "statement": "O repositório distrobox-gaming está se tornando uma biblioteca de documentação sobre como instalar jogos, emuladores e retro games no Linux.",
+      "evidence": "Sem querer, o repositório está virando uma biblioteca de documentação sobre como instalar jogos, emuladores e retro games no Linux."
+    },
+    {
+      "id": "C058",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "Existe também o [distrobox-llm](https://github.com/akitaonrails/distrobox-llm), que isola o ambiente de LLMs locais (CUDA, Ollama, LM Studio) deixando apenas o driver NVIDIA no host.",
+      "evidence": "Na mesma linha existe o [distrobox-llm](https://github.com/89luca89/distrobox-llm), que faz o mesmo isolamento pro meu ambiente de LLMs locais (CUDA, Ollama, LM Studio e companhia), deixando só o driver NVIDIA no host."
+    },
+    {
+      "id": "C059",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "A instalação do distrobox-gaming envolve clonar o repositório, instalar coleções Ansible, copiar e editar um arquivo de variáveis de host, e rodar o playbook `site.yml`.",
+      "evidence": "Instalação: clona o repositório e roda os playbooks: ```sh cd ansible ansible-galaxy collection install -r collections/requirements.yml cp host_vars/localhost.yml.example host_vars/localhost.yml $EDITOR host_vars/localhost.yml ansible-playbook site.yml ```"
+    },
+    {
+      "id": "C060",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O autor usa o ComfyUI para geração de imagens e acompanha o youtuber Aitrepreneur, que mantém receitas para instalar e configurar o ComfyUI.",
+      "evidence": "Pra geração de imagens eu gosto do ComfyUI, e [postei sobre ele ano passado](/2025/04/20/entendendo-o-basico-de-comfyui-pra-gerar-imagens-com-i-a/). Eu acompanho um youtuber chamado [Aitrepreneur](https://www.youtube.com/@Aitrepreneur) que mantém uma página no Patreon com receitas pra instalar e configurar o ComfyUI com os modelos e workflows mais recentes."
+    },
+    {
+      "id": "C061",
+      "kind": "opiniao",
+      "criticality": "contextual",
+      "statement": "O trabalho de curadoria do Aitrepreneur é ótimo, mas suas receitas são scripts `.sh` antigos, pensados para rodar one-shot em instâncias como RunPod.",
+      "evidence": "O trabalho de curadoria dele é ótimo, mas as receitas são scripts `.sh` old school, pensados pra rodar one-shot numa instância do RunPod, por exemplo."
+    },
+    {
+      "id": "C062",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "O autor criou o [aitrepreneur-docker](https://github.com/akitaonrails/aitrepreneur-docker) para converter os scripts do Aitrepreneur em imagens e containers Docker, permitindo rodar tudo isolado na máquina do autor sem desestabilizar o sistema.",
+      "evidence": "Agora que as LLMs evoluíram a ponto de escreverem Dockerfiles decentes, criei o [aitrepreneur-docker](https://github.com/akitaonrails/aitrepreneur-docker), que converte esses scripts em imagens e containers Docker de verdade: versões pinadas, dados persistentes no host ou NAS, um comando pra subir ou atualizar cada app. Assim eu rodo tudo isolado na minha máquina, sem entulhar meu Linux com toneladas de pacotes Python e gambiarras que poderiam desestabilizar o sistema."
+    },
+    {
+      "id": "C063",
+      "kind": "ressalva",
+      "criticality": "critica",
+      "statement": "O crédito pela seleção de stack, curadoria de modelos e workflows é do Aitrepreneur; o repositório aitrepreneur-docker apenas traduz o trabalho dele para Docker, e os scripts originais são conteúdo pago do Patreon não incluído.",
+      "evidence": "Dois avisos importantes. O crédito da seleção de stack, curadoria de modelos e workflows é todo do Aitrepreneur: o repositório só traduz o trabalho dele pra forma de Docker, e os scripts originais dele são conteúdo pago do Patreon que NÃO está incluído."
+    },
+    {
+      "id": "C064",
+      "kind": "ressalva",
+      "criticality": "importante",
+      "statement": "O repositório aitrepreneur-docker não cobre tudo que Aitrepreneur já produziu, apenas as receitas mais recentes.",
+      "evidence": "E o repositório não cobre tudo que ele já produziu, só as receitas mais recentes."
+    },
+    {
+      "id": "C065",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "A instalação do aitrepreneur-docker envolve `git clone`, `make setup` (para criar o `.env` com o token da Hugging Face), `make build` e `make up`.",
+      "evidence": "Instalação: `git clone`, `make setup` (cria o `.env` pra você colocar seu token da Hugging Face), `make build` e `make up`."
+    },
+    {
+      "id": "C066",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O autor menciona que o [ai-memory](/2026/06/16/ai-memory-memoria-longo-prazo-karpathy-wiki-auto-aprendizado-hermes-projetos/) é o projeto mais popular e com mais contribuições.",
+      "evidence": "Tem muito mais projeto que eu já cobri em posts dedicados. O [ai-memory](/2026/06/16/ai-memory-memoria-longo-prazo-karpathy-wiki-auto-aprendizado-hermes-projetos/) é o mais popular, mais usado e com mais contribuições de todos."
+    },
+    {
+      "id": "C067",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O [ai-jail](/2026/05/24/dicas-e-toolkit-de-ia-do-akita-ai-jail-ai-memory-ai-usagebar/) foi o primeiro da série e é o segundo mais popular.",
+      "evidence": "O [ai-jail](/2026/05/24/dicas-e-toolkit-de-ia-do-akita-ai-jail-ai-memory-ai-usagebar/), que apareceu de novo no [post de ontem sobre agentes destrutivos](/2026/07/11/como-me-precaver-pros-meus-agentes-nao-apagarem-minhas-coisas/), foi o primeiro da série e é o segundo mais popular."
+    },
+    {
+      "id": "C068",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "A série 'Frank' (em homenagem a Frank Rosenblatt, criador do perceptron) marca os projetos experimentais do autor feitos por diversão.",
+      "evidence": "E tem os outros da série Frank ('Frank' em homenagem ao Frank Rosenblatt, criador do perceptron, a rede neural original; o nome marca os projetos experimentais que eu faço por diversão):"
+    },
+    {
+      "id": "C069",
+      "kind": "exemplo",
+      "criticality": "contextual",
+      "statement": "Outros projetos da série Frank incluem: Frank Sherlock (indexador inteligente de imagens), Frank Mega (clone do MEGA para home server), FrankMD (editor de markdown), Frank FBI (analisador de fraudes por email) e Frank Investigator (ensina a questionar notícias).",
+      "evidence": "- [Frank Sherlock](/2026/02/23/vibe-code-fiz-um-indexador-inteligente-de-imagens-com-ia-em-2-dias/): indexador inteligente de imagens - [Frank Mega](/2026/02/21/vibe-code-fiz-um-clone-do-mega-em-rails-em-1-dia-pro-meu-home-server/): clone do MEGA pro meu home server - [FrankMD](/2026/02/01/vibe-code-fiz-um-editor-de-markdown-do-zero-com-claude-code-frankmd-part-1/): editor de markdown - [Frank FBI](/2026/03/09/atacando-fraudes-via-email-frank-fbi/): analisador de fraudes por email - [Frank Investigator](/2026/03/27/ensinando-a-questionar-noticias-frank-investigator/): ensina a questionar notícias"
+    },
+    {
+      "id": "C070",
+      "kind": "conclusao",
+      "criticality": "critica",
+      "statement": "Todos os projetos são open source e estão no GitHub do autor, e ele convida a contribuições e compartilhamento, pois nasceram de problemas reais que podem resolver os de outros.",
+      "evidence": "Tudo é open source e está no [meu GitHub](https://github.com/akitaonrails). Todo mundo é bem-vindo pra contribuir com issues, pull requests, ou simplesmente compartilhando com os amigos. Cada um desses projetos nasceu de um probleminha real meu. Vai que um deles resolve o seu também."
+    }
+  ]
+}

@@ -1,0 +1,355 @@
+{
+  "results": [
+    {
+      "coverage_id": "C001",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C002",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C003",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C004",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C005",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C006",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C007",
+      "status": "completo",
+      "notes": "A afirmação do roteiro lista todos os projetos mencionados no conteúdo original."
+    },
+    {
+      "coverage_id": "C008",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C009",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C010",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C011",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C012",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C013",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C014",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C015",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C016",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C017",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C018",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C019",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C020",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C021",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C022",
+      "status": "ausente",
+      "notes": "O roteiro não menciona o fluxo de email do autor."
+    },
+    {
+      "coverage_id": "C023",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C024",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C025",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C026",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C027",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C028",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C029",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C030",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C031",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C032",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C033",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C034",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C035",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C036",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C037",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C038",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C039",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C040",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C041",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C042",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C043",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C044",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C045",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C046",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C047",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C048",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C049",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C050",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C051",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C052",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C053",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C054",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C055",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C056",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C057",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C058",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C059",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C060",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C061",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C062",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C063",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C064",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C065",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C066",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C067",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C068",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C069",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    },
+    {
+      "coverage_id": "C070",
+      "status": "completo",
+      "notes": "A afirmação do roteiro corresponde integralmente ao conteúdo original."
+    }
+  ],
+  "unsupported_claims": []
+}

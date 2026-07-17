@@ -1,0 +1,675 @@
+{
+  "turns": [
+    {
+      "turn_id": "T001",
+      "speaker": "apresentador_a",
+      "text": "Olá a todos e bem-vindos ao nosso podcast! Hoje vamos mergulhar em um artigo super interessante do Fabio Akita, intitulado \"Usando IA pra resolver meus probleminhas do dia-a-dia\", publicado lá no AkitaOnRails.com. Akita sempre nos surpreende com suas soluções criativas, não é mesmo?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T002",
+      "speaker": "apresentador_b",
+      "text": "Exatamente! E o que é fascinante é que, como ele mesmo menciona, ele não costuma escrever um artigo para cada pequeno projeto open source que desenvolve. A maioria desses projetos nasce para resolver problemas muito específicos do cotidiano dele, e um artigo dedicado para cada um seria, de fato, desproporcional.",
+      "coverage_ids": [
+        "C001"
+      ]
+    },
+    {
+      "turn_id": "T003",
+      "speaker": "apresentador_a",
+      "text": "Ah, entendi! Então, ele foi acumulando esses \"probleminhas resolvidos\" e percebeu que tinha uma coleção de projetos que nunca tinham sido apresentados ao público. Que legal que ele decidiu juntar tudo em um só lugar!",
+      "coverage_ids": [
+        "C002",
+        "C003"
+      ]
+    },
+    {
+      "turn_id": "T004",
+      "speaker": "apresentador_b",
+      "text": "Sim, essa foi a abordagem dele. E o padrão é bastante claro: ele se depara com uma pequena \"fricção\" diária, algo que a maioria de nós simplesmente ignora porque consertar levaria muito tempo. Mas, em vez de engolir essa irritação, ele usa um agente de IA para criar uma solução.",
+      "coverage_ids": [
+        "C004"
+      ]
+    },
+    {
+      "turn_id": "T005",
+      "speaker": "apresentador_a",
+      "text": "Um agente de IA? Isso é muito interessante! Então, a IA tornou o processo de transformar uma irritação em uma ferramenta tão rápido e barato que agora vale a pena resolver quase tudo?",
+      "coverage_ids": [
+        "C005"
+      ]
+    },
+    {
+      "turn_id": "T006",
+      "speaker": "apresentador_b",
+      "text": "Precisamente. O custo-benefício se inverteu. E, para quem se interessar, todos os projetos que vamos discutir estão disponíveis no GitHub dele, com binários, releases e instruções de instalação.",
+      "coverage_ids": [
+        "C006"
+      ]
+    },
+    {
+      "turn_id": "T007",
+      "speaker": "apresentador_a",
+      "text": "Perfeito! Já vou deixar o link na descrição. E quais são os projetos que ele destacou neste artigo?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T008",
+      "speaker": "apresentador_b",
+      "text": "Ele menciona o clock-tui, com os widgets google-calendar-tui e ghpending; o github-visualize; o frank_geary; a série de mangá em japonês que inclui FrankYomik, FRANK MANGA+ e FRANK Scanlation; o frank_lyrics; o frank_type; o distrobox-gaming e o aitrepreneur-docker. Uma lista bem completa!",
+      "coverage_ids": [
+        "C007"
+      ]
+    },
+    {
+      "turn_id": "T009",
+      "speaker": "apresentador_a",
+      "text": "Uau, bastante coisa! Vamos começar com o clock-tui. O que é isso?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T010",
+      "speaker": "apresentador_b",
+      "text": "O Akita tinha um monitor secundário vertical e queria algo mais útil do que um simples papel de parede. A ideia inicial era apenas um relógio de mesa, mas ele encontrou um programa open source antigo, o clock-tui original, que estava parado. Ele decidiu fazer um fork e continuar o desenvolvimento.",
+      "coverage_ids": [
+        "C008",
+        "C009"
+      ]
+    },
+    {
+      "turn_id": "T011",
+      "speaker": "apresentador_a",
+      "text": "Então ele pegou um projeto que estava esquecido e deu uma nova vida a ele! E o que ele fez de diferente?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T012",
+      "speaker": "apresentador_b",
+      "text": "Ele o deixou mais bonito, modernizou as dependências em Rust e, o mais importante, adicionou suporte a widgets de comando. O relógio fica no topo, e embaixo entram painéis que rodam qualquer comando que imprima texto, cada um com atualização independente.",
+      "coverage_ids": [
+        "C010"
+      ]
+    },
+    {
+      "turn_id": "T013",
+      "speaker": "apresentador_a",
+      "text": "Widgets de comando? Que interessante! E ele criou alguns widgets próprios, certo?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T014",
+      "speaker": "apresentador_b",
+      "text": "Sim. Um deles é o google-calendar-tui, que exibe a agenda do Google Calendar no terminal, de forma somente leitura, usando as contas que já estão configuradas no GNOME Online Accounts, sem precisar de nenhuma configuração de OAuth. Assim, ele consegue ver seus compromissos do dia rapidamente.",
+      "coverage_ids": [
+        "C011"
+      ]
+    },
+    {
+      "turn_id": "T015",
+      "speaker": "apresentador_a",
+      "text": "Isso é super prático! E qual o outro widget?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T016",
+      "speaker": "apresentador_b",
+      "text": "O outro é o ghpending. Ele lista issues e pull requests abertos em todos os repositórios que o Akita acompanha. Como ele tem muitos projetos open source, essa é a forma dele perceber em segundos quando há uma nova PR ou issue, sem precisar abrir o GitHub.",
+      "coverage_ids": [
+        "C012"
+      ]
+    },
+    {
+      "turn_id": "T017",
+      "speaker": "apresentador_a",
+      "text": "Que sacada genial para quem gerencia vários projetos! E ele até adicionou temas, inspirados em Evangelion, eu vi nas imagens!",
+      "coverage_ids": [
+        "C013"
+      ]
+    },
+    {
+      "turn_id": "T018",
+      "speaker": "apresentador_b",
+      "text": "Isso mesmo! Ele adicionou os temas 'evangelion' e 'nerv', que podem ser alternados em tempo real. Os temas são injetados nos widgets, então a paleta de cores se adapta. Para a instalação, no Arch Linux, usa-se `yay -S clock-tui-bin`. Os widgets também têm binários no AUR e nas releases do GitHub, e o ghpending também pode ser instalado via `brew` no macOS.",
+      "coverage_ids": [
+        "C013",
+        "C014"
+      ]
+    },
+    {
+      "turn_id": "T019",
+      "speaker": "apresentador_a",
+      "text": "Muito legal! Agora, sobre o github-visualize. O que é isso e por que ele o criou?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T020",
+      "speaker": "apresentador_b",
+      "text": "O github-visualize nasceu da inspiração em um artigo do Jarred Sumner sobre a reescrita do TypeScript do Bun em Rust. O Akita gostou muito das animações dos gráficos que viu lá, e mesmo considerando o projeto 'inútil', a beleza foi motivo suficiente para ele criar sua própria versão.",
+      "coverage_ids": [
+        "C015",
+        "C016"
+      ]
+    },
+    {
+      "turn_id": "T021",
+      "speaker": "apresentador_a",
+      "text": "Inútil, mas bonito! Adorei a justificativa! E o que ele faz exatamente?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T022",
+      "speaker": "apresentador_b",
+      "text": "É um dashboard self-hosted que monitora os repositórios do GitHub dele e reproduz o progresso com visualizações animadas. Isso inclui uma timeline de commits com linhas adicionadas e deletadas, um heat map de commits por dia e hora, e até uma \"corrida\" de CI até o verde.",
+      "coverage_ids": [
+        "C017"
+      ]
+    },
+    {
+      "turn_id": "T023",
+      "speaker": "apresentador_a",
+      "text": "Que legal! Então ele pode ver a evolução dos projetos de uma forma bem visual. Ele pretende usar isso para algo específico?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T024",
+      "speaker": "apresentador_b",
+      "text": "Ele menciona que talvez use em slides de apresentação ou para ilustrar futuros posts no blog. A instalação é feita via uma imagem pública no Docker Hub, sendo um container único com SQLite num volume, sem a necessidade de um banco de dados externo.",
+      "coverage_ids": [
+        "C018",
+        "C019"
+      ]
+    },
+    {
+      "turn_id": "T025",
+      "speaker": "apresentador_a",
+      "text": "Ótimo! Agora vamos para o Frank Geary. Pelo nome, já imagino que tem a ver com e-mail, certo?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T026",
+      "speaker": "apresentador_b",
+      "text": "Isso mesmo. O Akita escolheu o Geary, do GNOME, como seu cliente de e-mail principal. Ele o considera limpo e direto, semelhante à interface do Mail da Apple. Ele até comenta que acha o Thunderbird inchado e feio, e o Mailspring, inchado e pesado.",
+      "coverage_ids": [
+        "C020",
+        "C021"
+      ]
+    },
+    {
+      "turn_id": "T027",
+      "speaker": "apresentador_a",
+      "text": "Entendi. Ele busca simplicidade. Mas o Geary tinha alguns problemas para ele, não é?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T028",
+      "speaker": "apresentador_b",
+      "text": "Sim, dois problemas cruciais. Primeiro, em seu monitor vertical, a interface de três colunas do Geary ocupava muito espaço horizontal, e não havia como recolher a primeira coluna. Segundo, e mais grave, o campo de destinatário no compositor não autocompletava de forma eficaz, forçando-o a digitar ou copiar e colar endereços.",
+      "coverage_ids": [
+        "C023"
+      ]
+    },
+    {
+      "turn_id": "T029",
+      "speaker": "apresentador_a",
+      "text": "Nossa, isso é frustrante! E como ele resolveu?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T030",
+      "speaker": "apresentador_b",
+      "text": "Inicialmente, ele usou módulos GTK externos, mas isso exigia compilar o Geary do código-fonte e recompilar a cada atualização do sistema. Cansado disso, ele fez o que deveria ter feito desde o início: um fork do Geary, criando o Frank Geary. Ele adicionou as duas funcionalidades diretamente no código: a barra lateral agora recolhe e o autocompletar de destinatários funciona consultando os contatos dos e-mails existentes.",
+      "coverage_ids": [
+        "C024",
+        "C025"
+      ]
+    },
+    {
+      "turn_id": "T031",
+      "speaker": "apresentador_a",
+      "text": "Que solução elegante! Então ele vai manter esse fork atualizado?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T032",
+      "speaker": "apresentador_b",
+      "text": "Sim, ele pretende manter o fork rebaseando frequentemente do projeto original. E a melhor parte é que agora existem pacotes no AUR para o Frank Geary, tanto binário quanto para compilar do código-fonte, que substituem o Geary padrão do sistema.",
+      "coverage_ids": [
+        "C026",
+        "C027"
+      ]
+    },
+    {
+      "turn_id": "T033",
+      "speaker": "apresentador_a",
+      "text": "Facilita muito a instalação! Tem alguma dica extra para quem for usar?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T034",
+      "speaker": "apresentador_b",
+      "text": "Sim, um detalhe importante: após instalar ou atualizar, se a opção de vigiar e-mail novo estiver ligada, o Geary continua rodando em segundo plano. Então, é bom executar `geary --quit` para garantir que nenhum processo antigo permaneça ativo.",
+      "coverage_ids": [
+        "C028"
+      ]
+    },
+    {
+      "turn_id": "T035",
+      "speaker": "apresentador_a",
+      "text": "Boa dica! Agora, vamos falar sobre mangá em japonês. Ele mencionou FrankYomik, FRANK MANGA+ e FRANK Scanlation. O que são esses?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T036",
+      "speaker": "apresentador_b",
+      "text": "O Akita é um grande fã de mangá japonês. O FrankYomik nasceu para ele conseguir ler mangás originais em japonês que compra na Amazon do Japão. O problema é que mangás para adultos não têm 'furigana', aquelas legendinhas em kana que indicam a leitura de kanjis difíceis. Ele não sabe ler esses kanjis raros.",
+      "coverage_ids": [
+        "C029",
+        "C030"
+      ]
+    },
+    {
+      "turn_id": "T037",
+      "speaker": "apresentador_a",
+      "text": "Ah, entendi! Então o FrankYomik ajuda com isso?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T038",
+      "speaker": "apresentador_b",
+      "text": "Exatamente! O FrankYomik adiciona furigana em tempo real sobre a página do mangá. Ele usa um modelo para detectar os balões de fala, o manga-ocr extrai o texto e o furigana, ou até uma tradução completa via LLM local, é renderizado por cima. Tudo isso rodando no próprio hardware dele.",
+      "coverage_ids": [
+        "C031"
+      ]
+    },
+    {
+      "turn_id": "T039",
+      "speaker": "apresentador_a",
+      "text": "Isso é genial! E sem violar direitos autorais, certo?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T040",
+      "speaker": "apresentador_b",
+      "text": "Correto. Ele destaca que funciona 'on-the-fly', sobre a imagem que ele já abriu legitimamente, sem baixar ou redistribuir páginas, o que evita infringir direitos autorais.",
+      "coverage_ids": [
+        "C032"
+      ]
+    },
+    {
+      "turn_id": "T041",
+      "speaker": "apresentador_a",
+      "text": "Muito inteligente! E o FRANK MANGA+?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T042",
+      "speaker": "apresentador_b",
+      "text": "Ele paga a assinatura do Manga Plus, o aplicativo oficial da Shueisha, mas ele só permite ler no celular. Isso era um problema para ele, que tem um monitor grande de 32 polegadas. Então, ele construiu o FRANK MANGA+, um leitor desktop em Tauri que roda em Linux, macOS e Windows, permitindo usar a própria assinatura fora do app oficial.",
+      "coverage_ids": [
+        "C033",
+        "C034"
+      ]
+    },
+    {
+      "turn_id": "T043",
+      "speaker": "apresentador_a",
+      "text": "Ah, para ler no conforto do desktop! E a instalação?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T044",
+      "speaker": "apresentador_b",
+      "text": "A instalação é via AppImage, `.deb` e `.dmg` nas releases do GitHub, ou `yay -S mangaplus-reader-bin` no Arch.",
+      "coverage_ids": [
+        "C035"
+      ]
+    },
+    {
+      "turn_id": "T045",
+      "speaker": "apresentador_a",
+      "text": "E por último, o FRANK Scanlation?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T046",
+      "speaker": "apresentador_b",
+      "text": "Ele também lê as 'scanlations' da comunidade, que são traduções feitas por fãs. Essas scanlations ficam espalhadas por vários sites, como o MangaDex, e ele se cansou de ter dezenas de abas abertas. Então, ele criou o FRANK Scanlation, um aplicativo desktop que centraliza todas as suas scanlations favoritas em um só lugar, com biblioteca, progresso de leitura e checagem de capítulos novos.",
+      "coverage_ids": [
+        "C036",
+        "C037",
+        "C038"
+      ]
+    },
+    {
+      "turn_id": "T047",
+      "speaker": "apresentador_a",
+      "text": "Então, uma central para todas as suas leituras de mangá! E como ele faz para carregar as páginas?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T048",
+      "speaker": "apresentador_b",
+      "text": "As janelas de leitura carregam o próprio site e injetam um leitor com spreads de página dupla e navegação por teclado. Ele usa heurísticas para detectar sequências de imagens e numeração de capítulos em qualquer URL, sem ser hardcoded para um site específico. Ele diz que virou seu jeito preferido de ler mangás que não estão disponíveis para compra.",
+      "coverage_ids": [
+        "C039",
+        "C040"
+      ]
+    },
+    {
+      "turn_id": "T049",
+      "speaker": "apresentador_a",
+      "text": "Que solução robusta! E a instalação?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T050",
+      "speaker": "apresentador_b",
+      "text": "AppImage, `.deb` e `.rpm`, além de build para macOS, nas releases do GitHub.",
+      "coverage_ids": [
+        "C041"
+      ]
+    },
+    {
+      "turn_id": "T051",
+      "speaker": "apresentador_a",
+      "text": "Agora, vamos para o Frank Lyrics. Pelo nome, imagino que tem a ver com música, certo?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T052",
+      "speaker": "apresentador_b",
+      "text": "Isso mesmo. Ele já tinha criado o Frank Karaoke, um app para adicionar pontuação no YouTube. O Frank Lyrics surge de um caso de uso similar: ele gosta de aprender músicas novas, como aberturas de animes, e o processo de decorar a letra exige repetir a mesma linha várias vezes. No YouTube, isso é um inferno, pois é difícil acertar o ponto exato na timeline.",
+      "coverage_ids": [
+        "C042",
+        "C043"
+      ]
+    },
+    {
+      "turn_id": "T053",
+      "speaker": "apresentador_a",
+      "text": "Ah, sim! Ficar caçando o ponto certo na barra de progresso é super chato. E como o Frank Lyrics resolve isso?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T054",
+      "speaker": "apresentador_b",
+      "text": "Ele criou uma extensão de Chrome que descobre o timing correto de cada linha da letra usando os marcadores públicos do LRCLIB. Essa extensão injeta controles na própria página do YouTube, permitindo repetir a linha exata que se está decorando, quantas vezes for necessário, sem precisar mexer na timeline.",
+      "coverage_ids": [
+        "C044"
+      ]
+    },
+    {
+      "turn_id": "T055",
+      "speaker": "apresentador_a",
+      "text": "Que maravilha! E o que é esse LRCLIB?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T056",
+      "speaker": "apresentador_b",
+      "text": "É uma biblioteca aberta e comunitária de letras sincronizadas, onde cada linha vem com um timestamp no formato LRC, com uma API pública e gratuita.",
+      "coverage_ids": [
+        "C045"
+      ]
+    },
+    {
+      "turn_id": "T057",
+      "speaker": "apresentador_a",
+      "text": "Entendi. E a instalação da extensão?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T058",
+      "speaker": "apresentador_b",
+      "text": "Basta baixar o `.zip` das releases, descompactar, abrir `chrome://extensions`, ativar o modo desenvolvedor e fazer 'Load unpacked' apontando para a pasta.",
+      "coverage_ids": [
+        "C046"
+      ]
+    },
+    {
+      "turn_id": "T059",
+      "speaker": "apresentador_a",
+      "text": "Prático! Agora, Frank Type. Tem a ver com digitação, certo?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T060",
+      "speaker": "apresentador_b",
+      "text": "Sim. O Akita é um entusiasta de teclados e gosta de treinar no MonkeyType, mas não aprecia digitar palavras aleatórias. Ele também conhece o TypeRacer, que usa textos públicos reais, mas o obriga a esperar outros jogadores, algo que ele detesta.",
+      "coverage_ids": [
+        "C047",
+        "C048"
+      ]
+    },
+    {
+      "turn_id": "T061",
+      "speaker": "apresentador_a",
+      "text": "Então ele queria uma experiência de treino de digitação mais personalizada?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T062",
+      "speaker": "apresentador_b",
+      "text": "Exatamente. Ele queria uma experiência single player, com prosa de verdade, mas com a estética do MonkeyType. Então, ele criou o Frank Type, um mini-clone desses treinadores de digitação em Rails 8, que usa trechos normalizados de prosa em domínio público.",
+      "coverage_ids": [
+        "C049",
+        "C050"
+      ]
+    },
+    {
+      "turn_id": "T063",
+      "speaker": "apresentador_a",
+      "text": "Que legal! E como ele funciona?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T064",
+      "speaker": "apresentador_b",
+      "text": "É um aplicativo local-first, sem necessidade de cadastro. O histórico de sessões, tempos e gráficos de perfil ficam armazenados no local storage do navegador. Ele até inclui um heat map de dígrafos para mostrar quais combinações de teclas podem atrasar o usuário.",
+      "coverage_ids": [
+        "C051"
+      ]
+    },
+    {
+      "turn_id": "T065",
+      "speaker": "apresentador_a",
+      "text": "Isso é super útil para melhorar a digitação! E a instalação?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T066",
+      "speaker": "apresentador_b",
+      "text": "É um container Docker publicado como `akitaonrails/frank_type`. Um comando `curl` pode ser usado para levantar o serviço em `http://localhost:3200`.",
+      "coverage_ids": [
+        "C052"
+      ]
+    },
+    {
+      "turn_id": "T067",
+      "speaker": "apresentador_a",
+      "text": "Perfeito! Agora, distrobox-gaming. Isso me parece algo para quem gosta de jogos, mas não quer bagunçar o sistema, certo?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T068",
+      "speaker": "apresentador_b",
+      "text": "Você acertou em cheio! O Akita joga no mesmo PC em que trabalha, mas se recusa a misturar pacotes de emulador e gambiarras de Wine com seu ambiente de desenvolvimento. A solução dele foi isolar os jogos inteiros dentro de um distrobox, que são containers que se integram ao desktop como se fossem nativos.",
+      "coverage_ids": [
+        "C053",
+        "C054"
+      ]
+    },
+    {
+      "turn_id": "T069",
+      "speaker": "apresentador_a",
+      "text": "Que ideia inteligente para manter a organização! E o distrobox-gaming é o quê, exatamente?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T070",
+      "speaker": "apresentador_b",
+      "text": "É um repositório de playbooks Ansible que constrói essa box Arch do zero, incluindo o ES-DE como frontend, emuladores standalone, cores do RetroArch e configurações por jogo. A regra que ele se impôs é que todo jogo novo instalado deve se tornar uma receita Ansible reproduzível, documentando todos os truques e hacks no código.",
+      "coverage_ids": [
+        "C054",
+        "C055"
+      ]
+    },
+    {
+      "turn_id": "T071",
+      "speaker": "apresentador_a",
+      "text": "Então é como uma biblioteca de como instalar jogos no Linux, especialmente os mais antigos?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T072",
+      "speaker": "apresentador_b",
+      "text": "Exatamente! Ele instala muitos abandonware antigos, como a série Colin McRae Rally, Sega Rally Revo e OutRun 2006 Coast 2 Coast, cada um com suas particularidades de Wine, patches e configurações. O repositório está se tornando uma valiosa biblioteca de documentação sobre como instalar jogos, emuladores e retro games no Linux.",
+      "coverage_ids": [
+        "C056",
+        "C057"
+      ]
+    },
+    {
+      "turn_id": "T073",
+      "speaker": "apresentador_a",
+      "text": "Muito útil para a comunidade gamer! E ele mencionou algo similar para LLMs?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T074",
+      "speaker": "apresentador_b",
+      "text": "Sim, existe o distrobox-llm, que faz o mesmo isolamento para o ambiente de LLMs locais, como CUDA, Ollama e LM Studio, deixando apenas o driver NVIDIA no host.",
+      "coverage_ids": [
+        "C058"
+      ]
+    },
+    {
+      "turn_id": "T075",
+      "speaker": "apresentador_a",
+      "text": "Interessante! E a instalação do distrobox-gaming?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T076",
+      "speaker": "apresentador_b",
+      "text": "Envolve clonar o repositório, instalar as coleções Ansible, copiar e editar um arquivo de variáveis de host, e rodar o playbook `site.yml`.",
+      "coverage_ids": [
+        "C059"
+      ]
+    },
+    {
+      "turn_id": "T077",
+      "speaker": "apresentador_a",
+      "text": "Certo. E por último, o aitrepreneur-docker. O que é isso?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T078",
+      "speaker": "apresentador_b",
+      "text": "Para geração de imagens, o Akita usa o ComfyUI e acompanha um youtuber chamado Aitrepreneur, que mantém receitas para instalar e configurar o ComfyUI com os modelos e workflows mais recentes. O trabalho de curadoria do Aitrepreneur é ótimo, mas seus scripts são mais antigos, pensados para rodar uma única vez em instâncias como o RunPod.",
+      "coverage_ids": [
+        "C060",
+        "C061"
+      ]
+    },
+    {
+      "turn_id": "T079",
+      "speaker": "apresentador_a",
+      "text": "Então o aitrepreneur-docker é uma forma de modernizar e organizar esses scripts?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T080",
+      "speaker": "apresentador_b",
+      "text": "Exatamente! Com a evolução das LLMs, que agora escrevem Dockerfiles decentes, ele criou o aitrepreneur-docker para converter esses scripts em imagens e containers Docker. Isso permite rodar tudo isolado na máquina dele, sem entulhar o Linux com pacotes Python e gambiarras que poderiam desestabilizar o sistema.",
+      "coverage_ids": [
+        "C062"
+      ]
+    },
+    {
+      "turn_id": "T081",
+      "speaker": "apresentador_a",
+      "text": "Que solução inteligente para manter o sistema limpo! Mas tem algumas ressalvas, certo?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T082",
+      "speaker": "apresentador_b",
+      "text": "Sim, é importante notar que o crédito pela seleção de stack, curadoria de modelos e workflows é todo do Aitrepreneur. O repositório do Akita apenas traduz o trabalho dele para o formato Docker, e os scripts originais são conteúdo pago do Patreon, não incluídos. Além disso, o repositório não cobre tudo que o Aitrepreneur já produziu, apenas as receitas mais recentes.",
+      "coverage_ids": [
+        "C063",
+        "C064"
+      ]
+    },
+    {
+      "turn_id": "T083",
+      "speaker": "apresentador_a",
+      "text": "Entendido. Então, quem quiser o conteúdo completo deve assinar o Patreon do Aitrepreneur. E a instalação do aitrepreneur-docker?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T084",
+      "speaker": "apresentador_b",
+      "text": "É feita com `git clone`, `make setup` para criar o `.env` com o token da Hugging Face, `make build` e `make up`.",
+      "coverage_ids": [
+        "C065"
+      ]
+    },
+    {
+      "turn_id": "T085",
+      "speaker": "apresentador_a",
+      "text": "Muito bom! E ele mencionou outros projetos que já cobriu em posts dedicados?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T086",
+      "speaker": "apresentador_b",
+      "text": "Sim, ele destaca o ai-memory como o mais popular e com mais contribuições. O ai-jail foi o primeiro da série e é o segundo mais popular. E ele tem uma série de projetos chamada \"Frank\", em homenagem a Frank Rosenblatt, o criador do perceptron, que são projetos experimentais feitos por diversão.",
+      "coverage_ids": [
+        "C066",
+        "C067",
+        "C068"
+      ]
+    },
+    {
+      "turn_id": "T087",
+      "speaker": "apresentador_a",
+      "text": "Que legal essa homenagem! Quais outros projetos \"Frank\" ele tem?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T088",
+      "speaker": "apresentador_b",
+      "text": "Ele cita o Frank Sherlock, um indexador inteligente de imagens; o Frank Mega, um clone do MEGA para home server; o FrankMD, um editor de markdown; o Frank FBI, um analisador de fraudes por e-mail; e o Frank Investigator, que ensina a questionar notícias.",
+      "coverage_ids": [
+        "C069"
+      ]
+    },
+    {
+      "turn_id": "T089",
+      "speaker": "apresentador_a",
+      "text": "Uma variedade impressionante de projetos! E todos são open source, certo?",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T090",
+      "speaker": "apresentador_b",
+      "text": "Sim, todos são open source e estão no GitHub dele. Ele convida a todos para contribuir com issues, pull requests ou simplesmente compartilhar com os amigos, pois cada projeto nasceu de um problema real dele e pode resolver o de outras pessoas também.",
+      "coverage_ids": [
+        "C070"
+      ]
+    },
+    {
+      "turn_id": "T091",
+      "speaker": "apresentador_a",
+      "text": "Que iniciativa fantástica! É inspirador ver como ele transforma pequenos incômodos em soluções robustas e ainda as compartilha com a comunidade. Muito obrigado, por nos guiar por esses projetos incríveis!",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T092",
+      "speaker": "apresentador_b",
+      "text": "De nada! Foi um prazer. E assim encerramos este episódio. Baseado no artigo \"Usando IA pra resolver meus probleminhas do dia-a-dia\", de Fabio Akita, publicado em AkitaOnRails.com, sob CC BY-NC-SA 4.0. Esta adaptação é distribuída sob CC BY-NC-SA 4.0.",
+      "coverage_ids": []
+    }
+  ]
+}

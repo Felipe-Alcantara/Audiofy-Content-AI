@@ -1,0 +1,11 @@
+{
+  "source_words": 2771,
+  "script_words": 2683,
+  "duration_seconds": 1192.512,
+  "cost_usd": 1.191272,
+  "cost_exact": false,
+  "tts_model": "google/gemini-3.1-flash-tts-preview",
+  "profile_name": "economico",
+  "generated_at": "2026-07-17T07:14:33-03:00",
+  "cost_source": "mixed_key_reconstruction"
+}

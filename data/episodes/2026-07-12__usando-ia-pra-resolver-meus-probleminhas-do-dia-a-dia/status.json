@@ -1,0 +1,18 @@
+{
+  "episode_id": "2026-07-12/usando-ia-pra-resolver-meus-probleminhas-do-dia-a-dia",
+  "pid": 131622,
+  "state": "concluido",
+  "stage": "montagem",
+  "progress": {
+    "current": 0,
+    "total": 0
+  },
+  "cost_usd": 1.191272,
+  "cost_exact": false,
+  "started_at": 1784279341.4785435,
+  "run_started_at": 1784282909.0668342,
+  "updated_at": 1784283273.3959801,
+  "resume_count": 8,
+  "retry": null,
+  "last_error": null
+}
