@@ -631,23 +631,31 @@ def do_catalog() -> None:
 def do_desktop() -> None:
     """Abre a interface Electron (instala as dependências na primeira vez)."""
     electron_dir = PROJECT_ROOT / "electron"
-    if not shutil.which("npm"):
+    # Caminho completo: no Windows o npm é ``npm.cmd`` e o Popen não resolve
+    # o nome sem extensão (o CreateProcess não consulta o PATHEXT).
+    npm = shutil.which("npm")
+    if not npm:
         _fail("npm não encontrado — instale Node.js para usar o app desktop.")
         return
     if not (electron_dir / "node_modules" / "electron").is_dir():
         print(f"{CYAN}Instalando dependências do app (primeira vez)…{RESET}")
         result = subprocess.run(
-            ["npm", "install", "--no-fund", "--no-audit"], cwd=electron_dir,
+            [npm, "install", "--no-fund", "--no-audit"], cwd=electron_dir,
             capture_output=True, text=True,
         )
         if result.returncode != 0:
             _fail(f"Falha ao instalar o Electron: {(result.stderr or result.stdout)[-300:]}")
             return
+    environment = desktop_environment(prefer_dotenv=True)
+    # O Electron chama o backend com este interpretador — o mesmo que já roda o menu.
+    environment.setdefault("AUDIOFY_PYTHON", sys.executable)
+    detach: dict = (
+        {"creationflags": subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP}
+        if sys.platform == "win32" else {"start_new_session": True}
+    )
     try:
-        subprocess.Popen(["npm", "start"], cwd=electron_dir,
-                         env=desktop_environment(prefer_dotenv=True),
-                         start_new_session=True,
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.Popen([npm, "start"], cwd=electron_dir, env=environment,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **detach)
     except OSError as error:
         _fail(f"Não foi possível iniciar o app desktop: {error}")
         return

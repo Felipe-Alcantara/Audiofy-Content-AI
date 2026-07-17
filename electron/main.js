@@ -10,7 +10,11 @@ const { buildBridgeEnvironment } = require("./environment");
 const { resolveProjectPath, validateBridgeRequest } = require("./security");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
-const PYTHON = process.env.AUDIOFY_PYTHON || "python3";
+// No Windows não existe "python3" no PATH (ou é o atalho da Microsoft Store,
+// que não executa nada); o start_app.py exporta AUDIOFY_PYTHON com o
+// interpretador real quando abre o app.
+const PYTHON = process.env.AUDIOFY_PYTHON
+  || (process.platform === "win32" ? "python" : "python3");
 const MAX_OUTPUT_LENGTH = 2 * 1024 * 1024;
 
 function bridge(args, stdinData) {

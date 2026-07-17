@@ -451,3 +451,30 @@ A instalação real no macOS ainda não foi reexecutada com as mudanças.
 (sudo no Linux); nesses casos a ação reporta a falha com orientação, mas não resolve sozinha.
 O `--break-system-packages` instala no escopo do usuário fora de venv — aceito por ser o mesmo
 escopo que o `--user` já usava, apenas destravando o bloqueio do PEP 668.
+
+---
+
+## 2026-07-17 — App desktop abre no Windows
+
+**O que mudou:** no Windows, abrir o app desktop pelo menu não fazia nada. Duas causas no
+lançamento: o `Popen(["npm", "start"])` falhava porque o npm do Windows é `npm.cmd` e o
+`CreateProcess` não resolve o nome sem extensão (não consulta o `PATHEXT`); e, mesmo que a
+janela abrisse, o processo principal chamava o backend como `python3`, que no Windows não
+existe no PATH — ou é o atalho da Microsoft Store, que não executa nada. O `do_desktop` agora
+usa o caminho completo retornado por `shutil.which("npm")` (instalação e lançamento), desanexa
+o processo com `creationflags` no Windows (mantendo `start_new_session` no POSIX) e exporta
+`AUDIOFY_PYTHON` com o interpretador que já roda o menu; o `main.js` usa essa variável e,
+sem ela, cai para `python` no Windows e `python3` nos demais.
+
+**Decisões:** o interpretador é propagado pela porta de entrada em vez de o Electron adivinhar,
+garantindo que o backend rode com o mesmo Python (e venv) do menu; `AUDIOFY_PYTHON` definida
+pelo usuário continua tendo prioridade. Quem roda `npm start` direto no Windows, sem passar
+pelo menu, usa o fallback `python`.
+
+**Validação:** 130 testes Python (4 novos: caminho completo do npm, desanexação por plataforma
+e exportação do interpretador) e 13 verificações Node verdes; Ruff, compilação, sintaxe
+Electron, `git diff --check` e `npm audit` (zero vulnerabilidades) aprovados. Falta confirmar
+a abertura real numa máquina Windows.
+
+**Risco que sobrou:** se o npm não estiver no PATH do Windows (Node instalado sem reiniciar o
+terminal), o menu reporta "npm não encontrado" — a correção não cobre PATH desatualizado.
