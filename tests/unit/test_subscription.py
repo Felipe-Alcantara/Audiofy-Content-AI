@@ -44,6 +44,12 @@ class RegistryTest(unittest.TestCase):
             command = cli.command("sistema", )
             self.assertEqual(command[0], cli.binary)
 
+    def test_chat_tem_permissao_total_sem_afetar_o_pipeline(self):
+        claude = get_cli("claude-code")
+        self.assertIn("--dangerously-skip-permissions", claude.chat_command("s"))
+        self.assertNotIn("--dangerously-skip-permissions", claude.command("s"))
+        self.assertIn("--yolo", get_cli("gemini-cli").chat_args)
+
     def test_detecta_modelo_global_do_codex(self):
         with tempfile.TemporaryDirectory() as tmp:
             config = Path(tmp) / "config.toml"

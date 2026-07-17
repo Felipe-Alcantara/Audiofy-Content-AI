@@ -51,9 +51,17 @@ class SubscriptionCli:
     name: str
     binary: str
     args: tuple[str, ...]  # argumentos de modo headless; prompt entra por stdin
+    # Argumentos extras do chat de pesquisa: em modo headless a CLI não tem como
+    # pedir confirmação, então sem permissão total ela trava ou falha ao usar
+    # ferramentas (pesquisa web, leitura de páginas). Só valem no chat — as
+    # etapas do pipeline são texto puro e não precisam de ferramentas.
+    chat_args: tuple[str, ...] = ()
 
     def command(self, system: str) -> list[str]:
         return [self.binary, *[a.format(system=system) for a in self.args]]
+
+    def chat_command(self, system: str) -> list[str]:
+        return [*self.command(system), *self.chat_args]
 
     def is_available(self) -> bool:
         return shutil.which(self.binary) is not None
@@ -65,18 +73,20 @@ SUBSCRIPTION_CLIS: list[SubscriptionCli] = [
         name="Claude Code (assinatura Anthropic)",
         binary="claude",
         args=("-p", "--output-format", "text", "--append-system-prompt", "{system}"),
+        chat_args=("--dangerously-skip-permissions",),
     ),
     SubscriptionCli(
         key="gemini-cli",
         name="Gemini CLI (conta Google)",
         binary="gemini",
         args=(),  # lê o prompt inteiro por stdin
+        chat_args=("--yolo",),
     ),
     SubscriptionCli(
         key="codex",
         name="Codex CLI (assinatura OpenAI)",
         binary="codex",
-        args=("exec", "-"),
+        args=("exec", "-"),  # já é não interativo; roda em sandbox sem aprovações
     ),
 ]
 

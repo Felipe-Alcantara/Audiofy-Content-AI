@@ -531,3 +531,28 @@ válido a custo zero. Confirmação no Windows pendente.
 **Risco que sobrou:** no Windows o `cmd.exe` expande `%VAR%` mesmo entre aspas; os argumentos
 vêm do contrato fixo (sem `%`), então o risco prático é nulo hoje, mas argumentos novos com
 `%` exigiriam atenção.
+
+---
+
+## 2026-07-17 — Chat com permissão total nas CLIs de assinatura
+
+**O que mudou:** o chat travava com o provedor de assinatura porque, em modo headless, a CLI
+não tem como pedir confirmação de permissão ao usar ferramentas (pesquisa web, leitura de
+páginas) — ficava presa ou falhava. A pedido do usuário, o chat passa a conceder permissão
+total por padrão: o contrato declarativo `SubscriptionCli` ganhou `chat_args`
+(`--dangerously-skip-permissions` no Claude Code, `--yolo` no Gemini CLI; o Codex `exec` já é
+não interativo) e o `chat.py` usa `chat_command`, eliminando o caso especial do Claude que
+existia ali (o `--allowedTools WebSearch` ficou redundante e saiu).
+
+**Decisões:** a permissão total vale somente para o chat de pesquisa — as etapas do pipeline
+(matriz, roteiro, auditoria) continuam com o comando básico, pois são texto puro e não usam
+ferramentas. As ações propostas pelo chat (gerar episódio, adicionar URL) continuam sendo
+executadas pela interface com confirmação explícita; a permissão ampla é da CLI, não do app.
+
+**Validação:** 140 testes Python verdes (novo teste garante os flags no chat e a ausência deles
+no pipeline); Ruff, compilação e `git diff --check` aprovados. Smoke real no Linux: o comando de
+chat do Claude Code com o flag respondeu normalmente (código 0).
+
+**Risco que sobrou:** com permissão total, a CLI do chat pode executar ferramentas locais sem
+confirmação caso o modelo decida — aceito pelo usuário como padrão do chat; reverter é remover
+os `chat_args` do contrato.

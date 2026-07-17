@@ -132,13 +132,10 @@ def _default_provider(system: str, user: str, settings: Settings) -> str:
     if settings.text_provider not in ("", "openrouter"):
         from .providers.subscription import get_cli, run_cli
         cli = get_cli(settings.text_provider)
-        if cli.key == "claude-code":
-            command = [*cli.command(system), "--allowedTools", "WebSearch"]
-            stdin = user
-        elif cli.args:
-            command, stdin = cli.command(system), user
+        if cli.args:
+            command, stdin = cli.chat_command(system), user
         else:
-            command, stdin = [cli.binary], f"{system}\n\n{user}"
+            command, stdin = [cli.binary, *cli.chat_args], f"{system}\n\n{user}"
         try:
             result = run_cli(command, stdin)
         except OSError as error:
