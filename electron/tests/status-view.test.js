@@ -87,3 +87,12 @@ test("player embutido fica disponível e não abre o MP3 externamente", () => {
   assert.match(renderer, /playInApp\(episode\.mp3/);
   assert.doesNotMatch(renderer, /onclick = \(\) => openProjectPath\(episode\.mp3\)/);
 });
+
+test("renderer recarrega Conteúdo ao abrir a aba e depois do Chat", () => {
+  const renderer = fs.readFileSync(
+    path.resolve(__dirname, "../renderer/renderer.js"), "utf8"
+  );
+
+  assert.match(renderer, /button\.dataset\.tab === "content"\) loadItems/);
+  assert.match(renderer, /if \(currentSource === "custom"\) await loadItems/);
+});

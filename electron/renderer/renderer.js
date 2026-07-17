@@ -69,6 +69,7 @@ function activateTab(button, moveFocus = false) {
   if (moveFocus) button.focus();
   if (button.dataset.tab === "settings") loadSettings();
   if (button.dataset.tab === "episodes") refreshStatus();
+  if (button.dataset.tab === "content") loadItems($("search").value.trim());
 }
 
 tabButtons.forEach((button, index) => {
@@ -160,8 +161,12 @@ async function sendChat() {
   const result = await bridge(["chat", "principal"], text);
   thinking.remove();
   $("chat-send").disabled = false;
-  if (result.ok) addChatMessage("assistant", result.reply, result.actions);
-  else addChatMessage("system", `✖ ${result.error}`);
+  if (result.ok) {
+    addChatMessage("assistant", result.reply, result.actions);
+    // O Chat pode criar/atualizar conteúdo enquanto outra aba está aberta.
+    // Recarregar aqui evita deixar a lista de Conteúdo próprio com snapshot antigo.
+    if (currentSource === "custom") await loadItems($("search").value.trim());
+  } else addChatMessage("system", `✖ ${result.error}`);
 }
 
 $("chat-send").onclick = sendChat;
