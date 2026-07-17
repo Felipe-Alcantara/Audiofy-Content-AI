@@ -194,3 +194,43 @@ class GenerationTracker:
         if not status.is_file():
             return None
         return json.loads(status.read_text(encoding="utf-8"))
+
+    # Quanto tempo um estado "iniciando" sem PID pode durar antes de ser
+    # considerado um worker que nunca subiu (lançamento + imports do Python).
+    STARTUP_GRACE_SECONDS = 90
+
+    @classmethod
+    def reconcile(cls, directory: Path) -> dict | None:
+        """Carrega o status e corrige um 'rodando' cujo worker morreu.
+
+        Um worker desanexado pode morrer sem atualizar o status (erro de
+        importação, processo finalizado pelo sistema). Sem esta verificação, a
+        interface mostraria "rodando" para sempre — o travamento silencioso.
+        """
+        from .process import pid_alive
+
+        data = cls.load(directory)
+        if not data or data.get("state") != "rodando":
+            return data
+        pid = data.get("pid")
+        if pid:
+            if not pid_alive(pid):
+                data.update({
+                    "state": "falhou",
+                    "retry": None,
+                    "last_error": ("O processo de geração terminou inesperadamente; "
+                                   "veja generation.log na pasta do episódio."),
+                })
+                cls._write(directory, data)
+        elif data.get("stage") == "iniciando":
+            started = float(data.get("run_started_at", 0) or 0)
+            if time.time() - started > cls.STARTUP_GRACE_SECONDS:
+                data.update({
+                    "state": "falhou",
+                    "stage": "inicialização",
+                    "retry": None,
+                    "last_error": ("O worker de geração não iniciou; "
+                                   "veja generation.log na pasta do episódio."),
+                })
+                cls._write(directory, data)
+        return data

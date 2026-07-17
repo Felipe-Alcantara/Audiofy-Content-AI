@@ -24,6 +24,43 @@ class ToolNotFoundError(RuntimeError):
     """A ferramenta externa exigida não está instalada nem no PATH."""
 
 
+def pid_alive(pid: int) -> bool:
+    """Informa se um processo existe, sem sinalizá-lo nem matá-lo.
+
+    No Windows ``os.kill(pid, 0)`` TERMINA o processo (TerminateProcess), então a
+    consulta usa a API do kernel. Em caso de dúvida (sem permissão para abrir o
+    processo), assume vivo — o vigia só declara morte quando tem certeza.
+    """
+    if not isinstance(pid, int) or pid <= 0:
+        return False
+    if sys.platform == "win32":
+        import ctypes
+
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        STILL_ACTIVE = 259
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not handle:
+            ERROR_ACCESS_DENIED = 5
+            return kernel32.GetLastError() == ERROR_ACCESS_DENIED
+        try:
+            exit_code = ctypes.c_ulong()
+            if not kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+                return True
+            return exit_code.value == STILL_ACTIVE
+        finally:
+            kernel32.CloseHandle(handle)
+    import os
+
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
 def detached_flags() -> dict:
     """Argumentos de ``Popen`` para desanexar um processo de longa duração.
 

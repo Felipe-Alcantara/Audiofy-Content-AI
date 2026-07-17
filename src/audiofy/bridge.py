@@ -38,7 +38,9 @@ def _episode_dir(item_id: str) -> Path:
 
 
 def _episode_summary(directory: Path) -> dict:
-    status = GenerationTracker.load(directory) or {}
+    # reconcile: um "rodando" cujo worker morreu vira "falhou" em vez de
+    # ficar pendurado para sempre na interface.
+    status = GenerationTracker.reconcile(directory) or {}
     completed_mp3 = directory / "episode.mp3"
     return {
         "dir": str(directory),
@@ -91,7 +93,9 @@ def _cmd_item(source_key: str, item_id: str) -> dict:
 
 def _cmd_generate(source_key: str, item_id: str, force: bool = False) -> dict:
     directory = _episode_dir(item_id)
-    status = GenerationTracker.load(directory)
+    # reconcile: um "rodando" órfão (worker morto) não pode bloquear a nova
+    # geração — era isso que fazia todo clique responder "já em andamento".
+    status = GenerationTracker.reconcile(directory)
     if status and status.get("state") == "rodando":
         return {"started": False, "reason": "geração já em andamento", "dir": str(directory)}
     Settings().require_api_key()
@@ -110,7 +114,10 @@ def _cmd_generate(source_key: str, item_id: str, force: bool = False) -> dict:
             launch_detached(
                 child_args,
                 cwd=Path(__file__).resolve().parents[2],
-                env={**os.environ, "PYTHONPATH": "src"},
+                # UTF-8 forçado: no Windows o worker herdaria cp1252 e os prints
+                # de progresso (emojis) derrubariam o processo em silêncio.
+                env={**os.environ, "PYTHONPATH": "src",
+                     "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"},
                 log_handle=log,
             )
     except OSError as error:
@@ -123,9 +130,18 @@ def _cmd_generate(source_key: str, item_id: str, force: bool = False) -> dict:
 
 def _cmd_run_generation(source_key: str, item_id: str, force: bool = False) -> dict:
     from .pipeline import generate_episode
-    settings = Settings()
-    item = get_source(source_key).get_item(item_id)
-    final = generate_episode(settings, item, force=force)
+    try:
+        settings = Settings()
+        item = get_source(source_key).get_item(item_id)
+        final = generate_episode(settings, item, force=force)
+    except Exception as error:
+        # Falha antes/fora do pipeline (fonte, configuração, imports tardios):
+        # sem esta marca o status ficaria "rodando" para sempre.
+        directory = _episode_dir(item_id)
+        status = GenerationTracker.load(directory) or {}
+        if status.get("state") == "rodando":
+            GenerationTracker.mark_launch_failed(directory, str(error))
+        raise
     return {"mp3": str(final)}
 
 

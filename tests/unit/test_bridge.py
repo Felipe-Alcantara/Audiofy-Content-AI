@@ -157,6 +157,56 @@ class ForcedGenerationTest(unittest.TestCase):
             self.assertNotIn("start_new_session", popen.call_args.kwargs)
             self.assertIn("creationflags", popen.call_args.kwargs)
 
+    def test_worker_roda_com_utf8_forcado(self):
+        """No Windows o worker herdaria cp1252 e os prints com emoji o derrubariam."""
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / "episode"
+            with (
+                patch("audiofy.bridge._episode_dir", return_value=directory),
+                patch("audiofy.bridge.Settings", return_value=Mock()),
+                patch("audiofy.runtime.process.subprocess.Popen") as popen,
+            ):
+                bridge._cmd_generate("custom", "item")
+            env = popen.call_args.kwargs["env"]
+        self.assertEqual(env["PYTHONUTF8"], "1")
+        self.assertEqual(env["PYTHONIOENCODING"], "utf-8")
+
+    def test_rodando_orfao_nao_bloqueia_nova_geracao(self):
+        """Worker morto com status 'rodando' era o que travava toda regeneração."""
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / "episode"
+            directory.mkdir(parents=True)
+            import json as json_module
+            (directory / "status.json").write_text(json_module.dumps({
+                "episode_id": "item", "pid": 99999, "state": "rodando",
+                "stage": "tts", "cost_usd": 0, "cost_exact": True,
+            }), encoding="utf-8")
+            with (
+                patch("audiofy.bridge._episode_dir", return_value=directory),
+                patch("audiofy.bridge.Settings", return_value=Mock()),
+                patch("audiofy.runtime.process.pid_alive", return_value=False),
+                patch("audiofy.runtime.process.subprocess.Popen") as popen,
+            ):
+                result = bridge._cmd_generate("custom", "item")
+        self.assertTrue(result["started"])
+        popen.assert_called_once()
+
+    def test_falha_fora_do_pipeline_marca_status_falhou(self):
+        """Erro antes do generate_episode (fonte, settings) não pode ficar mudo."""
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / "episode"
+            bridge.GenerationTracker.mark_starting(directory, "item")
+            with (
+                patch("audiofy.bridge._episode_dir", return_value=directory),
+                patch("audiofy.bridge.get_source",
+                      side_effect=LookupError("fonte quebrada")),
+            ):
+                with self.assertRaises(LookupError):
+                    bridge._cmd_run_generation("custom", "item")
+            status = bridge.GenerationTracker.load(directory)
+        self.assertEqual(status["state"], "falhou")
+        self.assertIn("fonte quebrada", status["last_error"])
+
     def test_falha_ao_lancar_worker_fica_visivel_no_status(self):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp) / "episode"

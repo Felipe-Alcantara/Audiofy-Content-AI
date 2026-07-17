@@ -39,8 +39,11 @@ function generationFeedback(status) {
       ? ` · retomando fala ${status.retry.segment}, tentativa ` +
         `${status.retry.attempt}/${status.retry.max_attempts}`
       : "";
+    const resuming = Number(status.resume_count) > 0;
     const label = status.stage === "iniciando"
-      ? `Iniciando a retomada — checkpoint ${count}.`
+      ? (resuming
+        ? `Iniciando a retomada — checkpoint ${count}.`
+        : `Iniciando a geração — ${count}.`)
       : `Etapa: ${status.stage || "iniciando"} — ${count}${retry}`;
     return { visible: true, tone: "active", percent, label, cost };
   }

@@ -653,3 +653,36 @@ ferramenta, desanexação do worker portátil, normalização do concat, guardas
 `generate_episode` (que marca `falhou`), o status pode ficar em `rodando`; o `generation.log`
 por episódio registra o traceback. A confirmação do fluxo completo no Windows real segue
 pendente, mas a causa estrutural do travamento foi removida.
+
+---
+
+## 2026-07-17 — Vigia de worker: geração presa em "iniciando" nunca mais bloqueia
+
+**O que mudou:** no Windows a geração parava em "Iniciando a retomada" e não saía dali — e
+clicar em Gerar de novo (mesmo após apagar a pasta) respondia "geração já em andamento". A
+cadeia do problema: o worker desanexado morria logo ao subir sem tocar o `status.json`; o
+status ficava `rodando/iniciando` para sempre; e o `generate` recusava novas execuções por
+causa desse estado órfão. Três correções, com TDD:
+
+- **Vigia de PID** (`GenerationTracker.reconcile` + `process.pid_alive`): ao consultar o
+  status, um `rodando` cujo PID não existe mais vira `falhou` com orientação para o
+  `generation.log`; um `iniciando` sem PID há mais de 90s idem. O `pid_alive` usa a API do
+  kernel no Windows (`os.kill(pid, 0)` lá TERMINA o processo — nunca usar) e sinal 0 no POSIX.
+  O `_cmd_generate` também usa `reconcile`, então o estado órfão deixa de bloquear regeneração.
+- **UTF-8 forçado no worker** (`PYTHONUTF8=1` + `PYTHONIOENCODING=utf-8`): no Windows o worker
+  herdava cp1252 e o primeiro print com emoji do pipeline podia derrubá-lo — causa provável da
+  morte silenciosa observada.
+- **Guarda no `run-generation`**: falha antes do pipeline (fonte, configuração) agora marca o
+  status como `falhou` em vez de morrer só no log.
+- **Texto honesto**: "Iniciando a retomada" só aparece quando há retomada de fato
+  (`resume_count > 0`); geração nova diz "Iniciando a geração".
+
+**Validação:** 171 testes Python (12 novos: pid_alive vivo/morto/inválido, reconcile em todos
+os estados, UTF-8 do worker, órfão não bloqueia regeneração, falha fora do pipeline) e 14 Node
+verdes; Ruff, compilação, `git diff --check` e `npm audit` aprovados. Smoke real: processo
+morto de verdade reconciliado para `falhou` com checkpoint preservado.
+
+**Risco que sobrou:** reutilização de PID pelo sistema pode, em tese, manter um órfão como
+"rodando" se outro processo nascer com o mesmo PID; a janela é pequena e o custo é apenas
+esperar o usuário abortar. A causa exata da morte do worker naquele Windows será confirmada
+pelo generation.log agora que o erro fica visível.

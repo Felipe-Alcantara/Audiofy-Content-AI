@@ -69,6 +69,29 @@ test("estado de inicialização aparece antes do primeiro segmento", () => {
   assert.doesNotMatch(feedback.cost, /aproximado/i);
 });
 
+test("geração nova não é anunciada como retomada", () => {
+  const fresh = generationFeedback({
+    state: "rodando",
+    stage: "iniciando",
+    progress: { current: 0, total: 0 },
+    resume_count: 0,
+    cost_usd: 0,
+    cost_exact: true,
+  });
+  assert.doesNotMatch(fresh.label, /retomada/i);
+  assert.match(fresh.label, /geração/i);
+
+  const resumed = generationFeedback({
+    state: "rodando",
+    stage: "iniciando",
+    progress: { current: 66, total: 92 },
+    resume_count: 2,
+    cost_usd: 0.8,
+    cost_exact: true,
+  });
+  assert.match(resumed.label, /retomada/i);
+});
+
 test("helper e renderer compartilham a página sem colisão de escopo", () => {
   const rendererDirectory = path.resolve(__dirname, "../renderer");
   const source = ["status-view.js", "renderer.js"]

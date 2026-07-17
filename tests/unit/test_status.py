@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -137,6 +138,68 @@ class GenerationTrackerTest(unittest.TestCase):
             worker.checkpoint()
 
         self.assertEqual(self._read()["state"], "abortado")
+
+
+class ReconcileTest(unittest.TestCase):
+    """Um 'rodando' cujo worker morreu não pode ficar pendurado na interface."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.directory = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _write_status(self, **overrides):
+        import time
+        data = {
+            "episode_id": "ep", "pid": None, "state": "rodando",
+            "stage": "iniciando", "progress": {"current": 0, "total": 0},
+            "cost_usd": 0.0, "cost_exact": True, "started_at": time.time(),
+            "run_started_at": time.time(), "updated_at": time.time(),
+            "resume_count": 0, "retry": None, "last_error": None,
+        }
+        data.update(overrides)
+        (self.directory / "status.json").write_text(
+            json.dumps(data), encoding="utf-8")
+        return data
+
+    def test_worker_morto_vira_falhou(self):
+        with patch("audiofy.runtime.process.pid_alive",
+                                 return_value=False):
+            self._write_status(pid=99999, stage="tts")
+            data = GenerationTracker.reconcile(self.directory)
+        self.assertEqual(data["state"], "falhou")
+        self.assertIn("generation.log", data["last_error"])
+        self.assertEqual(
+            GenerationTracker.load(self.directory)["state"], "falhou")
+
+    def test_worker_vivo_permanece_rodando(self):
+        with patch("audiofy.runtime.process.pid_alive",
+                                 return_value=True):
+            self._write_status(pid=1234, stage="tts")
+            data = GenerationTracker.reconcile(self.directory)
+        self.assertEqual(data["state"], "rodando")
+
+    def test_iniciando_ha_muito_tempo_sem_pid_vira_falhou(self):
+        self._write_status(pid=None, stage="iniciando",
+                           run_started_at=1.0)  # passado distante
+        data = GenerationTracker.reconcile(self.directory)
+        self.assertEqual(data["state"], "falhou")
+        self.assertIn("não iniciou", data["last_error"])
+
+    def test_iniciando_recente_e_tolerado(self):
+        self._write_status(pid=None, stage="iniciando")
+        data = GenerationTracker.reconcile(self.directory)
+        self.assertEqual(data["state"], "rodando")
+
+    def test_estados_finais_nao_sao_tocados(self):
+        self._write_status(state="concluido", pid=99999)
+        data = GenerationTracker.reconcile(self.directory)
+        self.assertEqual(data["state"], "concluido")
+
+    def test_sem_status_retorna_none(self):
+        self.assertIsNone(GenerationTracker.reconcile(self.directory))
 
 
 if __name__ == "__main__":

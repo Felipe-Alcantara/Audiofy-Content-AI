@@ -13,6 +13,7 @@ from audiofy.runtime.process import (  # noqa: E402
     ToolNotFoundError,
     detached_flags,
     launch_detached,
+    pid_alive,
     resolve_tool,
     run_tool,
 )
@@ -73,6 +74,25 @@ class RunToolTest(unittest.TestCase):
             with self.assertRaises(ToolNotFoundError):
                 run_tool("ffmpeg", [], timeout=30)
         run.assert_not_called()
+
+
+class PidAliveTest(unittest.TestCase):
+    def test_processo_atual_esta_vivo(self):
+        import os
+
+        self.assertTrue(pid_alive(os.getpid()))
+
+    def test_pid_inexistente_esta_morto(self):
+        # PIDs muito altos não existem em máquinas normais; se existir, o teste
+        # usa um processo encerrado de verdade para garantir determinismo.
+        dead = subprocess.Popen([sys.executable, "-c", "pass"])
+        dead.wait()
+        self.assertFalse(pid_alive(dead.pid))
+
+    def test_pid_invalido_e_morto_sem_excecao(self):
+        self.assertFalse(pid_alive(0))
+        self.assertFalse(pid_alive(-1))
+        self.assertFalse(pid_alive(None))
 
 
 class LaunchDetachedTest(unittest.TestCase):
