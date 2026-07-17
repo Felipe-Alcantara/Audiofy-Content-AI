@@ -85,18 +85,24 @@ def _cmd_generate(source_key: str, item_id: str, force: bool = False) -> dict:
         return {"started": False, "reason": "geração já em andamento", "dir": str(directory)}
     Settings().require_api_key()
     directory.mkdir(parents=True, exist_ok=True)
+    GenerationTracker.mark_starting(directory, item_id, resume=not force)
     child_args = [
         sys.executable, "-m", "audiofy.bridge", "run-generation", source_key, item_id,
     ]
     if force:
         child_args.append("--force")
-    with (directory / "generation.log").open("a", encoding="utf-8") as log:
-        subprocess.Popen(
-            child_args,
-            cwd=str(Path(__file__).resolve().parents[2]),
-            stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
-            env={**__import__("os").environ, "PYTHONPATH": "src"},
-        )
+    try:
+        with (directory / "generation.log").open("a", encoding="utf-8") as log:
+            subprocess.Popen(
+                child_args,
+                cwd=str(Path(__file__).resolve().parents[2]),
+                stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
+                env={**__import__("os").environ, "PYTHONPATH": "src"},
+            )
+    except OSError as error:
+        detail = f"Não foi possível iniciar o worker de geração: {error}"
+        GenerationTracker.mark_launch_failed(directory, detail)
+        raise RuntimeError(detail) from error
     return {"started": True, "force": force, "dir": str(directory),
             "log": str(directory / "generation.log")}
 

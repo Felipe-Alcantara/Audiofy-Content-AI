@@ -28,7 +28,8 @@ class GenerationTracker:
     def __init__(self, directory: Path, episode_id: str, resume: bool = True) -> None:
         self.directory = directory
         self.directory.mkdir(parents=True, exist_ok=True)
-        previous = (self.load(directory) or {}) if resume else {}
+        launch_status = self.load(directory) or {}
+        previous = launch_status if resume else {}
         now = time.time()
         self._data: dict = {
             "episode_id": episode_id,
@@ -44,20 +45,67 @@ class GenerationTracker:
             "retry": None,
             "last_error": None,
         }
-        # Um início novo limpa pedidos de abort antigos.
-        (self.directory / self.ABORT_FILE).unlink(missing_ok=True)
+        # O launcher já limpou aborts antigos. Um abort pedido enquanto o worker
+        # iniciava precisa sobreviver até o primeiro checkpoint do processo filho.
+        if launch_status.get("stage") != "iniciando":
+            (self.directory / self.ABORT_FILE).unlink(missing_ok=True)
         self._flush()
 
     # ── Escrita ──────────────────────────────────────────────────────────
 
-    def _flush(self) -> None:
-        self._data["updated_at"] = time.time()
-        target = self.directory / self.STATUS_FILE
+    @staticmethod
+    def _write(directory: Path, data: dict) -> None:
+        data["updated_at"] = time.time()
+        target = directory / GenerationTracker.STATUS_FILE
         temporary = target.with_suffix(".json.tmp")
         temporary.write_text(
-            json.dumps(self._data, ensure_ascii=False, indent=2), encoding="utf-8"
+            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         temporary.rename(target)
+
+    def _flush(self) -> None:
+        self._write(self.directory, self._data)
+
+    @classmethod
+    def mark_starting(cls, directory: Path, episode_id: str,
+                      resume: bool = True) -> None:
+        """Publica o início antes de lançar o worker, fechando a janela sem feedback."""
+        directory.mkdir(parents=True, exist_ok=True)
+        previous = (cls.load(directory) or {}) if resume else {}
+        now = time.time()
+        progress = previous.get("progress", {"current": 0, "total": 0})
+        if not isinstance(progress, dict):
+            progress = {"current": 0, "total": 0}
+        data = {
+            "episode_id": episode_id,
+            "pid": None,
+            "state": "rodando",
+            "stage": "iniciando",
+            "progress": {
+                "current": int(progress.get("current", 0) or 0),
+                "total": int(progress.get("total", 0) or 0),
+            },
+            "cost_usd": float(previous.get("cost_usd", 0.0) or 0.0),
+            "started_at": previous.get("started_at", now),
+            "run_started_at": now,
+            "updated_at": now,
+            "resume_count": int(previous.get("resume_count", 0) or 0),
+            "retry": None,
+            "last_error": None,
+        }
+        (directory / cls.ABORT_FILE).unlink(missing_ok=True)
+        cls._write(directory, data)
+
+    @classmethod
+    def mark_launch_failed(cls, directory: Path, error: str) -> None:
+        data = cls.load(directory) or {}
+        data.update({
+            "state": "falhou",
+            "stage": "inicialização",
+            "retry": None,
+            "last_error": str(error)[:300],
+        })
+        cls._write(directory, data)
 
     def stage(self, name: str, total: int = 0, current: int = 0) -> None:
         """Entra em uma nova etapa; `total` > 0 habilita progresso granular."""

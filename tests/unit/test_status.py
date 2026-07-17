@@ -103,6 +103,32 @@ class GenerationTrackerTest(unittest.TestCase):
         self.assertEqual(data["cost_usd"], 0.0)
         self.assertEqual(data["resume_count"], 0)
 
+    def test_marca_inicio_antes_do_worker_preservando_checkpoint(self):
+        self.tracker.stage("tts", total=92)
+        self.tracker.advance(66)
+        self.tracker.add_cost(0.85)
+        self.tracker.finish("falhou", error="erro anterior")
+
+        GenerationTracker.mark_starting(self.directory, "ep-teste")
+        data = self._read()
+
+        self.assertEqual(data["state"], "rodando")
+        self.assertEqual(data["stage"], "iniciando")
+        self.assertEqual(data["progress"], {"current": 66, "total": 92})
+        self.assertEqual(data["cost_usd"], 0.85)
+        self.assertIsNone(data["last_error"])
+
+    def test_abort_pedido_durante_inicializacao_chega_ao_worker(self):
+        self.tracker.finish("falhou")
+        GenerationTracker.mark_starting(self.directory, "ep-teste")
+        GenerationTracker.request_abort(self.directory)
+
+        worker = GenerationTracker(self.directory, "ep-teste")
+        with self.assertRaises(GenerationAborted):
+            worker.checkpoint()
+
+        self.assertEqual(self._read()["state"], "abortado")
+
 
 if __name__ == "__main__":
     unittest.main()

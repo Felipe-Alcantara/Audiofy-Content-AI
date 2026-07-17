@@ -127,14 +127,33 @@ class ForcedGenerationTest(unittest.TestCase):
             settings = Mock()
             with (
                 patch("audiofy.bridge._episode_dir", return_value=directory),
-                patch.object(bridge.GenerationTracker, "load", return_value=None),
                 patch("audiofy.bridge.Settings", return_value=settings),
                 patch("audiofy.bridge.subprocess.Popen") as popen,
             ):
                 result = bridge._cmd_generate("custom", "item", force=True)
+            status = bridge.GenerationTracker.load(directory)
         settings.require_api_key.assert_called_once_with()
         self.assertTrue(result["started"])
         self.assertIn("--force", popen.call_args.args[0])
+        self.assertEqual(status["state"], "rodando")
+        self.assertEqual(status["stage"], "iniciando")
+
+    def test_falha_ao_lancar_worker_fica_visivel_no_status(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / "episode"
+            settings = Mock()
+            with (
+                patch("audiofy.bridge._episode_dir", return_value=directory),
+                patch("audiofy.bridge.Settings", return_value=settings),
+                patch("audiofy.bridge.subprocess.Popen", side_effect=OSError("sem processo")),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "worker"):
+                    bridge._cmd_generate("custom", "item")
+            status = bridge.GenerationTracker.load(directory)
+
+        self.assertEqual(status["state"], "falhou")
+        self.assertEqual(status["stage"], "inicialização")
+        self.assertIn("sem processo", status["last_error"])
 
 
 class EpisodeSummaryTest(unittest.TestCase):

@@ -313,3 +313,29 @@ também foram aprovados.
 **Risco que sobrou:** um erro permanente devolvido incorretamente pelo provedor como `Provider
 returned 400` consumirá as tentativas configuradas antes de parar; chamadas rejeitadas não produzem
 áudio e nenhum segmento existente é sobrescrito.
+
+---
+
+## 2026-07-17 — Feedback persistente para falhas rápidas no Electron
+
+**O que mudou:** o botão de geração funcionava e o worker retomava o episódio, mas uma falha
+permanente muito rápida podia ocorrer entre o retorno da bridge e o primeiro polling. O cartão
+escondia a área de progresso assim que `state` deixava de ser `rodando`, dando a impressão de que o
+clique não fizera nada. A bridge agora grava atomicamente o estado `iniciando` antes de lançar o
+worker; o Electron desabilita e rotula o botão durante a solicitação e mantém estados `falhou` e
+`abortado` visíveis com etapa, checkpoint, custo e ação recomendada.
+
+**Decisões:** mensagens conhecidas do OpenRouter são traduzidas localmente sem renderizar URLs ou
+identificadores devolvidos pelo provedor. Um limite mensal de chave orienta aumentar esse limite ou
+trocar `OPENROUTER_API_KEY/.env`; autenticação e falta de créditos têm mensagens próprias. Erros não
+reconhecidos continuam disponíveis de forma sanitizada. Falha ao criar o processo também passa para
+o `status.json`, evitando estado `iniciando` preso.
+
+**Validação:** 104 testes Python e 7 testes Node verdes. As regressões cobrem publicação antecipada
+do início, preservação do checkpoint, abort durante a inicialização e falha ao lançar o worker.
+Os testes Node cobrem tradução segura do limite mensal e os estados de inicialização/falha. Ruff,
+compilação Python, sintaxe Electron, `git diff --check` e `npm audit` (zero vulnerabilidades)
+também foram aprovados.
+
+**Risco que sobrou:** o saldo geral da conta pode continuar positivo mesmo quando uma chave possui
+um limite mensal próprio; esse limite só é informado pelo provedor quando uma chamada é recusada.

@@ -4,6 +4,7 @@
 
 const $ = (id) => document.getElementById(id);
 const bridge = (args, stdin) => window.audiofy.bridge(args, stdin);
+const { friendlyGenerationError, generationFeedback } = window.audiofyStatusView;
 
 async function openProjectPath(target) {
   const error = await window.audiofy.openPath(target);
@@ -21,6 +22,7 @@ let currentSource = "custom";
 let selectedItem = null;
 let pollTimer = null;
 let sourcesByKey = new Map();
+let generationRequestPending = false;
 
 // ── Abas ──────────────────────────────────────────────────────────────────
 
@@ -282,6 +284,21 @@ $("btn-add-text").onclick = async () => {
 
 // ── Geração, episódios e status ───────────────────────────────────────────
 
+function updateGenerateButton() {
+  const button = $("btn-generate");
+  const running = button.dataset.running === "true";
+  button.disabled = generationRequestPending || running;
+  button.textContent = generationRequestPending ? "⏳ Iniciando…" : "🎙️ Gerar episódio";
+}
+
+function showGenerationRequest(message, tone = "active") {
+  const box = $("progress-box");
+  box.classList.remove("hidden", "active", "error", "warning");
+  box.classList.add(tone);
+  $("progress-label").textContent = message;
+  $("cost-label").textContent = "";
+}
+
 $("btn-generate").onclick = async () => {
   if (!selectedItem) return;
   const force = $("generate-force").checked;
@@ -294,10 +311,23 @@ $("btn-generate").onclick = async () => {
   if (!confirmed) return;
   const args = ["generate", selectedItem.source, selectedItem.item_id];
   if (force) args.push("--force");
-  const result = await bridge(args);
-  if (!result.ok || !result.started) alert(`Não iniciou: ${result.reason || result.error}`);
-  else $("generate-force").checked = false;
-  refreshStatus();
+  generationRequestPending = true;
+  updateGenerateButton();
+  showGenerationRequest("Solicitando a retomada ao backend…");
+  try {
+    const result = await bridge(args);
+    if (!result.ok || !result.started) {
+      const reason = result.reason || result.error || "a geração não foi iniciada";
+      showGenerationRequest(`Não foi possível iniciar: ${reason}`, "error");
+      return;
+    }
+    $("generate-force").checked = false;
+    showGenerationRequest("Geração iniciada; carregando o checkpoint…");
+    await refreshStatus();
+  } finally {
+    generationRequestPending = false;
+    updateGenerateButton();
+  }
 };
 
 $("btn-notebooklm").onclick = async () => {
@@ -348,31 +378,23 @@ function renderSelectedStatus(episodes) {
   const status = episodes.find((e) => e.episode_id === selectedItem.item_id);
   const running = status && status.state === "rodando";
   const done = status && status.mp3;
+  const feedback = generationFeedback(status);
 
   $("btn-abort").classList.toggle("hidden", !running);
-  $("btn-generate").disabled = running;
+  $("btn-generate").dataset.running = String(Boolean(running));
+  updateGenerateButton();
   $("btn-play").classList.toggle("hidden", !done);
   $("btn-folder").classList.toggle("hidden", !status);
-  $("progress-box").classList.toggle("hidden", !running);
+  const box = $("progress-box");
+  box.classList.toggle("hidden", !feedback.visible);
+  box.classList.remove("active", "error", "warning");
+  if (feedback.tone) box.classList.add(feedback.tone);
 
-  if (running) {
-    const progress = status.progress || {};
-    const percent = progress.total
-      ? Math.round((100 * progress.current) / progress.total) : 0;
-    $("progress-fill").style.width = `${percent}%`;
-    $("progress-track").setAttribute("aria-valuenow", String(percent));
-    $("progress-label").textContent =
-      `Etapa: ${status.stage} — ${progress.current || 0}/${progress.total || "?"} (${percent}%)` +
-      (status.retry
-        ? ` · retomando fala ${status.retry.segment}, tentativa ` +
-          `${status.retry.attempt}/${status.retry.max_attempts}`
-        : "");
-    $("cost-label").textContent = `💰 US$ ${status.cost_usd.toFixed(4)} até agora`;
-  } else {
-    $("progress-fill").style.width = "0%";
-    $("progress-track").setAttribute("aria-valuenow", "0");
-  }
-  $("btn-play").onclick = () => openProjectPath(status.mp3);
+  $("progress-fill").style.width = `${feedback.percent}%`;
+  $("progress-track").setAttribute("aria-valuenow", String(feedback.percent));
+  $("progress-label").textContent = feedback.label;
+  $("cost-label").textContent = feedback.cost;
+  $("btn-play").onclick = () => status && status.mp3 && openProjectPath(status.mp3);
   $("btn-folder").onclick = () => status && openProjectPath(status.dir);
 }
 
@@ -390,6 +412,9 @@ function renderEpisodes(episodes) {
     row.appendChild(makeElement("span", `state-${episode.state}`, "●"));
     row.appendChild(makeElement("span", "episode-title", episode.episode_id));
     row.appendChild(makeElement("span", "muted", `${episode.state}${progress}${retry}${cost}`));
+    if (episode.state === "falhou" && episode.last_error) {
+      row.title = friendlyGenerationError(episode.last_error);
+    }
     if (episode.state === "rodando") {
       const abortButton = document.createElement("button");
       abortButton.textContent = "🛑";

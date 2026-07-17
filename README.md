@@ -121,6 +121,9 @@ e mostra o perfil, o provedor/modelo efetivo das etapas de texto e o modelo TTS 
 uma variável `AUDIOFY_*` está sobrescrevendo o perfil ativo. Para o Codex, o modelo global definido
 em `~/.codex/config.toml` também é identificado (somente esse campo é lido). A interface reorganiza
 navegação, cartões e formulários ao redimensionar a janela até sua largura mínima de 360 px.
+O cartão do conteúdo confirma imediatamente o início da geração e mantém falhas rápidas visíveis
+com etapa, checkpoint, custo e orientação segura — por exemplo, limite mensal ou chave recusada —
+em vez de parecer que o botão não respondeu.
 O app fala com o backend pela bridge JSON
 (`python3 -m audiofy.bridge`), a mesma interface disponível para qualquer automação.
 

@@ -98,7 +98,7 @@
           <input id="generate-force" type="checkbox" />
           Regenerar cobertura, roteiro e auditoria
         </label>
-        <div id="progress-box" class="hidden">
+        <div id="progress-box" class="generation-status hidden" role="status" aria-live="polite">
           <div class="progress-track" id="progress-track" role="progressbar"
             aria-label="Progresso da geração" aria-valuemin="0" aria-valuemax="100"
             aria-valuenow="0"><div id="progress-fill"></div></div>
@@ -213,6 +213,7 @@
     </div>
   </main>
 
+  <script src="status-view.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

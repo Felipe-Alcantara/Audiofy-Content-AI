@@ -268,6 +268,22 @@ ul { list-style: none; }
 .check-option { display: inline-flex; align-items: center; gap: 9px; color: var(--muted); cursor: pointer; }
 .check-option input { width: 16px; min-height: 16px; accent-color: var(--accent); }
 
+.generation-status {
+  margin-top: 14px;
+  padding: 13px;
+  background: rgba(24, 24, 27, 0.72);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+.generation-status.active { border-color: rgba(250, 204, 21, 0.42); }
+.generation-status.error {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(248, 113, 113, 0.48);
+}
+.generation-status.warning { border-color: rgba(251, 146, 60, 0.45); }
+.generation-status.error #progress-label { color: #fca5a5; }
+.generation-status.error .cost { color: #fda4af; }
+
 .progress-track {
   height: 10px;
   overflow: hidden;
