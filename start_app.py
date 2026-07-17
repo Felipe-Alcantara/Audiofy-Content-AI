@@ -628,21 +628,53 @@ def do_catalog() -> None:
     print(f"\n{DIM}Exemplo: AUDIOFY_PRESENTERS=\"ana:Kore:animada, beto:Puck:cético\"{RESET}")
 
 
+def _npm_command() -> list[str] | None:
+    """Comando npm executável sem shell.
+
+    No Windows o npm é um script ``npm.cmd``, que só roda de forma confiável através
+    do ``cmd.exe`` — e falha com "arquivo não encontrado" em caminhos com espaços ou
+    acentos. Chamar o ``node.exe`` (executável real) com o ``npm-cli.js`` evita o shell.
+    """
+    npm = shutil.which("npm")
+    if not npm:
+        return None
+    if sys.platform == "win32":
+        node = shutil.which("node")
+        if node:
+            npm_cli = Path(node).parent / "node_modules" / "npm" / "bin" / "npm-cli.js"
+            if npm_cli.is_file():
+                return [node, str(npm_cli)]
+    return [npm]
+
+
+def _electron_executable(electron_dir: Path) -> Path | None:
+    """Binário real do Electron instalado — dispensa o ``npm start`` (e o cmd.exe)."""
+    package = electron_dir / "node_modules" / "electron"
+    path_txt = package / "path.txt"
+    if path_txt.is_file():
+        candidate = package / "dist" / path_txt.read_text(encoding="utf-8").strip()
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def do_desktop() -> None:
     """Abre a interface Electron (instala as dependências na primeira vez)."""
     electron_dir = PROJECT_ROOT / "electron"
-    # Caminho completo: no Windows o npm é ``npm.cmd`` e o Popen não resolve
-    # o nome sem extensão (o CreateProcess não consulta o PATHEXT).
-    npm = shutil.which("npm")
+    npm = _npm_command()
     if not npm:
         _fail("npm não encontrado — instale Node.js para usar o app desktop.")
         return
     if not (electron_dir / "node_modules" / "electron").is_dir():
         print(f"{CYAN}Instalando dependências do app (primeira vez)…{RESET}")
-        result = subprocess.run(
-            [npm, "install", "--no-fund", "--no-audit"], cwd=electron_dir,
-            capture_output=True, text=True,
-        )
+        try:
+            result = subprocess.run(
+                [*npm, "install", "--no-fund", "--no-audit"], cwd=electron_dir,
+                capture_output=True, text=True,
+            )
+        except OSError as error:
+            _fail(f"Não foi possível executar o npm ({npm[0]}): {error}")
+            return
         if result.returncode != 0:
             _fail(f"Falha ao instalar o Electron: {(result.stderr or result.stdout)[-300:]}")
             return
@@ -653,8 +685,10 @@ def do_desktop() -> None:
         {"creationflags": subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP}
         if sys.platform == "win32" else {"start_new_session": True}
     )
+    electron = _electron_executable(electron_dir)
+    command = [str(electron), "."] if electron else [*npm, "start"]
     try:
-        subprocess.Popen([npm, "start"], cwd=electron_dir, env=environment,
+        subprocess.Popen(command, cwd=electron_dir, env=environment,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **detach)
     except OSError as error:
         _fail(f"Não foi possível iniciar o app desktop: {error}")

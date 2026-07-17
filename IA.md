@@ -478,3 +478,29 @@ a abertura real numa máquina Windows.
 
 **Risco que sobrou:** se o npm não estiver no PATH do Windows (Node instalado sem reiniciar o
 terminal), o menu reporta "npm não encontrado" — a correção não cobre PATH desatualizado.
+
+---
+
+## 2026-07-17 — Lançamento do desktop sem depender do npm.cmd
+
+**O que mudou:** mesmo com o caminho completo do npm, o Windows respondeu
+"[WinError 2] O sistema não pode encontrar o arquivo": scripts `.cmd` só executam de forma
+confiável através do `cmd.exe`, e o atalho implícito falha em caminhos com espaços ou acentos
+(caso da pasta deste projeto). O lançamento deixou de depender do `npm.cmd`: no Windows, o
+`npm install` roda pelo `node.exe` chamando o `npm-cli.js` (executável real, sem shell), e a
+abertura do app usa o binário do Electron apontado por `node_modules/electron/path.txt`,
+com `npm start` apenas como fallback quando o binário não é encontrado. A instalação também
+ganhou tratamento de `OSError` com mensagem orientada em vez de erro cru.
+
+**Decisões:** evitar o shell é mais robusto do que envolver o `cmd.exe` explicitamente, cuja
+citação de argumentos com aspas é notoriamente frágil; o fallback preserva o comportamento
+anterior em plataformas onde o npm é um executável normal.
+
+**Validação:** 136 testes Python (6 novos: resolução do npm via node no Windows, preferência
+pelo binário real do Electron, fallback e leitura do `path.txt`) e 13 verificações Node verdes;
+Ruff, compilação, `git diff --check` e `npm audit` (zero vulnerabilidades) aprovados. Smoke
+local confirmou a resolução do npm real; a abertura no Windows segue pendente de confirmação.
+
+**Risco que sobrou:** instalações de Node que não colocam o `npm-cli.js` ao lado do `node.exe`
+caem no fallback do `npm.cmd`, que pode repetir o erro original; nesse caso a mensagem agora
+identifica o comando que falhou.
