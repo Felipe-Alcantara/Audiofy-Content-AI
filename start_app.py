@@ -84,20 +84,129 @@ def do_setup() -> None:
         _warn("Arquivo .env existe, mas OPENROUTER_API_KEY está vazia.")
 
 
-def do_configure() -> None:
-    """Grava a chave do OpenRouter no .env de forma interativa."""
-    env_path = PROJECT_ROOT / ".env"
-    if not env_path.is_file():
-        shutil.copy(PROJECT_ROOT / ".env.example", env_path)
-    key = input("Cole sua OPENROUTER_API_KEY (Enter para manter a atual): ").strip()
-    if not key:
-        print("Nada alterado.")
-        return
-    lines = [line for line in env_path.read_text(encoding="utf-8").splitlines()
-             if not line.startswith("OPENROUTER_API_KEY=")]
-    lines.insert(0, f"OPENROUTER_API_KEY={key}")
-    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    _ok("Chave gravada no .env (arquivo ignorado pelo Git).")
+def do_keys() -> None:
+    """Cofre de chaves nomeadas: listar, adicionar, ativar, remover, checar saldo."""
+    from audiofy.config import key_store
+    store = key_store()
+    while True:
+        print(f"\n{BOLD}Chaves do OpenRouter{RESET} "
+              f"{DIM}(.audiofy/keys.json, permissão 0600, fora do Git){RESET}")
+        keys = store.list_keys()
+        if not keys:
+            _warn("Nenhuma chave no cofre.")
+        for named in keys:
+            marker = f"{GREEN}● ativa{RESET}" if named.name == store.active_name() else " "
+            print(f"  {named.name:<20} {DIM}{named.masked}{RESET} {marker}")
+        if __import__("os").environ.get("OPENROUTER_API_KEY"):
+            _warn("OPENROUTER_API_KEY definida no ambiente/.env — ela tem prioridade "
+                  "sobre o cofre.")
+        print(f"\n  {BOLD}a{RESET} adicionar  {BOLD}t{RESET} trocar ativa  "
+              f"{BOLD}r{RESET} remover  {BOLD}s{RESET} saldo/checar  {BOLD}0{RESET} voltar")
+        choice = input(f"{BOLD}Opção:{RESET} ").strip().lower()
+        if choice == "a":
+            name = input("Nome da chave (ex.: pessoal): ").strip()
+            key = input("Cole a chave (sk-or-…): ").strip()
+            try:
+                store.add(name, key)
+                _ok(f"Chave '{name}' guardada.")
+            except ValueError as error:
+                _fail(str(error))
+        elif choice == "t":
+            name = input("Nome da chave a ativar: ").strip()
+            try:
+                store.set_active(name)
+                _ok(f"'{name}' agora é a chave ativa.")
+            except LookupError as error:
+                _fail(str(error))
+        elif choice == "r":
+            store.remove(input("Nome da chave a remover: ").strip())
+            _ok("Removida (se existia).")
+        elif choice == "s":
+            from audiofy.providers.openrouter import check_api_key
+            ok, detail = check_api_key(Settings())
+            _ok(detail) if ok else _fail(detail)
+        elif choice in ("0", "q", ""):
+            return
+
+
+def _pick_model(settings: Settings, label: str, current: str,
+                modality: str | None = None) -> str:
+    """Escolha em dois passos (empresa → modelo, com preço), padrão Openia."""
+    from audiofy.catalog import load_models, models_of, vendors
+    try:
+        models = load_models(settings)
+    except Exception as error:  # noqa: BLE001 — sem catálogo, mantém o atual
+        _warn(f"Não consegui carregar o catálogo ({error}); mantendo {current}.")
+        return current
+    companies = vendors(models)
+    print(f"\n{BOLD}{label}{RESET} {DIM}(atual: {current}; Enter mantém){RESET}")
+    print("  " + ", ".join(companies))
+    vendor = input("Empresa: ").strip().lower()
+    if not vendor:
+        return current
+    options = models_of(models, vendor, modality)
+    if not options:
+        _warn("Nenhum modelo dessa empresa (para essa modalidade).")
+        return current
+    for index, model in enumerate(options, 1):
+        print(f"  {index:3d}. {model.id:<48} {DIM}{model.price_line}{RESET}")
+    choice = input("Número do modelo (Enter mantém): ").strip()
+    if choice.isdigit() and 1 <= int(choice) <= len(options):
+        return options[int(choice) - 1].id
+    return current
+
+
+def do_profiles() -> None:
+    """Perfis nomeados: modelos + apresentadores, com troca e criação."""
+    from audiofy.config import profile_store
+    from audiofy.profiles import Profile
+    store = profile_store()
+    while True:
+        print(f"\n{BOLD}Perfis de geração{RESET} {DIM}(env AUDIOFY_* tem prioridade){RESET}")
+        for profile in store.list_profiles():
+            marker = f"{GREEN}● ativo{RESET}" if profile.name == store.active().name else " "
+            print(f"  {profile.name:<16} {marker}  {DIM}{profile.description}{RESET}")
+            print(f"    {DIM}roteiro={profile.text_model} | auditoria={profile.audit_model}"
+                  f" | tts={profile.tts_model}{RESET}")
+            print(f"    {DIM}apresentadores: {profile.presenters_spec}{RESET}")
+        print(f"\n  {BOLD}t{RESET} trocar ativo  {BOLD}n{RESET} novo perfil  "
+              f"{BOLD}r{RESET} remover  {BOLD}0{RESET} voltar")
+        choice = input(f"{BOLD}Opção:{RESET} ").strip().lower()
+        if choice == "t":
+            try:
+                store.set_active(input("Nome do perfil: ").strip())
+                _ok(f"Perfil ativo: {store.active().name}")
+            except LookupError as error:
+                _fail(str(error))
+        elif choice == "n":
+            name = input("Nome do novo perfil: ").strip()
+            if not name:
+                continue
+            base = store.active()
+            settings = Settings()
+            text_model = _pick_model(settings, "Modelo do roteiro", base.text_model)
+            audit_model = _pick_model(settings, "Modelo da auditoria", base.audit_model)
+            tts_model = _pick_model(settings, "Modelo TTS", base.tts_model, modality="audio")
+            spec = input(f"Apresentadores [{base.presenters_spec}]: ").strip() \
+                or base.presenters_spec
+            try:
+                from audiofy.presenters import parse_presenters
+                parse_presenters(spec)  # valida antes de salvar
+                description = input("Descrição curta: ").strip()
+                store.save(Profile(name, text_model, audit_model, tts_model,
+                                   spec, description))
+                store.set_active(name)
+                _ok(f"Perfil '{name}' criado e ativado.")
+            except ValueError as error:
+                _fail(str(error))
+        elif choice == "r":
+            try:
+                store.remove(input("Nome do perfil a remover: ").strip())
+                _ok("Removido.")
+            except ValueError as error:
+                _fail(str(error))
+        elif choice in ("0", "q", ""):
+            return
 
 
 def _running_generations() -> list[dict]:
@@ -114,7 +223,13 @@ def _running_generations() -> list[dict]:
 def do_status() -> None:
     print(f"\n{BOLD}Status do Audiofy{RESET}")
     settings = Settings()
-    _ok("Chave configurada") if settings.api_key else _warn("OPENROUTER_API_KEY ausente")
+    from audiofy.config import key_store
+    if settings.api_key:
+        active_name = key_store().active_name() or "via ambiente/.env"
+        _ok(f"Chave configurada ({active_name})")
+    else:
+        _warn("Nenhuma chave configurada (menu Chaves & saldo)")
+    print(f"  {DIM}Perfil ativo: {settings.profile_name}{RESET}")
     source = get_source(SOURCE_KEY)
     if source.is_ready():
         _ok(f"Fonte '{source.name}' sincronizada ({len(source.list_items())} itens)")
@@ -348,46 +463,49 @@ def menu() -> None:
 ║              🎙️  Audiofy Content AI                        ║
 ╚══════════════════════════════════════════════════════════╝{RESET}{alert}
   {BOLD}1{RESET} — 🛠️  Instalar / Setup     {DIM}dependências, akita-articles, .env{RESET}
-  {BOLD}2{RESET} — 🔑 Configurar chave      {DIM}grava a OPENROUTER_API_KEY{RESET}
-  {BOLD}3{RESET} — 🔄 Sincronizar fonte     {DIM}atualiza os artigos do Akita{RESET}
-  {BOLD}4{RESET} — 📚 Listar itens          {DIM}digite o número para gerar direto{RESET}
-  {BOLD}5{RESET} — 🔍 Buscar                {DIM}por título, slug ou tag{RESET}
-  {BOLD}6{RESET} — 🎙️  Gerar episódio       {DIM}ao vivo, com barra e custo em US${RESET}
-  {BOLD}7{RESET} — 🚀 Gerar em 2º plano     {DIM}libera o terminal; watch acompanha{RESET}
-  {BOLD}8{RESET} — 👀 Acompanhar geração    {DIM}progresso e custo ao vivo{RESET}
-  {BOLD}9{RESET} — 🛑 Abortar geração       {DIM}para no próximo segmento{RESET}
- {BOLD}10{RESET} — 🎛️  Catálogo TTS/vozes   {DIM}modelos e vozes para configurar{RESET}
- {BOLD}11{RESET} — 📊 Status                {DIM}mostra o que está gastando créditos{RESET}
- {BOLD}12{RESET} — 🖥️  Abrir app desktop    {DIM}interface Electron (npm start){RESET}
+  {BOLD}2{RESET} — 🔑 Chaves & saldo        {DIM}chaves nomeadas, ativa, saldo em US${RESET}
+  {BOLD}3{RESET} — 👤 Perfis & modelos      {DIM}presets de modelos e apresentadores{RESET}
+  {BOLD}4{RESET} — 🔄 Sincronizar fonte     {DIM}atualiza os artigos do Akita{RESET}
+  {BOLD}5{RESET} — 📚 Listar itens          {DIM}digite o número para gerar direto{RESET}
+  {BOLD}6{RESET} — 🔍 Buscar                {DIM}por título, slug ou tag{RESET}
+  {BOLD}7{RESET} — 🎙️  Gerar episódio       {DIM}ao vivo, com barra e custo em US${RESET}
+  {BOLD}8{RESET} — 🚀 Gerar em 2º plano     {DIM}libera o terminal; watch acompanha{RESET}
+  {BOLD}9{RESET} — 👀 Acompanhar geração    {DIM}progresso e custo ao vivo{RESET}
+ {BOLD}10{RESET} — 🛑 Abortar geração       {DIM}para no próximo segmento{RESET}
+ {BOLD}11{RESET} — 🎛️  Catálogo TTS/vozes   {DIM}modelos e vozes para configurar{RESET}
+ {BOLD}12{RESET} — 📊 Status                {DIM}mostra o que está gastando créditos{RESET}
+ {BOLD}13{RESET} — 🖥️  Abrir app desktop    {DIM}interface Electron (npm start){RESET}
   {BOLD}0{RESET} — 🚪 Sair
 """)
         choice = input(f"{BOLD}Opção:{RESET} ").strip()
         if choice == "1":
             do_setup()
         elif choice == "2":
-            do_configure()
+            do_keys()
         elif choice == "3":
-            do_sync()
+            do_profiles()
         elif choice == "4":
-            do_list()
+            do_sync()
         elif choice == "5":
+            do_list()
+        elif choice == "6":
             if query := input("Buscar por: ").strip():
                 do_search(query)
-        elif choice in ("6", "7"):
+        elif choice in ("7", "8"):
             selector = input("Número da listagem ou id do item: ").strip()
             if selector:
-                do_generate(selector, background=choice == "7")
-        elif choice == "8":
-            if selector := input("Id do item (ou número): ").strip():
-                do_watch(selector)
+                do_generate(selector, background=choice == "8")
         elif choice == "9":
             if selector := input("Id do item (ou número): ").strip():
-                do_abort(selector)
+                do_watch(selector)
         elif choice == "10":
-            do_catalog()
+            if selector := input("Id do item (ou número): ").strip():
+                do_abort(selector)
         elif choice == "11":
-            do_status()
+            do_catalog()
         elif choice == "12":
+            do_status()
+        elif choice == "13":
             do_desktop()
         elif choice in ("0", "q"):
             if _running_generations():
@@ -402,7 +520,8 @@ def main() -> None:
     sys.stdout.reconfigure(line_buffering=True)
     args = sys.argv[1:]
     simple = {"list": do_list, "sync": do_sync, "status": do_status,
-              "setup": do_setup, "catalog": do_catalog}
+              "setup": do_setup, "catalog": do_catalog,
+              "keys": do_keys, "profiles": do_profiles}
     if not args:
         try:
             menu()

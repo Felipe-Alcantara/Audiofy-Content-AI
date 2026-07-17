@@ -1,7 +1,8 @@
 Padrão de qualidade - Felixo System Design/
 
-# Segredos
+# Segredos e estado local (chaves, perfis, caches)
 .env
+.audiofy/
 
 # Python
 __pycache__/

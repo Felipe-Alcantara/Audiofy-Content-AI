@@ -145,6 +145,35 @@ def account_usage_usd(settings: Settings) -> float:
     return float(body.get("data", {}).get("total_usage", 0.0) or 0.0)
 
 
+@dataclass(frozen=True)
+class AccountBalance:
+    total_credits: float
+    total_usage: float
+
+    @property
+    def remaining(self) -> float:
+        return self.total_credits - self.total_usage
+
+
+def account_balance(settings: Settings) -> AccountBalance:
+    """Créditos comprados, uso acumulado e saldo restante da chave ativa."""
+    data = _request(settings, "GET", "/credits").json().get("data", {})
+    return AccountBalance(
+        total_credits=float(data.get("total_credits", 0.0) or 0.0),
+        total_usage=float(data.get("total_usage", 0.0) or 0.0),
+    )
+
+
+def check_api_key(settings: Settings) -> tuple[bool, str]:
+    """Valida a chave contra a API; retorna (ok, motivo/resumo)."""
+    try:
+        balance = account_balance(settings)
+        return True, (f"chave válida — saldo US$ {balance.remaining:.2f} "
+                      f"(uso acumulado US$ {balance.total_usage:.2f})")
+    except (OpenRouterError, RuntimeError) as error:
+        return False, str(error)
+
+
 def list_tts_models(settings: Settings) -> list[dict[str, str]]:
     """Modelos com saída de áudio disponíveis no catálogo do OpenRouter."""
     body = _request(settings, "GET", "/models?output_modalities=audio").json()

@@ -112,3 +112,33 @@ passa a ser versionado; apenas o clone da fonte (`data/source/`) fica fora.
 chave; o app Electron ainda não foi testado visualmente de ponta a ponta (a bridge que o
 alimenta foi). Roadmap registrado no README: módulo de chat estilo Openia, modo NotebookLM
 barato, planejamento editorial em lote, STT final.
+
+---
+
+## 2026-07-17 — Chaves nomeadas, saldo, perfis e seletor de modelos (padrões do Openia)
+
+**O que mudou:** portadas as features de gestão do Openia que faltavam:
+
+- **Keystore** (`keystore.py` + menu "Chaves & saldo"): chaves nomeadas com uma ativa,
+  validação de formato (`sk-or-`), armazenamento em `.audiofy/keys.json` com `0600`,
+  prioridade da env var/.env, máscara na exibição; checagem de chave e saldo/uso via
+  `/credits` (`account_balance`, `check_api_key`).
+- **Perfis** (`profiles.py` + menu "Perfis & modelos"): presets nomeados de modelos +
+  apresentadores; embutidos `padrao`, `economico`, `narrador-unico`; customizados persistidos
+  sem segredos; ativo trocável; `Settings` resolve env > perfil > padrão.
+- **Seletor de modelos** (`catalog.py`): catálogo `/models` com cache de 24h em
+  `.audiofy/models-cache.json`, navegação empresa → modelo com preço por milhão de tokens,
+  filtro por modalidade (áudio para TTS).
+- `.audiofy/` entrou no .gitignore; o antigo "Configurar chave" (que gravava no .env) foi
+  substituído pelo cofre — o .env segue suportado como override.
+
+**Sobre "assinatura":** no Openia, assinatura refere-se a rodar CLIs sob a assinatura do
+provedor (ex.: Claude Code com plano Anthropic) em vez de chave de API. No Audiofy a geração é
+via API do OpenRouter, onde esse conceito não se aplica diretamente; o equivalente barato/manual
+é o modo NotebookLM, que segue no roadmap.
+
+**Validação:** 35 testes verdes (17 novos de keystore/perfis); saldo checado ao vivo contra a
+conta real (US$ 5,01 restantes / US$ 18,99 usados em 17/07/2026); menu smoke-testado.
+
+**Risco que sobrou:** o parse do catálogo assume `pricing.prompt/completion` por token; se o
+OpenRouter mudar o esquema de preços, o seletor mostra valores errados (a geração não é afetada).

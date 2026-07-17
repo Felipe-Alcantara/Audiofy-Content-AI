@@ -61,7 +61,8 @@ O menu interativo é a porta de entrada única:
 | Opção | O que faz |
 |---|---|
 | Instalar / Setup | verifica dependências, instala o módulo akita-articles, cria o `.env` |
-| Configurar chave | grava a `OPENROUTER_API_KEY` |
+| Chaves & saldo | chaves **nomeadas** (pessoal, trabalho…), chave ativa, saldo/uso em US$ |
+| Perfis & modelos | presets de modelos + apresentadores; escolha empresa → modelo com preço |
 | Sincronizar fonte | baixa/atualiza os artigos |
 | Listar / Buscar | catálogo com busca por título, slug ou tag |
 | Gerar episódio | ao vivo, com barra de progresso e custo em US$ |
@@ -100,6 +101,20 @@ e devolve `ContentItem`s com texto e atribuição. O registro em `src/audiofy/so
 | Fonte | Módulo | Estado |
 |---|---|---|
 | Akita on Rails | [akita-articles](https://github.com/Felipe-Alcantara/akita-articles) | ✅ funcional |
+
+## 🔑 Chaves, perfis e modelos
+
+Padrões portados do [Openia](https://github.com/Felipe-Alcantara/Openia):
+
+- **Chaves nomeadas** — várias chaves do OpenRouter ("pessoal", "trabalho"…), uma ativa,
+  guardadas em `.audiofy/keys.json` com permissão `0600` e fora do Git. A variável
+  `OPENROUTER_API_KEY` (inclusive via `.env`) tem prioridade, para CI/sessões temporárias.
+  O menu mostra o **saldo e o uso em US$** da chave ativa.
+- **Perfis** — presets nomeados de modelos + apresentadores. Embutidos: `padrao` (qualidade),
+  `economico` (tudo no modelo barato) e `narrador-unico` (audiolivro). Crie os seus pelo menu;
+  variáveis `AUDIOFY_*` continuam tendo prioridade sobre o perfil ativo.
+- **Escolha de modelo em dois passos** — empresa → modelo, com preço por milhão de tokens em
+  cada linha, vindo da API ao vivo com cache local de 24h.
 
 ## 🎛️ Apresentadores e vozes
 

@@ -1,6 +1,9 @@
-"""Configuração central do Audiofy: env, caminhos, modelos e apresentadores.
+"""Configuração central do Audiofy: env, caminhos, perfis, chaves e apresentadores.
 
-Modelos, vozes e apresentadores são configuração, não regra de negócio.
+Resolução de configuração (maior prioridade primeiro):
+1. variáveis de ambiente `AUDIOFY_*` / `OPENROUTER_API_KEY` (inclusive via .env);
+2. perfil ativo (`.audiofy/profiles.json`) e cofre de chaves (`.audiofy/keys.json`);
+3. padrões embutidos.
 """
 
 from __future__ import annotations
@@ -9,11 +12,14 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .keystore import KeyStore
 from .presenters import Presenter, parse_presenters
+from .profiles import ProfileStore
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
 EPISODES_DIR = DATA_DIR / "episodes"
+STATE_DIR = PROJECT_ROOT / ".audiofy"  # chaves, perfis e caches locais (gitignored)
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
@@ -39,34 +45,57 @@ _load_dotenv(PROJECT_ROOT / ".env")
 os.environ.setdefault("AKITA_ARTICLES_HOME", str(DATA_DIR / "source"))
 
 
+def key_store() -> KeyStore:
+    return KeyStore(STATE_DIR / "keys.json")
+
+
+def profile_store() -> ProfileStore:
+    return ProfileStore(STATE_DIR / "profiles.json")
+
+
+def _resolved(env_name: str, profile_value: str) -> str:
+    return os.environ.get(env_name) or profile_value
+
+
+def _default_settings() -> dict:
+    profile = profile_store().active()
+    return {
+        "api_key": key_store().resolve() or "",
+        "profile_name": profile.name,
+        "text_model": _resolved("AUDIOFY_TEXT_MODEL", profile.text_model),
+        "audit_model": _resolved("AUDIOFY_AUDIT_MODEL", profile.audit_model),
+        "tts_model": _resolved("AUDIOFY_TTS_MODEL", profile.tts_model),
+        "presenters": parse_presenters(
+            os.environ.get("AUDIOFY_PRESENTERS") or profile.presenters_spec
+        ),
+    }
+
+
 @dataclass
 class Settings:
-    api_key: str = field(default_factory=lambda: os.environ.get("OPENROUTER_API_KEY", ""))
-    text_model: str = field(
-        default_factory=lambda: os.environ.get("AUDIOFY_TEXT_MODEL", "google/gemini-2.5-pro")
-    )
-    audit_model: str = field(
-        default_factory=lambda: os.environ.get("AUDIOFY_AUDIT_MODEL", "google/gemini-2.5-flash")
-    )
-    tts_model: str = field(
-        default_factory=lambda: os.environ.get(
-            "AUDIOFY_TTS_MODEL", "google/gemini-3.1-flash-tts-preview"
-        )
-    )
+    api_key: str = ""
+    profile_name: str = "padrao"
+    text_model: str = ""
+    audit_model: str = ""
+    tts_model: str = ""
+    presenters: list[Presenter] = field(default_factory=list)
     # O Gemini TTS via OpenRouter só aceita "pcm" (cru, 16-bit mono); o pipeline
     # embrulha em WAV. Modelos que suportem "mp3"/"wav" podem trocar via env.
     tts_format: str = field(default_factory=lambda: os.environ.get("AUDIOFY_TTS_FORMAT", "pcm"))
     tts_sample_rate: int = field(
         default_factory=lambda: int(os.environ.get("AUDIOFY_TTS_SAMPLE_RATE", "24000"))
     )
-    presenters: list[Presenter] = field(
-        default_factory=lambda: parse_presenters(os.environ.get("AUDIOFY_PRESENTERS", ""))
-    )
+
+    def __post_init__(self) -> None:
+        defaults = _default_settings()
+        for name, value in defaults.items():
+            if not getattr(self, name):
+                setattr(self, name, value)
 
     def require_api_key(self) -> str:
         if not self.api_key:
             raise RuntimeError(
-                "OPENROUTER_API_KEY não definida. Crie um arquivo .env na raiz do projeto "
-                "(veja .env.example) ou exporte a variável no terminal."
+                "Nenhuma chave do OpenRouter configurada. Use o menu 'Chaves & saldo' "
+                "(fica em .audiofy/keys.json, fora do Git) ou defina OPENROUTER_API_KEY."
             )
         return self.api_key
