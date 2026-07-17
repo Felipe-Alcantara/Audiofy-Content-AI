@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass, field
+import json
+from copy import copy
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from .keystore import KeyStore
@@ -78,7 +80,8 @@ def _load_dotenv(path: Path) -> frozenset[str]:
 DOTENV_LOADED_KEYS = _load_dotenv(PROJECT_ROOT / ".env")
 
 
-def desktop_environment(dotenv_path: Path | None = None) -> dict[str, str]:
+def desktop_environment(dotenv_path: Path | None = None,
+                        *, prefer_dotenv: bool = False) -> dict[str, str]:
     """Prepara o Electron com valores atuais e a origem segura das chaves do .env.
 
     O processo principal pode durar horas. A marca de procedência permite que ele remova
@@ -88,12 +91,21 @@ def desktop_environment(dotenv_path: Path | None = None) -> dict[str, str]:
     path = dotenv_path or PROJECT_ROOT / ".env"
     values = _dotenv_values(path)
     environment = dict(os.environ)
-    for key in DOTENV_LOADED_KEYS:
-        if key in values:
-            environment[key] = values[key]
-        else:
-            environment.pop(key, None)
-    environment[DOTENV_PROVENANCE_ENV] = ",".join(sorted(DOTENV_LOADED_KEYS))
+    if prefer_dotenv:
+        # O processo do menu pode ter herdado uma chave antiga exportada no shell.
+        # O Electron inicia com a configuração visível no .env atual; a prioridade
+        # shell continua valendo para a CLI e para o uso direto da API.
+        for key, value in values.items():
+            environment[key] = value
+        provenance = set(values)
+    else:
+        for key in DOTENV_LOADED_KEYS:
+            if key in values:
+                environment[key] = values[key]
+            else:
+                environment.pop(key, None)
+        provenance = set(DOTENV_LOADED_KEYS)
+    environment[DOTENV_PROVENANCE_ENV] = ",".join(sorted(provenance))
     return environment
 
 
@@ -104,6 +116,38 @@ def api_key_source() -> str | None:
     if "OPENROUTER_API_KEY" in DOTENV_LOADED_KEYS:
         return ".env"
     return "ambiente"
+
+
+def api_key_candidates(settings: "Settings") -> list[tuple[str, "Settings"]]:
+    """Retorna a configuração atual e alternativas sem expor os segredos.
+
+    A alternativa do `.env` é importante quando o processo pai herdou uma chave
+    antiga do shell; o cofre cobre as demais chaves nomeadas cadastradas no app.
+    """
+    candidates: list[tuple[str, Settings]] = []
+    seen: set[str] = set()
+
+    def add(label: str, key: str | None) -> None:
+        if not key or key in seen:
+            return
+        seen.add(key)
+        try:
+            candidate = replace(settings, api_key=key)
+        except TypeError:
+            # Test doubles e integrações antigas podem não ser dataclasses.
+            candidate = copy(settings)
+            if hasattr(candidate, "api_key"):
+                candidate.api_key = key
+        candidates.append((label, candidate))
+
+    add("chave atual", getattr(settings, "api_key", None))
+    add(".env", _dotenv_values(PROJECT_ROOT / ".env").get("OPENROUTER_API_KEY"))
+    try:
+        for named in key_store().list_keys():
+            add(named.name, named.key)
+    except (OSError, ValueError, json.JSONDecodeError):
+        pass
+    return candidates
 
 # O clone do blog do Akita continua em data/source/ (compartilhado com o módulo
 # akita-articles via variável de ambiente própria dele).

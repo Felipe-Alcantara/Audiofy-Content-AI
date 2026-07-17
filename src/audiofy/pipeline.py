@@ -15,9 +15,10 @@ import sys
 import time
 import wave
 from datetime import datetime
+from dataclasses import dataclass
 from pathlib import Path
 
-from .config import EPISODES_DIR, Settings
+from .config import EPISODES_DIR, Settings, api_key_candidates
 from .estimates import EpisodeMetrics, estimate_tts_cost
 from .prompts import AUDIT_PROMPT, COVERAGE_PROMPT, SYSTEM_PROMPT, script_prompt
 from .providers import openrouter
@@ -216,38 +217,65 @@ def _wait_for_retry(delay_seconds: float, tracker: GenerationTracker) -> None:
         remaining -= step
 
 
+def _is_key_limit_error(error: openrouter.OpenRouterError) -> bool:
+    message = str(error).lower()
+    return error.status_code == 403 and "limit" in message
+
+
+@dataclass(frozen=True)
+class _SynthesisResult:
+    speech: openrouter.SpeechResult
+    settings: Settings
+    key_label: str
+
+
 def _synthesize_with_retry(settings: Settings, text: str, voice: str,
                            instructions: str, segment_number: int,
-                           tracker: GenerationTracker) -> openrouter.SpeechResult:
+                           tracker: GenerationTracker) -> _SynthesisResult:
     policy = RetryPolicy(
         max_attempts=settings.tts_retry_attempts,
         base_delay_seconds=settings.tts_retry_base_seconds,
         max_delay_seconds=settings.tts_retry_max_seconds,
     )
-    for attempt in range(1, policy.max_attempts + 1):
-        tracker.checkpoint()
-        try:
-            return openrouter.text_to_speech(
-                settings, text, voice, instructions=instructions,
-            )
-        except openrouter.OpenRouterError as error:
-            if not error.retryable or attempt == policy.max_attempts:
-                tracker.record_error(str(error))
-                raise
-            delay = policy.delay_after(attempt)
-            tracker.retrying(
-                segment=segment_number,
-                next_attempt=attempt + 1,
-                max_attempts=policy.max_attempts,
-                delay_seconds=delay,
-                error=str(error),
-            )
-            print(
-                f"\n   ↻ Falha temporária na fala {segment_number}; "
-                f"tentativa {attempt + 1}/{policy.max_attempts} em {delay:.1f}s.",
-                flush=True,
-            )
-            _wait_for_retry(delay, tracker)
+    candidates = api_key_candidates(settings) or [("chave atual", settings)]
+    last_error: openrouter.OpenRouterError | None = None
+    for key_index, (key_label, candidate) in enumerate(candidates):
+        for attempt in range(1, policy.max_attempts + 1):
+            tracker.checkpoint()
+            try:
+                speech = openrouter.text_to_speech(
+                    candidate, text, voice, instructions=instructions,
+                )
+                return _SynthesisResult(speech, candidate, key_label)
+            except openrouter.OpenRouterError as error:
+                last_error = error
+                if _is_key_limit_error(error) and key_index + 1 < len(candidates):
+                    next_label = candidates[key_index + 1][0]
+                    print(
+                        f"\n   ↪ Limite da {key_label}; tentando {next_label} "
+                        f"na fala {segment_number}.", flush=True,
+                    )
+                    break
+                if not error.retryable or attempt == policy.max_attempts:
+                    tracker.record_error(str(error))
+                    raise
+                delay = policy.delay_after(attempt)
+                tracker.retrying(
+                    segment=segment_number,
+                    next_attempt=attempt + 1,
+                    max_attempts=policy.max_attempts,
+                    delay_seconds=delay,
+                    error=str(error),
+                )
+                print(
+                    f"\n   ↻ Falha temporária na fala {segment_number}; "
+                    f"tentativa {attempt + 1}/{policy.max_attempts} em {delay:.1f}s.",
+                    flush=True,
+                )
+                _wait_for_retry(delay, tracker)
+    if last_error:
+        tracker.record_error(str(last_error))
+        raise last_error
     raise AssertionError("A política de retry terminou sem resultado nem erro.")
 
 
@@ -316,10 +344,12 @@ def _synthesize_turns(settings: Settings, directory: Path, turns: list[dict],
         presenter = plan["presenter"]
         cost_label = f"US$ {tracker.cost_usd:.3f}"
         _progress_bar(index, len(turns), f"{presenter.speaker} ({presenter.voice}) {cost_label}")
-        speech = _synthesize_with_retry(
+        synthesis = _synthesize_with_retry(
             settings, plan["turn"]["text"], presenter.voice,
             plan["instructions"], index, tracker,
         )
+        speech = synthesis.speech
+        speech_settings = synthesis.settings
         temporary = segment.with_suffix(segment.suffix + ".tmp")
         temporary.unlink(missing_ok=True)
         try:
@@ -339,7 +369,7 @@ def _synthesize_turns(settings: Settings, directory: Path, turns: list[dict],
         if speech.generation_id:
             try:
                 segment_cost = openrouter.generation_cost_usd(
-                    settings, speech.generation_id
+                    speech_settings, speech.generation_id
                 )
                 cost_exact = True
             except (openrouter.OpenRouterError, RuntimeError, ValueError):
@@ -353,6 +383,7 @@ def _synthesize_turns(settings: Settings, directory: Path, turns: list[dict],
             "fingerprint": plan["fingerprint"],
             "bytes": segment.stat().st_size,
             "generation_id": speech.generation_id,
+            "key_label": synthesis.key_label,
             "cost_usd": round(segment_cost, 8),
             "cost_exact": cost_exact,
         }

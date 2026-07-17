@@ -44,6 +44,21 @@ class DotenvEnvironmentTest(unittest.TestCase):
                 result[config.DOTENV_PROVENANCE_ENV], "OPENROUTER_API_KEY"
             )
 
+    def test_desktop_do_app_prioriza_dotenv_atual(self):
+        with tempfile.TemporaryDirectory() as directory:
+            dotenv = Path(directory) / ".env"
+            dotenv.write_text("OPENROUTER_API_KEY=chave-atual\n", encoding="utf-8")
+            with (
+                patch.dict(os.environ, {"OPENROUTER_API_KEY": "chave-antiga"}, clear=True),
+                patch.object(config, "DOTENV_LOADED_KEYS", frozenset()),
+            ):
+                result = config.desktop_environment(dotenv, prefer_dotenv=True)
+
+            self.assertEqual(result["OPENROUTER_API_KEY"], "chave-atual")
+            self.assertEqual(
+                result[config.DOTENV_PROVENANCE_ENV], "OPENROUTER_API_KEY"
+            )
+
     def test_origem_distingue_dotenv_de_shell(self):
         with (
             patch.dict(os.environ, {"OPENROUTER_API_KEY": "chave"}, clear=True),

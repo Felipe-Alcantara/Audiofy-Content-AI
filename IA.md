@@ -396,7 +396,8 @@ no Electron; episódios falhos não são retomados silenciosamente apenas por ab
 misturava potencialmente nove chaves do mesmo workspace. Cada resposta de áudio agora preserva o
 `X-Generation-Id`; o backend consulta `/generation`, soma `total_cost` e registra ID, valor e
 precisão junto ao segmento. Metadado indisponível usa somente a tabela oficial do modelo como
-fallback e marca o total como aproximado.
+fallback e marca o total como aproximado. Um `403` de limite também alterna automaticamente entre
+a chave efetiva, a chave atual do `.env` e o cofre, registrando somente o rótulo da alternativa.
 
 **Médias:** cada episódio concluído grava `metrics.json` com palavras da fonte e do roteiro,
 duração real, custo, precisão, perfil e TTS. A estimativa usa totais ponderados de episódios do

@@ -644,7 +644,8 @@ def do_desktop() -> None:
             _fail(f"Falha ao instalar o Electron: {(result.stderr or result.stdout)[-300:]}")
             return
     try:
-        subprocess.Popen(["npm", "start"], cwd=electron_dir, env=desktop_environment(),
+        subprocess.Popen(["npm", "start"], cwd=electron_dir,
+                         env=desktop_environment(prefer_dotenv=True),
                          start_new_session=True,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except OSError as error:

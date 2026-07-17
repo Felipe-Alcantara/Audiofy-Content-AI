@@ -159,6 +159,35 @@ class ResumableSynthesisTest(unittest.TestCase):
         self.assertFalse(entry["cost_exact"])
         estimate_cost.assert_called_once()
 
+    @patch("audiofy.pipeline.api_key_candidates")
+    @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_tenta_proxima_chave_quando_a_atual_atinge_limite(
+        self, text_to_speech, _generation_cost, candidates
+    ):
+        first = _settings()
+        first.api_key = "sk-or-chave-antiga"
+        second = _settings()
+        second.api_key = "sk-or-chave-disponivel"
+        candidates.return_value = [("antiga", first), ("disponivel", second)]
+        text_to_speech.side_effect = [
+            OpenRouterError("Key limit exceeded", status_code=403),
+            SpeechResult(b"\x00\x00" * 300, "gen-fallback"),
+        ]
+
+        _synthesize_turns(
+            first, self.directory,
+            [{"speaker": "ana", "text": "usa a alternativa"}], self.tracker,
+        )
+
+        self.assertEqual(text_to_speech.call_count, 2)
+        self.assertEqual(text_to_speech.call_args_list[0].args[0].api_key,
+                         "sk-or-chave-antiga")
+        self.assertEqual(text_to_speech.call_args_list[1].args[0].api_key,
+                         "sk-or-chave-disponivel")
+        manifest = json.loads((self.directory / "segments.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["segments"]["001_ana.wav"]["key_label"], "disponivel")
+
     def test_abort_interrompe_espera_antes_do_proximo_retry(self):
         self.tracker.stage("tts", total=2, current=1)
         GenerationTracker.request_abort(self.directory)
