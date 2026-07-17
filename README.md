@@ -1,15 +1,16 @@
-# 🎙️ Akita on Rails to Podcast
+# 🎙️ Audiofy Content AI
 
 <div align="center">
 
 ![Status](https://img.shields.io/badge/status-MVP-green?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Electron](https://img.shields.io/badge/Electron-33-47848F?style=for-the-badge&logo=electron&logoColor=white)
 ![OpenRouter](https://img.shields.io/badge/OpenRouter-API-6C47FF?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
-**Pipeline auditável para transformar artigos públicos do AkitaOnRails em podcasts técnicos com dois apresentadores.**
+**Transforme qualquer conteúdo em podcasts auditáveis com IA — pipeline verificável, múltiplos apresentadores e custo em tempo real.**
 
-[📖 Plano técnico](docs/PLANO-TECNICO.md) • [🎯 Objetivo](#-sobre-o-projeto) • [⚠️ Limites](#-limites-atuais)
+[📖 Plano técnico](docs/PLANO-TECNICO.md) • [🚀 Como usar](#-como-usar) • [🧩 Fontes](#-fontes-de-conteúdo) • [⚠️ Limites](#-limites-atuais)
 
 </div>
 
@@ -19,7 +20,10 @@
 
 - [🎯 Sobre o projeto](#-sobre-o-projeto)
 - [🚀 Como usar](#-como-usar)
-- [📖 Documentação](#-documentação)
+- [🖥️ App desktop (Electron)](#️-app-desktop-electron)
+- [🧩 Fontes de conteúdo](#-fontes-de-conteúdo)
+- [🎛️ Apresentadores e vozes](#️-apresentadores-e-vozes)
+- [💰 Custo em tempo real](#-custo-em-tempo-real)
 - [📁 Estrutura](#-estrutura)
 - [⚠️ Limites atuais](#-limites-atuais)
 - [🤝 Contribuições](#-contribuições)
@@ -29,96 +33,152 @@
 
 ## 🎯 Sobre o projeto
 
-O projeto propõe transformar os artigos em Markdown do repositório público
-[`akitaonrails/akitaonrails.github.io`](https://github.com/akitaonrails/akitaonrails.github.io)
-em episódios com dois apresentadores. O objetivo central não é produzir apenas um resumo:
-cada episódio deve ter uma **matriz de cobertura**, roteiro verificável, transcrição e auditoria
-contra o artigo original.
+O Audiofy transforma conteúdo escrito em episódios de podcast com um pipeline **auditável** —
+não um resumo cego: cada episódio tem matriz de cobertura, roteiro verificável, auditoria
+contra o texto original e registro de custo.
 
-O desenho recomendado usa o **OpenRouter** como interface unificada para modelos de texto,
-Text-to-Speech e Speech-to-Text, preservando a possibilidade de trocar provedores sem acoplar a
-regra de negócio a um modelo específico.
+```text
+conteúdo → matriz de cobertura → roteiro (N apresentadores) → auditoria → TTS → montagem
+```
+
+O projeto nasceu como "Akita on Rails to Podcast" e evoluiu para um programa geral: os artigos
+do [AkitaOnRails](https://akitaonrails.com) são a primeira **fonte de conteúdo**, empacotada no
+módulo independente [akita-articles](https://github.com/Felipe-Alcantara/akita-articles).
+Novas fontes (outros blogs, feeds, pastas de arquivos) entram implementando um contrato pequeno,
+sem tocar no núcleo.
 
 ## 🚀 Como usar
 
-Requisitos: Python 3.10+, `git`, `ffmpeg` e a biblioteca `requests`. É preciso uma chave do
-[OpenRouter](https://openrouter.ai/keys) com créditos.
+Requisitos: Python 3.10+, `git`, `ffmpeg`, biblioteca `requests` e uma chave do
+[OpenRouter](https://openrouter.ai/keys) com créditos. Para o app desktop: Node.js.
 
 ```bash
 python3 start_app.py
 ```
 
-O menu interativo é a porta de entrada única do programa:
+O menu interativo é a porta de entrada única:
 
-1. **Instalar / Setup** — verifica dependências e cria o `.env`;
-2. **Configurar chave** — grava a `OPENROUTER_API_KEY`;
-3. **Sincronizar blog** — clona/atualiza o repositório oficial de artigos;
-4. **Listar artigos** — todos os artigos em português, mais recentes primeiro;
-5. **Gerar episódio** — pipeline completo: matriz de cobertura → roteiro com dois
-   apresentadores → auditoria → TTS por turno → montagem com ffmpeg.
+| Opção | O que faz |
+|---|---|
+| Instalar / Setup | verifica dependências, instala o módulo akita-articles, cria o `.env` |
+| Configurar chave | grava a `OPENROUTER_API_KEY` |
+| Sincronizar fonte | baixa/atualiza os artigos |
+| Listar / Buscar | catálogo com busca por título, slug ou tag |
+| Gerar episódio | ao vivo, com barra de progresso e custo em US$ |
+| Gerar em 2º plano | libera o terminal; `watch` acompanha |
+| Acompanhar geração | progresso e custo ao vivo de uma geração em andamento |
+| Abortar geração | cancela com segurança no próximo segmento |
+| Catálogo TTS/vozes | modelos de áudio do OpenRouter e vozes do Gemini |
+| Status | mostra **explicitamente** o que está consumindo créditos |
+| Abrir app desktop | interface Electron |
 
-Também há atalhos diretos: `start_app.py list`, `start_app.py generate <número|id>`,
-`start_app.py sync`, `start_app.py status`.
+Atalhos de linha de comando: `list`, `search <termos>`, `generate <n|id> [--bg]`,
+`watch <id>`, `abort <id>`, `sync`, `status`, `setup`, `catalog`.
 
-Cada episódio fica em `data/episodes/<artigo>/` com os artefatos auditáveis
-(`coverage.json`, `script.json`, `audit.json`, `segments/`, `episode.mp3`, `NOTES.md`).
-Se uma etapa falhar, rodar novamente retoma de onde parou sem regenerar o que já existe.
-A geração exibe uma estimativa de custo e pede confirmação antes de consumir créditos.
+Cada episódio fica em `data/episodes/<item>/` com artefatos auditáveis (`coverage.json`,
+`script.json`, `audit.json`, `status.json`, `segments/`, `episode.mp3`, `NOTES.md`).
+Falhou no meio? Rodar de novo retoma de onde parou sem regenerar (nem repagar) o que já existe.
 
-## 📖 Documentação
+## 🖥️ App desktop (Electron)
 
-O [plano técnico completo](docs/PLANO-TECNICO.md) registra:
+```bash
+cd electron && npm install && npm start
+```
 
-- requisitos de fidelidade e critérios de aprovação;
-- arquitetura do pipeline e responsabilidades;
-- alternativas NotebookLM, Gemini e OpenRouter;
-- contratos de dados e prompts iniciais;
-- estimativas de custo;
-- licenciamento, segurança, riscos e etapas do MVP.
+(ou opção "Abrir app desktop" no menu). A interface lista e busca artigos, mostra estimativa
+de custo antes de gerar, exibe **banner de alerta enquanto qualquer geração estiver consumindo
+créditos**, barra de progresso e custo ao vivo, botão de abortar e player dos episódios prontos.
+Toda a lógica continua no backend Python — o app fala com ele pela bridge JSON
+(`python3 -m audiofy.bridge`), a mesma interface disponível para qualquer automação.
+
+## 🧩 Fontes de conteúdo
+
+Uma fonte implementa o contrato `ContentSource` (`sync`, `list_items`, `search`, `get_item`)
+e devolve `ContentItem`s com texto e atribuição. O registro em `src/audiofy/sources/__init__.py`
+é o único ponto que muda ao adicionar uma fonte (Open/Closed).
+
+| Fonte | Módulo | Estado |
+|---|---|---|
+| Akita on Rails | [akita-articles](https://github.com/Felipe-Alcantara/akita-articles) | ✅ funcional |
+
+## 🎛️ Apresentadores e vozes
+
+De 1 a N apresentadores, por configuração (`.env`):
+
+```bash
+AUDIOFY_PRESENTERS="ana:Kore:animada, beto:Puck:cético, carla:Aoede:técnica"
+```
+
+O roteiro é gerado para os apresentadores configurados (nome e tom vão para o prompt e para o
+TTS). O menu **Catálogo TTS/vozes** lista os modelos de áudio disponíveis no OpenRouter e as
+30 vozes do Gemini TTS com seus estilos.
+
+## 💰 Custo em tempo real
+
+- **Etapas de texto** (matriz, roteiro, auditoria): custo **exato** por chamada, retornado pela
+  própria API (`usage.cost`).
+- **TTS**: a resposta é binária e não carrega custo; o pipeline acompanha pelo **delta de uso da
+  conta** durante a etapa — uma aproximação honesta (se outra coisa usar a mesma conta ao mesmo
+  tempo, o valor mistura os usos).
+- O custo aparece na barra de progresso, no `status.json`, no app desktop, no Status do menu e
+  fica registrado no `NOTES.md` do episódio.
+- **Referência real medida**: US$ 0,60 ≈ 13 minutos ≈ 2.200 palavras (episódio piloto). A
+  estimativa pré-geração usa essa razão.
+
+O Status (CLI e app) sempre deixa explícito se algo está rodando em segundo plano gastando
+créditos — e o abort para a geração no próximo segmento, sem corromper artefatos.
 
 ## 📁 Estrutura
 
 ```text
-Akita-On-Rails-to-Podcast/
+Audiofy-Content-AI/
 ├── 📁 docs/
-│   └── PLANO-TECNICO.md     # Arquitetura e decisões do projeto
+│   └── PLANO-TECNICO.md         # Arquitetura e decisões do projeto
 ├── 📁 src/
-│   └── 📁 akita_podcast/
-│       ├── config.py        # Variáveis de ambiente, caminhos e modelos
-│       ├── source_repo.py   # Sincronização Git e parser de artigos
-│       ├── openrouter.py    # Adaptador HTTP (chat JSON e TTS)
-│       └── pipeline.py      # Cobertura → roteiro → auditoria → áudio
-├── 📁 tests/
-│   └── 📁 unit/             # Testes do parser (python3 -m unittest discover -s tests)
-├── 📁 data/                 # Artefatos locais, ignorados pelo Git
-├── start_app.py             # Menu interativo — porta de entrada
-├── IA.md                    # Linha do tempo de decisões
-├── .env.example             # Nomes das variáveis, sem valores
-├── LICENSE                  # Licença do código deste projeto
+│   └── 📁 audiofy/
+│       ├── config.py            # Env, caminhos, modelos, apresentadores
+│       ├── presenters.py        # 1..N apresentadores configuráveis
+│       ├── prompts.py           # Prompts montados para N apresentadores
+│       ├── pipeline.py          # Cobertura → roteiro → auditoria → áudio
+│       ├── bridge.py            # Interface JSON (Electron e automações)
+│       ├── 📁 providers/        # OpenRouter: chat+custo, TTS, catálogo
+│       ├── 📁 sources/          # Contrato + registro de fontes (akita)
+│       └── 📁 runtime/          # status.json, custo acumulado, abort
+├── 📁 electron/                 # App desktop (npm start)
+├── 📁 tests/                    # python3 -m unittest discover -s tests
+├── 📁 data/                     # Episódios e clone da fonte
+├── start_app.py                 # Menu interativo — porta de entrada
+├── IA.md                        # Linha do tempo de decisões
 └── README.md
 ```
 
 ## ⚠️ Limites atuais
 
-- A auditoria pós-áudio (STT do arquivo final, fase 4 do plano) ainda não foi implementada;
-  a revisão dos episódios gerados é humana.
-- A auditoria do roteiro reporta pendências, mas não bloqueia a geração — a decisão de
-  publicar é de quem revisa (`audit.json`).
-- Nomes de modelos e vozes do OpenRouter mudam com o tempo; tudo é configurável via `.env`.
-- Conteúdo gerado por modelos pode conter omissões ou distorções; por isso, a auditoria faz
-  parte do produto e não é uma etapa opcional.
-- O conteúdo derivado dos artigos precisa respeitar a licença declarada pelo autor do blog.
+- A auditoria pós-áudio (STT do arquivo final) ainda não foi implementada; a revisão dos
+  episódios é humana (`audit.json` + ouvir).
+- A auditoria do roteiro reporta pendências, mas não bloqueia a geração — a decisão de publicar
+  é de quem revisa.
+- O custo do TTS é aproximado pelo uso da conta (ver acima); o valor exato consta no painel do
+  OpenRouter.
+- Nomes de modelos e vozes mudam com o catálogo do OpenRouter; tudo é configurável via `.env`.
 
 ## 🤝 Contribuições
 
-Contribuições são bem-vindas. Ideias especialmente úteis incluem experimentos de qualidade de
-voz em português, métricas de cobertura, parsers seguros de Markdown e formas transparentes de
-publicar a atribuição de cada episódio.
+Ideias que o projeto adoraria receber:
+
+- **Novas fontes de conteúdo** (outros blogs, feeds RSS, pastas de Markdown, Notion);
+- **Modo NotebookLM** — caminho manual/barato para episódios simples, complementando o pipeline;
+- **Módulo de chat** — conversar com o programa para checar módulos, baixar conteúdo, inserir
+  dados e configurar (no espírito do [Openia](https://github.com/Felipe-Alcantara/Openia));
+- **Planejamento editorial em lote** — inserir muitos dados e gerar pauta de episódios/tópicos;
+- STT + auditoria automática do MP3 final (fase 4 do plano técnico);
+- Métricas de cobertura semântica reproduzíveis.
 
 ## 📝 Licença
 
-O código e a documentação originais deste repositório estão sob a licença MIT. Os artigos de
-Fabio Akita e as adaptações produzidas a partir deles possuem condições próprias, documentadas no
+Código e documentação originais sob MIT. Conteúdo derivado de fontes de terceiros segue a
+licença de cada fonte — os artigos do Akita e suas adaptações são **CC BY-NC-SA 4.0** (uso
+não comercial, atribuição, mesma licença), como detalhado no
 [plano técnico](docs/PLANO-TECNICO.md#-licenciamento-e-atribuição).
 
 ## 👤 Autor

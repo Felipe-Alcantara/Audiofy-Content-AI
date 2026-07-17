@@ -66,3 +66,49 @@ recomeçou do primeiro segmento faltante, sem custo duplicado nas etapas textuai
 
 **Pendências registradas:** revisão humana integral do episódio piloto (exigência do plano);
 registrar o custo real da rodada (painel do OpenRouter) antes de gerar em lote.
+
+---
+
+## 2026-07-17 — Rebrand para Audiofy Content AI e extração do módulo akita-articles
+
+**O que mudou:** o projeto deixou de ser "Akita to Podcast" e virou um programa geral de
+geração de podcasts a partir de conteúdo. Reposicionamento completo:
+
+- **Repositório renomeado** para `Audiofy-Content-AI` (o GitHub redireciona o nome antigo);
+  a pasta local pode ser renomeada quando conveniente.
+- **Módulo `akita-articles` extraído** para repositório próprio
+  (https://github.com/Felipe-Alcantara/akita-articles): sincronização, busca com normalização
+  de acentos, separação de seções e análise editorial; 17 testes próprios. O Audiofy o consome
+  via pip (o Setup instala) ou clone irmão em desenvolvimento.
+- **Pacote `audiofy` substitui `akita_podcast`**: fontes de conteúdo viram um registro
+  Open/Closed (`sources/`, contrato `ContentSource`/`ContentItem`, inspirado no padrão de
+  interfaces declarativas do Openia); provedor OpenRouter em `providers/`; runtime de geração
+  em `runtime/`.
+- **1..N apresentadores** por configuração (`AUDIOFY_PRESENTERS="nome:Voz[:tom], …"`), com
+  prompts montados dinamicamente; catálogo de modelos TTS (API) e das 30 vozes Gemini no menu.
+- **Custo em tempo real** (feature obrigatória definida pelo usuário): etapas de texto usam
+  `usage.cost` exato da API; TTS usa delta de `total_usage` da conta (aproximação documentada,
+  no espírito do OpenRouter-Monitorator). Custo aparece na barra, no `status.json`, no Status
+  e no `NOTES.md`.
+- **Transparência de gasto em segundo plano**: `status.json` por episódio, geração em 2º plano
+  via bridge, `watch` ao vivo, abort cooperativo (arquivo `ABORT`, para no próximo segmento) e
+  Status/menu/app sempre alertando quando algo está consumindo créditos.
+- **Bridge JSON** (`python3 -m audiofy.bridge`) como interface programática única.
+- **App desktop Electron** (`electron/`): lista/busca, estimativa antes de gerar, banner de
+  gasto ativo, progresso+custo ao vivo, abortar, ouvir episódio. Lógica 100% no Python.
+
+**Custo real medido (episódio piloto do TikTok):** **US$ 0,60 ≈ 13 minutos ≈ 2.200 palavras**.
+A estimativa pré-geração da CLI e do app usa essa razão. Feedback do usuário sobre o áudio:
+qualidade muito boa.
+
+**Validação:** 17 testes no repositório principal (presenters, status/abort, sources) +
+17 no akita-articles, todos verdes; CLI e bridge smoke-testados contra a fonte real
+(771 itens); sintaxe do Electron verificada e binário instalado.
+
+**Decisão de versionamento:** a pedido do usuário, `data/episodes/` inteiro (incluindo áudio)
+passa a ser versionado; apenas o clone da fonte (`data/source/`) fica fora.
+
+**Riscos que sobraram:** o custo de TTS por delta de conta mistura usos concorrentes da mesma
+chave; o app Electron ainda não foi testado visualmente de ponta a ponta (a bridge que o
+alimenta foi). Roadmap registrado no README: módulo de chat estilo Openia, modo NotebookLM
+barato, planejamento editorial em lote, STT final.
