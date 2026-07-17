@@ -9,6 +9,7 @@ Resolução de configuração (maior prioridade primeiro):
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -22,6 +23,8 @@ EPISODES_DIR = DATA_DIR / "episodes"
 STATE_DIR = PROJECT_ROOT / ".audiofy"  # chaves, perfis e caches locais (gitignored)
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+DOTENV_PROVENANCE_ENV = "AUDIOFY_DOTENV_LOADED_KEYS"
+_ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def _env_int(name: str, default: int, minimum: int, maximum: int) -> int:
@@ -46,21 +49,61 @@ def _env_float(name: str, default: float, minimum: float, maximum: float) -> flo
     return value
 
 
-def _load_dotenv(path: Path) -> None:
-    """Carrega um .env simples (KEY=VALUE) sem sobrescrever o ambiente."""
+def _dotenv_values(path: Path) -> dict[str, str]:
+    """Lê um .env simples sem alterar o ambiente do processo."""
+    values: dict[str, str] = {}
     if not path.is_file():
-        return
+        return values
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, value = line.partition("=")
         key, value = key.strip(), value.strip().strip("'\"")
-        if key and key not in os.environ:
+        if _ENV_NAME.fullmatch(key):
+            values[key] = value
+    return values
+
+
+def _load_dotenv(path: Path) -> frozenset[str]:
+    """Carrega o .env sem sobrescrever o shell e registra a origem das chaves."""
+    loaded: set[str] = set()
+    for key, value in _dotenv_values(path).items():
+        if key not in os.environ:
             os.environ[key] = value
+            loaded.add(key)
+    return frozenset(loaded)
 
 
-_load_dotenv(PROJECT_ROOT / ".env")
+DOTENV_LOADED_KEYS = _load_dotenv(PROJECT_ROOT / ".env")
+
+
+def desktop_environment(dotenv_path: Path | None = None) -> dict[str, str]:
+    """Prepara o Electron com valores atuais e a origem segura das chaves do .env.
+
+    O processo principal pode durar horas. A marca de procedência permite que ele remova
+    somente valores originados no arquivo antes de abrir cada bridge Python, que então relê
+    o `.env`. Variáveis definidas explicitamente no shell nunca entram nessa lista.
+    """
+    path = dotenv_path or PROJECT_ROOT / ".env"
+    values = _dotenv_values(path)
+    environment = dict(os.environ)
+    for key in DOTENV_LOADED_KEYS:
+        if key in values:
+            environment[key] = values[key]
+        else:
+            environment.pop(key, None)
+    environment[DOTENV_PROVENANCE_ENV] = ",".join(sorted(DOTENV_LOADED_KEYS))
+    return environment
+
+
+def api_key_source() -> str | None:
+    """Informa a origem efetiva da chave sem retornar seu valor."""
+    if not os.environ.get("OPENROUTER_API_KEY"):
+        return key_store().active_name()
+    if "OPENROUTER_API_KEY" in DOTENV_LOADED_KEYS:
+        return ".env"
+    return "ambiente"
 
 # O clone do blog do Akita continua em data/source/ (compartilhado com o módulo
 # akita-articles via variável de ambiente própria dele).

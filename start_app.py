@@ -24,7 +24,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from audiofy.config import EPISODES_DIR, Settings  # noqa: E402
+from audiofy.config import EPISODES_DIR, Settings, desktop_environment  # noqa: E402
 from audiofy.runtime.status import GenerationTracker  # noqa: E402
 from audiofy.sources import get_source  # noqa: E402
 
@@ -636,7 +636,8 @@ def do_desktop() -> None:
             _fail(f"Falha ao instalar o Electron: {(result.stderr or result.stdout)[-300:]}")
             return
     try:
-        subprocess.Popen(["npm", "start"], cwd=electron_dir, start_new_session=True,
+        subprocess.Popen(["npm", "start"], cwd=electron_dir, env=desktop_environment(),
+                         start_new_session=True,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except OSError as error:
         _fail(f"Não foi possível iniciar o app desktop: {error}")

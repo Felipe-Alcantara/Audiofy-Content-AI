@@ -337,5 +337,30 @@ Os testes Node cobrem tradução segura do limite mensal e os estados de inicial
 compilação Python, sintaxe Electron, `git diff --check` e `npm audit` (zero vulnerabilidades)
 também foram aprovados.
 
-**Risco que sobrou:** o saldo geral da conta pode continuar positivo mesmo quando uma chave possui
-um limite mensal próprio; esse limite só é informado pelo provedor quando uma chamada é recusada.
+**Risco que sobrou:** mensagens de erro desconhecidas ainda dependem do texto devolvido pelo
+provedor para oferecer uma orientação específica; o detalhe é sanitizado antes de chegar à tela.
+
+---
+
+## 2026-07-17 — Chave efetiva atualizada no Electron
+
+**O que mudou:** o Electron aberto havia herdado uma `OPENROUTER_API_KEY` antiga do processo que
+o iniciou. Alterar o `.env` e recarregar a interface atualizava apenas o renderer; as bridges Python
+continuavam recebendo a credencial antiga do processo principal. A inicialização agora marca, sem
+valores secretos, quais variáveis foram carregadas do `.env`. Antes de cada bridge, o Electron
+remove somente essas cópias para que o backend releia o arquivo atual. Variáveis realmente
+definidas no shell continuam intactas e com prioridade.
+
+**Decisões:** o diagnóstico de chave passou do saldo geral da conta (`/credits`) para os metadados
+da chave autenticada (`/key`), exibindo o rótulo mascarado, limite, restante e uso mensal. A tela de
+configurações também diferencia `ambiente`, `.env` e a chave nomeada do cofre. Nenhum valor integral
+de credencial entra no IPC, em logs ou na interface.
+
+**Validação:** 109 testes Python e 10 testes Node verdes. As regressões cobrem procedência,
+atualização do arquivo sem sobrescrever o shell, interpretação do limite da chave, remoção
+seletiva e rejeição de nomes inválidos. Ruff, compilação, sintaxe Electron, `git diff --check`
+e `npm audit` também passaram. A consulta real confirmou a chave mascarada esperada e seu saldo
+próprio, sem iniciar geração nem consumir TTS.
+
+**Risco que sobrou:** processos de geração já iniciados preservam deliberadamente a configuração
+com que nasceram; trocar o `.env` afeta novas operações, não muta workers que estejam em execução.

@@ -8,7 +8,12 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from audiofy.providers.openrouter import OpenRouterError, _request  # noqa: E402
+from audiofy.providers.openrouter import (  # noqa: E402
+    OpenRouterError,
+    _request,
+    check_api_key,
+    current_key_limit,
+)
 
 
 class OpenRouterRetryClassificationTest(unittest.TestCase):
@@ -39,6 +44,42 @@ class OpenRouterRetryClassificationTest(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 401)
         request.assert_called_once()
 
+
+class OpenRouterKeyLimitTest(unittest.TestCase):
+    def setUp(self):
+        self.settings = SimpleNamespace(require_api_key=lambda: "chave-de-teste")
+
+    @patch("audiofy.providers.openrouter._request")
+    def test_consulta_limite_da_chave_em_vez_do_saldo_global(self, request):
+        request.return_value.json.return_value = {"data": {
+            "label": "sk-or-v1-594...81d",
+            "usage": 0.624287,
+            "usage_monthly": 0.624287,
+            "limit": 5,
+            "limit_remaining": 4.375713,
+            "limit_reset": None,
+        }}
+
+        limit = current_key_limit(self.settings)
+
+        self.assertEqual(limit.label, "sk-or-v1-594...81d")
+        self.assertEqual(limit.limit, 5.0)
+        self.assertAlmostEqual(limit.remaining, 4.375713)
+        request.assert_called_once_with(self.settings, "GET", "/key")
+
+    @patch("audiofy.providers.openrouter.current_key_limit")
+    def test_diagnostico_identifica_chave_e_saldo_do_limite(self, key_limit):
+        key_limit.return_value = SimpleNamespace(
+            label="sk-or-v1-594...81d", limit=5.0, remaining=4.375713,
+            usage_monthly=0.624287, reset=None,
+        )
+
+        valid, detail = check_api_key(self.settings)
+
+        self.assertTrue(valid)
+        self.assertIn("sk-or-v1-594...81d", detail)
+        self.assertIn("restante US$ 4.38", detail)
+        self.assertIn("uso mensal US$ 0.62", detail)
 
 if __name__ == "__main__":
     unittest.main()

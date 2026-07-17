@@ -151,7 +151,9 @@ Padrões portados do [Openia](https://github.com/Felipe-Alcantara/Openia):
 - **Chaves nomeadas** — várias chaves do OpenRouter ("pessoal", "trabalho"…), uma ativa,
   guardadas em `.audiofy/keys.json` com permissão `0600` e fora do Git. A variável
   `OPENROUTER_API_KEY` (inclusive via `.env`) tem prioridade, para CI/sessões temporárias.
-  O menu mostra o **saldo e o uso em US$** da chave ativa.
+  O menu consulta o **limite, o restante e o uso mensal da chave efetiva**; isso evita confundir
+  o saldo global da conta com um limite próprio de chave. O Electron relê valores originados no
+  `.env` a cada operação, enquanto uma chave definida explicitamente no shell mantém prioridade.
 - **Perfis** — presets nomeados de modelos + apresentadores. Embutidos: `padrao` (qualidade),
   `economico` (tudo no modelo barato), `narrador-unico` (audiolivro), `assinatura`
   (Claude Code) e `assinatura-codex` (Codex CLI). Crie e edite os seus pelo menu ou pelo app;

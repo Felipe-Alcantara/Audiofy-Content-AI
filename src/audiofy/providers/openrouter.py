@@ -182,7 +182,7 @@ class AccountBalance:
 
 
 def account_balance(settings: Settings) -> AccountBalance:
-    """Créditos comprados, uso acumulado e saldo restante da chave ativa."""
+    """Créditos comprados, uso acumulado e saldo restante da conta."""
     data = _request(settings, "GET", "/credits").json().get("data", {})
     return AccountBalance(
         total_credits=float(data.get("total_credits", 0.0) or 0.0),
@@ -190,12 +190,50 @@ def account_balance(settings: Settings) -> AccountBalance:
     )
 
 
+@dataclass(frozen=True)
+class KeyLimit:
+    """Uso e limite próprios da chave que autenticou a requisição."""
+
+    label: str
+    usage: float
+    usage_monthly: float
+    limit: float | None
+    remaining: float | None
+    reset: str | None
+
+
+def current_key_limit(settings: Settings) -> KeyLimit:
+    """Consulta o limite da chave ativa, que é independente do saldo da conta."""
+    data = _request(settings, "GET", "/key").json().get("data", {})
+
+    def optional_float(name: str) -> float | None:
+        value = data.get(name)
+        return None if value is None else float(value)
+
+    return KeyLimit(
+        label=str(data.get("label", "") or ""),
+        usage=float(data.get("usage", 0.0) or 0.0),
+        usage_monthly=float(data.get("usage_monthly", 0.0) or 0.0),
+        limit=optional_float("limit"),
+        remaining=optional_float("limit_remaining"),
+        reset=data.get("limit_reset"),
+    )
+
+
 def check_api_key(settings: Settings) -> tuple[bool, str]:
     """Valida a chave contra a API; retorna (ok, motivo/resumo)."""
     try:
-        balance = account_balance(settings)
-        return True, (f"chave válida — saldo US$ {balance.remaining:.2f} "
-                      f"(uso acumulado US$ {balance.total_usage:.2f})")
+        key = current_key_limit(settings)
+        label = f" {key.label}" if key.label else ""
+        if key.limit is None:
+            detail = "sem limite próprio"
+        elif key.remaining is None:
+            detail = f"limite US$ {key.limit:.2f}"
+        else:
+            detail = f"limite US$ {key.limit:.2f}, restante US$ {key.remaining:.2f}"
+        reset = f", renovação {key.reset}" if key.reset else ""
+        return True, (f"chave{label} válida — {detail} "
+                      f"(uso mensal US$ {key.usage_monthly:.2f}{reset})")
     except (OpenRouterError, RuntimeError) as error:
         return False, str(error)
 

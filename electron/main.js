@@ -6,6 +6,7 @@ const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+const { buildBridgeEnvironment } = require("./environment");
 const { resolveProjectPath, validateBridgeRequest } = require("./security");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
@@ -22,7 +23,7 @@ function bridge(args, stdinData) {
     }
     const child = spawn(PYTHON, ["-m", "audiofy.bridge", ...args], {
       cwd: PROJECT_ROOT,
-      env: { ...process.env, PYTHONPATH: "src" },
+      env: buildBridgeEnvironment(),
     });
     let stdout = "";
     let stderr = "";

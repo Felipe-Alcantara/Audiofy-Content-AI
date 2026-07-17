@@ -139,10 +139,9 @@ def _cmd_abort(item_id: str) -> dict:
 def _cmd_settings_info() -> dict:
     """Resumo de configuração para a interface: perfil, provedor, CLIs, apresentadores."""
     import os
-    from .config import key_store
+    from .config import api_key_source
     from .providers.subscription import SUBSCRIPTION_CLIS, configured_model
     settings = Settings()
-    environment_key = bool(os.environ.get("OPENROUTER_API_KEY"))
     overrides = [
         name for name in (
             "AUDIOFY_TEXT_PROVIDER", "AUDIOFY_TEXT_MODEL", "AUDIOFY_AUDIT_MODEL",
@@ -162,8 +161,7 @@ def _cmd_settings_info() -> dict:
             for p in settings.presenters
         ],
         "has_key": bool(settings.api_key),
-        "key_source": ("ambiente/.env" if environment_key
-                       else key_store().active_name()),
+        "key_source": api_key_source(),
         "overrides": overrides,
         "subscription_clis": [
             {"key": c.key, "name": c.name, "available": c.is_available(),
