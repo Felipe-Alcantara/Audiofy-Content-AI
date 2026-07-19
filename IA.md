@@ -995,3 +995,8 @@ foram críticos por silêncios finais de 18,765 s e 6,467 s.
 (faixa US$ 1,3847–2,0550), 33,73 min; leitura fiel usa uma amostra e estima US$ 1,1525 (faixa
 US$ 0,9220–1,3830), 35,45 min. A auditoria não regenerou os chunks problemáticos, evitando cobrança
 automática e deixando a decisão para a revisão individual no modal.
+
+**Inspeção responsiva:** em 600 px e 380 px, controles de música, ações empilhadas, alertas e
+player individual permaneceram utilizáveis. A inspeção revelou e corrigiu um estado apenas visual:
+ao reabrir o modal depois de ouvir um chunk, o rótulo antigo de reprodução agora volta para a
+instrução neutra junto com o player vazio.

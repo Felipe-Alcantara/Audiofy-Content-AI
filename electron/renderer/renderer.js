@@ -59,6 +59,7 @@ async function openChunkReview(itemId, title) {
   }
   const dialog = $("chunk-modal");
   $("chunk-modal-title").textContent = `Revisão dos chunks · ${title}`;
+  $("chunk-now-playing").textContent = "Escolha um chunk para ouvir.";
   const summary = result.audit;
   $("chunk-audit-summary").textContent = summary
     ? `${summary.segments} chunks · ${summary.critical} crítico(s) · ` +
