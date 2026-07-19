@@ -12,5 +12,9 @@
   "background_music": null,
   "background_volume": null,
   "verified_at": "2026-07-19T00:43:21-03:00",
-  "verification_version": 1
+  "verification_version": 1,
+  "source_key": "custom",
+  "source_file": "",
+  "final_audio_file": "fonte-custom__episodio-2026-07-17-o-valor-de-terminar__modo-podcast-adaptado__audio-completo.mp3",
+  "artifact_schema_version": 2
 }

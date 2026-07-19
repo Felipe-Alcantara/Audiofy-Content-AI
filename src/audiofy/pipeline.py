@@ -18,6 +18,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from .artifacts import (
+    ARTIFACT_SCHEMA_VERSION,
+    LEGACY_FINAL_AUDIO,
+    final_audio_filename,
+    segment_audio_filename,
+    write_source_document,
+)
 from .audio_audit import audit_segments
 from .config import EPISODES_DIR, Settings, api_key_candidates, api_key_source
 from .estimates import EpisodeMetrics, estimate_tts_cost
@@ -63,6 +70,7 @@ def generate_episode(
     narration_voice: str | None = None,
     background_music: Path | None = None,
     background_volume: float = 0.08,
+    source_key: str = "conteudo",
 ) -> Path:
     """Executa o pipeline completo para um item e retorna o MP3 final."""
     if generation_mode not in {"adaptation", "verbatim"}:
@@ -109,6 +117,7 @@ def generate_episode(
             generation_mode,
             background_music,
             background_volume,
+            source_key,
         )
         tracker.finish("concluido")
         return result
@@ -128,9 +137,11 @@ def _run(
     generation_mode: str,
     background_music: Path | None,
     background_volume: float,
+    source_key: str,
 ) -> Path:
     print(f"\n📄 {item.title} ({item.published_at})")
     print(f"   Pasta do episódio: {directory}")
+    source_file = write_source_document(directory, item, source_key)
 
     subscription = settings.text_provider not in ("", "openrouter")
 
@@ -214,6 +225,9 @@ def _run(
         turns,
         tracker,
         trust_legacy_segments=not force and generation_mode != "verbatim",
+        source_key=source_key,
+        item_id=item.item_id,
+        generation_mode=generation_mode,
     )
 
     print(
@@ -239,6 +253,8 @@ def _run(
         background_music,
         background_volume,
         tracker.background_music,
+        source_key=source_key,
+        generation_mode=generation_mode,
     )
     duration_seconds = media_duration_seconds(final_path)
     EpisodeMetrics(
@@ -256,6 +272,10 @@ def _run(
         background_volume=tracker.background_volume,
         title=item.title,
         source_created_at=item.published_at,
+        source_key=source_key,
+        source_file=source_file.name,
+        final_audio_file=final_path.name,
+        artifact_schema_version=ARTIFACT_SCHEMA_VERSION,
     ).write(directory)
     _write_show_notes(
         directory,
@@ -524,6 +544,9 @@ def _synthesize_turns(
     turns: list[dict],
     tracker: GenerationTracker,
     trust_legacy_segments: bool = True,
+    source_key: str = "conteudo",
+    item_id: str | None = None,
+    generation_mode: str = "adaptation",
 ) -> list[Path]:
     voices = {p.speaker: p for p in settings.presenters}
     default = settings.presenters[0]
@@ -534,11 +557,20 @@ def _synthesize_turns(
     loaded_manifest = _load_json(manifest_path)
     if loaded_manifest is not None and not isinstance(loaded_manifest, dict):
         raise ValueError("segments.json inválido: era esperado um objeto JSON.")
-    manifest = loaded_manifest or {"version": 1, "segments": {}}
+    manifest = loaded_manifest or {"version": ARTIFACT_SCHEMA_VERSION, "segments": {}}
     entries = manifest.get("segments")
     if not isinstance(entries, dict):
         raise ValueError("segments.json inválido: campo 'segments' ausente ou inválido.")
 
+    resolved_item_id = item_id or directory.name.replace("__", "/")
+    manifest.update(
+        {
+            "version": ARTIFACT_SCHEMA_VERSION,
+            "source_key": source_key,
+            "episode_id": resolved_item_id,
+            "generation_mode": generation_mode,
+        }
+    )
     plans: list[dict] = []
     completed = 0
     for index, turn in enumerate(turns, 1):
@@ -550,7 +582,21 @@ def _synthesize_turns(
             raise ValueError(f"Turno {index} inválido no roteiro.")
         speaker = turn.get("speaker")
         presenter = voices.get(speaker, default)
-        segment = segments_dir / f"{index:03d}_{presenter.speaker}.{extension}"
+        segment = segments_dir / segment_audio_filename(
+            source_key,
+            resolved_item_id,
+            generation_mode,
+            index,
+            len(turns),
+            presenter.speaker,
+            extension,
+        )
+        legacy_segment = segments_dir / f"{index:03d}_{presenter.speaker}.{extension}"
+        if not segment.exists() and legacy_segment.is_file():
+            legacy_segment.replace(segment)
+            legacy_entry = entries.pop(legacy_segment.name, None)
+            if isinstance(legacy_entry, dict):
+                entries[segment.name] = legacy_entry
         style = f", tom {presenter.style}" if presenter.style else ""
         supplied_instructions = turn.get("instructions")
         if supplied_instructions is not None and (
@@ -568,14 +614,24 @@ def _synthesize_turns(
         )
         entry = entries.get(segment.name)
         entry_matches = isinstance(entry, dict) and entry.get("fingerprint") == fingerprint
-        legacy_segment = entry is None and trust_legacy_segments
-        reusable = _valid_segment(segment) and (entry_matches or legacy_segment)
+        legacy_entry = (
+            entry is None or (isinstance(entry, dict) and not entry.get("fingerprint"))
+        ) and trust_legacy_segments
+        reusable = _valid_segment(segment) and (entry_matches or legacy_entry)
         if reusable:
             completed += 1
-            entries[segment.name] = {
-                "fingerprint": fingerprint,
-                "bytes": segment.stat().st_size,
-            }
+            preserved = entry.copy() if isinstance(entry, dict) else {}
+            preserved.update(
+                {
+                    "fingerprint": fingerprint,
+                    "bytes": segment.stat().st_size,
+                    "kind": "chunk",
+                    "chunk_index": index,
+                    "chunk_total": len(turns),
+                    "speaker": presenter.speaker,
+                }
+            )
+            entries[segment.name] = preserved
         plans.append(
             {
                 "index": index,
@@ -642,6 +698,10 @@ def _synthesize_turns(
         entries[segment.name] = {
             "fingerprint": plan["fingerprint"],
             "bytes": segment.stat().st_size,
+            "kind": "chunk",
+            "chunk_index": index,
+            "chunk_total": len(turns),
+            "speaker": presenter.speaker,
             "generation_id": speech.generation_id,
             "key_label": synthesis.key_label,
             "cost_usd": round(segment_cost, 8),
@@ -675,13 +735,20 @@ def _assemble(
     background_music: Path | None = None,
     background_volume: float = 0.08,
     background_music_name: str | None = None,
+    *,
+    source_key: str = "conteudo",
+    generation_mode: str = "adaptation",
 ) -> Path:
     if not segments:
         raise ValueError("Não há segmentos de áudio para montar o episódio.")
     concat_list = directory / "segments.txt"
     concat_list.write_text("".join(_concat_line(p) for p in segments), encoding="utf-8")
-    final_path = directory / "episode.mp3"
-    temporary = directory / "episode.tmp.mp3"
+    item_id = getattr(item, "item_id", None) or directory.name.replace("__", "/")
+    final_path = directory / final_audio_filename(source_key, item_id, generation_mode)
+    legacy_final = directory / LEGACY_FINAL_AUDIO
+    if not final_path.exists() and legacy_final.is_file():
+        legacy_final.replace(final_path)
+    temporary = final_path.with_name(f"{final_path.stem}.tmp.mp3")
     temporary.unlink(missing_ok=True)
     try:
         arguments = [
@@ -733,6 +800,7 @@ def _assemble(
         )
         run_tool("ffmpeg", arguments, timeout=_FFMPEG_TIMEOUT)
         temporary.replace(final_path)
+        legacy_final.unlink(missing_ok=True)
         mix_path = directory / "mix.json"
         if background_music:
             digest = hashlib.sha256()

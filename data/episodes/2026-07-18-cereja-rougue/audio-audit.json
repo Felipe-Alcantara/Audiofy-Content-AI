@@ -16,7 +16,7 @@
   },
   "segments": [
     {
-      "file": "001_narrador.wav",
+      "file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__chunk-001-de-012__voz-narrador.wav",
       "duration_seconds": 179.56,
       "silence_seconds": 13.599,
       "silence_ratio": 0.0757,
@@ -51,7 +51,7 @@
       ]
     },
     {
-      "file": "002_narrador.wav",
+      "file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__chunk-002-de-012__voz-narrador.wav",
       "duration_seconds": 177.08,
       "silence_seconds": 0,
       "silence_ratio": 0.0,
@@ -60,7 +60,7 @@
       "silences": []
     },
     {
-      "file": "003_narrador.wav",
+      "file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__chunk-003-de-012__voz-narrador.wav",
       "duration_seconds": 182.4,
       "silence_seconds": 1.513,
       "silence_ratio": 0.0083,
@@ -75,7 +75,7 @@
       ]
     },
     {
-      "file": "004_narrador.wav",
+      "file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__chunk-004-de-012__voz-narrador.wav",
       "duration_seconds": 188.04,
       "silence_seconds": 0,
       "silence_ratio": 0.0,
@@ -84,7 +84,7 @@
       "silences": []
     },
     {
-      "file": "005_narrador.wav",
+      "file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__chunk-005-de-012__voz-narrador.wav",
       "duration_seconds": 185.96,
       "silence_seconds": 8.421,
       "silence_ratio": 0.0453,
@@ -119,7 +119,7 @@
       ]
     },
     {
-      "file": "006_narrador.wav",
+      "file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__chunk-006-de-012__voz-narrador.wav",
       "duration_seconds": 188.36,
       "silence_seconds": 32.559,
       "silence_ratio": 0.1729,
@@ -174,7 +174,7 @@
       ]
     },
     {
-      "file": "007_narrador.wav",
+      "file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__chunk-007-de-012__voz-narrador.wav",
       "duration_seconds": 152.88,
       "silence_seconds": 12.736,
       "silence_ratio": 0.0833,
@@ -219,7 +219,7 @@
       ]
     },
     {
-      "file": "008_narrador.wav",
+      "file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__chunk-008-de-012__voz-narrador.wav",
       "duration_seconds": 186.04,
       "silence_seconds": 17.379,
       "silence_ratio": 0.0934,
@@ -279,7 +279,7 @@
       ]
     },
     {
-      "file": "009_narrador.wav",
+      "file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__chunk-009-de-012__voz-narrador.wav",
       "duration_seconds": 178.52,
       "silence_seconds": 1.808,
       "silence_ratio": 0.0101,
@@ -294,7 +294,7 @@
       ]
     },
     {
-      "file": "010_narrador.wav",
+      "file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__chunk-010-de-012__voz-narrador.wav",
       "duration_seconds": 190.36,
       "silence_seconds": 11.803,
       "silence_ratio": 0.062,
@@ -339,7 +339,7 @@
       ]
     },
     {
-      "file": "011_narrador.wav",
+      "file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__chunk-011-de-012__voz-narrador.wav",
       "duration_seconds": 168.04,
       "silence_seconds": 6.467,
       "silence_ratio": 0.0385,
@@ -354,7 +354,7 @@
       ]
     },
     {
-      "file": "012_narrador.wav",
+      "file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__chunk-012-de-012__voz-narrador.wav",
       "duration_seconds": 149.92,
       "silence_seconds": 4.879,
       "silence_ratio": 0.0325,

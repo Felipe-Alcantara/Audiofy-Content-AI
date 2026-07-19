@@ -1035,3 +1035,32 @@ metadados do piloto legado. A interface permaneceu legível e acionável em 600 
 Electron, lint, formatação, whitespace, JSON, links e auditorias Python/Node sem vulnerabilidades
 conhecidas; `akita-articles` continua explicitamente fora da auditoria do PyPI por ser dependência
 Git privada.
+
+---
+
+## 2026-07-19 — Nomes autoexplicativos para fonte, chunks e áudio completo
+
+**Problema observado:** `episode.mp3` e nomes como `001_narrador.wav` só tinham significado
+dentro da pasta do episódio. Ao copiar, compartilhar ou abrir o arquivo isoladamente, perdiam-se
+a fonte, o episódio, o modo de geração, a completude e, no caso do chunk, sua posição total.
+
+**Contrato v2:** os áudios novos carregam componentes portáveis e limitados de fonte, episódio e
+modo. O MP3 termina em `audio-completo.mp3`; cada trecho informa `chunk-N-de-T` e `voz-*`; a entrada
+integral é preservada como `fonte-original-completa.md`. `segments.json` registra a mesma semântica
+por arquivo, e `metrics.json` aponta explicitamente o MP3 e a fonte. O resolver continua aceitando
+`episode.mp3`, portanto integrações e acervos ainda não migrados não deixam de funcionar.
+
+**Migração local:** `scripts/migrate_artifact_names.py --apply` renomeia sem sobrescrever,
+sincroniza manifesto, auditoria e lista de concatenação, e nunca chama TTS ou rede. Os quatro
+episódios locais, 170 chunks e quatro MP3s foram migrados. Os hashes SHA-256 ordenados antes e
+depois permaneceram idênticos. Três fontes ainda disponíveis foram preservadas; *O valor de
+terminar* continua honestamente sem documento de origem porque seu texto já não existe no inbox.
+
+**Interface e inspeção:** o catálogo mostra a fonte e o nome descritivo do MP3. O modal identifica
+`Chunk N de T`, voz e nome completo. A inspeção real em 600 px e a emulação do viewport de 380 px
+confirmaram leitura, quebra dos nomes longos, botões e rolagem utilizáveis.
+
+**Validação final:** `python scripts/check_quality.py` aprovou 240 testes Python com 75% de
+cobertura, 28 testes Electron, lint, formatação, whitespace, JSON, links e auditorias Python/Node
+sem vulnerabilidades conhecidas. `akita-articles` permanece identificado como dependência Git
+privada que não existe no índice do PyPI.

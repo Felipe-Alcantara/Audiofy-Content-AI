@@ -12,5 +12,9 @@
   "background_music": null,
   "background_volume": null,
   "verified_at": "2026-07-19T00:43:17-03:00",
-  "verification_version": 1
+  "verification_version": 1,
+  "source_key": "akita",
+  "source_file": "fonte-akita__episodio-2026-07-12-usando-ia-pra-resolver-meus-probleminhas-do-dia-a-dia__fonte-original-completa.md",
+  "final_audio_file": "fonte-akita__episodio-2026-07-12-usando-ia-pra-resolver-meus-probleminhas-do-dia-a-dia__modo-podcast-adaptado__audio-completo.mp3",
+  "artifact_schema_version": 2
 }

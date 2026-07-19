@@ -31,6 +31,7 @@ from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
+from .artifacts import resolve_final_audio
 from .config import EPISODES_DIR, PROJECT_ROOT, STATE_DIR, Settings, api_key_source
 from .runtime.status import GenerationTracker
 from .sources import available_sources, get_source
@@ -61,13 +62,13 @@ def _episode_summary(directory: Path) -> dict:
     # reconcile: um "rodando" cujo worker morreu vira "falhou" em vez de
     # ficar pendurado para sempre na interface.
     status = GenerationTracker.reconcile(directory) or {}
-    completed_mp3 = directory / "episode.mp3"
     from .audio_audit import read_audio_audit
     from .estimates import read_episode_metrics
 
     audio_audit = read_audio_audit(directory)
     metrics = read_episode_metrics(directory)
     metrics_data = asdict(metrics) if metrics else {}
+    completed_mp3 = resolve_final_audio(directory, metrics_data.get("final_audio_file"))
     episode_id = status.get("episode_id", directory.name.replace("__", "/"))
     title = str(metrics_data.get("title") or "").strip()
     notes = directory / "NOTES.md"
@@ -82,7 +83,7 @@ def _episode_summary(directory: Path) -> dict:
     if not source_created_at:
         created_match = re.match(r"^(\d{4}-\d{2}-\d{2})", episode_id)
         source_created_at = created_match.group(1) if created_match else ""
-    file_stat = completed_mp3.stat() if completed_mp3.is_file() else None
+    file_stat = completed_mp3.stat() if completed_mp3 else None
     file_updated_at = (
         datetime.fromtimestamp(file_stat.st_mtime).astimezone().isoformat(timespec="seconds")
         if file_stat
@@ -122,16 +123,19 @@ def _episode_summary(directory: Path) -> dict:
         "source_created_at": source_created_at or None,
         "generated_at": metrics_data.get("generated_at") or file_updated_at,
         "file_updated_at": file_updated_at,
-        "file_name": completed_mp3.name if file_stat else None,
+        "file_name": completed_mp3.name if completed_mp3 else None,
         "file_size_bytes": file_stat.st_size if file_stat else None,
         "duration_seconds": metrics_data.get("duration_seconds"),
         "source_words": metrics_data.get("source_words"),
         "script_words": metrics_data.get("script_words"),
+        "source_key": metrics_data.get("source_key") or None,
+        "source_file": metrics_data.get("source_file") or None,
+        "artifact_schema_version": metrics_data.get("artifact_schema_version", 1),
         "profile_name": metrics_data.get("profile_name"),
         "tts_model": metrics_data.get("tts_model"),
         "verified_at": metrics_data.get("verified_at") or None,
         "updated_at": status.get("updated_at") or file_updated_at,
-        "mp3": (str(completed_mp3) if file_stat and status.get("state") != "rodando" else None),
+        "mp3": (str(completed_mp3) if completed_mp3 and status.get("state") != "rodando" else None),
     }
 
 
@@ -188,6 +192,17 @@ def _cmd_audio_chunks(item_id: str) -> dict:
     directory = _episode_dir(item_id)
     segments_directory = directory / "segments"
     audit = read_audio_audit(directory)
+    manifest = {}
+    manifest_path = directory / "segments.json"
+    if manifest_path.is_file():
+        try:
+            loaded = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest = loaded if isinstance(loaded, dict) else {}
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            pass
+    segment_metadata = manifest.get("segments", {})
+    if not isinstance(segment_metadata, dict):
+        segment_metadata = {}
     findings = {
         segment.get("file"): segment
         for segment in (audit or {}).get("segments", [])
@@ -199,10 +214,17 @@ def _cmd_audio_chunks(item_id: str) -> dict:
             if not path.is_file() or path.suffix.lower() not in {".wav", ".mp3", ".m4a", ".flac"}:
                 continue
             finding = findings.get(path.name, {})
+            metadata = segment_metadata.get(path.name, {})
+            if not isinstance(metadata, dict):
+                metadata = {}
             chunks.append(
                 {
                     "file": path.name,
                     "path": str(path),
+                    "kind": metadata.get("kind", "chunk"),
+                    "chunk_index": metadata.get("chunk_index"),
+                    "chunk_total": metadata.get("chunk_total"),
+                    "speaker": metadata.get("speaker"),
                     "duration_seconds": finding.get("duration_seconds"),
                     "severity": finding.get("severity", "unknown"),
                     "longest_silence_seconds": finding.get("longest_silence_seconds"),
@@ -214,6 +236,8 @@ def _cmd_audio_chunks(item_id: str) -> dict:
         "chunks": chunks,
         "audit": audit.get("summary") if audit else None,
         "audited_at": audit.get("audited_at") if audit else None,
+        "source_key": manifest.get("source_key"),
+        "generation_mode": manifest.get("generation_mode"),
     }
 
 
@@ -480,6 +504,7 @@ def _cmd_run_generation(
                 _cached_background_path(background_music) if background_music else None
             ),
             background_volume=_background_volume(background_volume),
+            source_key=source_key,
         )
     except Exception as error:
         # Falha antes/fora do pipeline (fonte, configuração, imports tardios):
@@ -752,7 +777,7 @@ def main() -> None:
             from .export import export_notebooklm_pack
 
             item = get_source(rest[0]).get_item(rest[1])
-            result = {"pack": str(export_notebooklm_pack(item))}
+            result = {"pack": str(export_notebooklm_pack(item, rest[0]))}
         elif command == "add-url" and rest:
             from .sources.custom import CustomSource
 

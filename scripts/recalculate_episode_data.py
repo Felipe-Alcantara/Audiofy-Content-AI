@@ -10,6 +10,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
+from audiofy.artifacts import resolve_final_audio  # noqa: E402
 from audiofy.config import EPISODES_DIR  # noqa: E402
 from audiofy.episode_verification import verify_episode  # noqa: E402
 
@@ -33,7 +34,7 @@ def _known_source_words(directory: Path) -> int | None:
 def recalculate_all(root: Path) -> list[dict]:
     results = []
     for directory in sorted(path for path in root.iterdir() if path.is_dir()):
-        if not (directory / "episode.mp3").is_file():
+        if resolve_final_audio(directory) is None:
             continue
         verification = verify_episode(
             directory,

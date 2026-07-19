@@ -58,6 +58,10 @@ class EpisodeMetrics:
     verification_version: int = 0
     title: str = ""
     source_created_at: str = ""
+    source_key: str = ""
+    source_file: str = ""
+    final_audio_file: str = ""
+    artifact_schema_version: int = 1
 
     def write(self, directory: Path) -> Path:
         target = directory / "metrics.json"

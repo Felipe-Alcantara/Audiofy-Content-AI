@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+from audiofy.artifacts import final_audio_filename, segment_audio_filename  # noqa: E402
 from audiofy.media import media_duration_seconds  # noqa: E402
 from audiofy.pipeline import (  # noqa: E402
     _assemble,
@@ -47,6 +48,16 @@ def _valid_wav(path: Path) -> bytes:
     return pcm
 
 
+def _segment_path(directory: Path, index: int, total: int) -> Path:
+    return (
+        directory
+        / "segments"
+        / segment_audio_filename(
+            "conteudo", directory.name, "adaptation", index, total, "ana", "wav"
+        )
+    )
+
+
 class ResumableSynthesisTest(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -79,15 +90,15 @@ class ResumableSynthesisTest(unittest.TestCase):
         )
 
         self.assertEqual(text_to_speech.call_count, 2)
-        self.assertEqual(first.read_bytes(), original)
+        self.assertEqual(paths[0].read_bytes(), original)
         self.assertTrue(paths[1].is_file())
         status = GenerationTracker.load(self.directory)
         self.assertEqual(status["progress"], {"current": 2, "total": 2})
         self.assertIsNone(status["retry"])
         manifest = json.loads((self.directory / "segments.json").read_text(encoding="utf-8"))
-        self.assertEqual(set(manifest["segments"]), {"001_ana.wav", "002_ana.wav"})
-        self.assertEqual(manifest["segments"]["002_ana.wav"]["generation_id"], "gen-2")
-        self.assertEqual(manifest["segments"]["002_ana.wav"]["cost_usd"], 0.012)
+        self.assertEqual(set(manifest["segments"]), {path.name for path in paths})
+        self.assertEqual(manifest["segments"][paths[1].name]["generation_id"], "gen-2")
+        self.assertEqual(manifest["segments"][paths[1].name]["cost_usd"], 0.012)
         self.assertEqual(status["cost_usd"], 0.012)
 
     @patch("audiofy.pipeline.openrouter.generation_cost_usd")
@@ -109,9 +120,9 @@ class ResumableSynthesisTest(unittest.TestCase):
             )
 
         self.assertEqual(text_to_speech.call_count, 2)
-        self.assertTrue((segments / "001_ana.wav").is_file())
-        self.assertFalse((segments / "002_ana.wav").exists())
-        self.assertFalse((segments / "002_ana.wav.tmp").exists())
+        self.assertTrue(_segment_path(self.directory, 1, 2).is_file())
+        self.assertFalse(_segment_path(self.directory, 2, 2).exists())
+        self.assertFalse(_segment_path(self.directory, 2, 2).with_suffix(".wav.tmp").exists())
         status = GenerationTracker.load(self.directory)
         self.assertEqual(status["progress"], {"current": 1, "total": 2})
 
@@ -188,7 +199,7 @@ class ResumableSynthesisTest(unittest.TestCase):
 
         status = GenerationTracker.load(self.directory)
         manifest = json.loads((self.directory / "segments.json").read_text(encoding="utf-8"))
-        entry = manifest["segments"]["001_ana.wav"]
+        entry = next(iter(manifest["segments"].values()))
         self.assertEqual(status["cost_usd"], 0.02)
         self.assertFalse(status["cost_exact"])
         self.assertFalse(entry["cost_exact"])
@@ -221,7 +232,7 @@ class ResumableSynthesisTest(unittest.TestCase):
         self.assertEqual(text_to_speech.call_args_list[0].args[0].api_key, "sk-or-chave-antiga")
         self.assertEqual(text_to_speech.call_args_list[1].args[0].api_key, "sk-or-chave-disponivel")
         manifest = json.loads((self.directory / "segments.json").read_text(encoding="utf-8"))
-        self.assertEqual(manifest["segments"]["001_ana.wav"]["key_label"], "disponivel")
+        self.assertEqual(next(iter(manifest["segments"].values()))["key_label"], "disponivel")
         self.assertEqual(GenerationTracker.load(self.directory)["key_source"], "disponivel")
 
     @patch("audiofy.pipeline.api_key_candidates")
@@ -285,10 +296,11 @@ class AtomicAssemblyTest(unittest.TestCase):
             _valid_wav(segment)
             old = directory / "episode.mp3"
             old.write_bytes(b"versao-anterior")
+            expected = directory / final_audio_filename("conteudo", directory.name, "adaptation")
 
             def create_output(name, arguments, **_kwargs):
                 self.assertEqual(name, "ffmpeg")
-                self.assertEqual(old.read_bytes(), b"versao-anterior")
+                self.assertEqual(expected.read_bytes(), b"versao-anterior")
                 Path(arguments[-1]).write_bytes(b"versao-nova")
 
             run_tool.side_effect = create_output
@@ -298,9 +310,10 @@ class AtomicAssemblyTest(unittest.TestCase):
                 SimpleNamespace(title="Episódio", attribution="Fonte"),
             )
 
-            self.assertEqual(result, old)
-            self.assertEqual(old.read_bytes(), b"versao-nova")
-            self.assertFalse((directory / "episode.tmp.mp3").exists())
+            self.assertEqual(result, expected)
+            self.assertEqual(expected.read_bytes(), b"versao-nova")
+            self.assertFalse(old.exists())
+            self.assertFalse(expected.with_name(f"{expected.stem}.tmp.mp3").exists())
             self.assertIn("timeout", run_tool.call_args.kwargs)
 
     def test_assemble_sem_segmentos_falha_em_vez_de_montar_vazio(self):

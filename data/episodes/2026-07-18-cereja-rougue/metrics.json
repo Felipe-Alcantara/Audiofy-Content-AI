@@ -12,5 +12,9 @@
   "background_music": null,
   "background_volume": null,
   "verified_at": "2026-07-19T00:43:26-03:00",
-  "verification_version": 1
+  "verification_version": 1,
+  "source_key": "custom",
+  "source_file": "fonte-custom__episodio-2026-07-18-cereja-rougue__fonte-original-completa.md",
+  "final_audio_file": "fonte-custom__episodio-2026-07-18-cereja-rougue__modo-leitura-fiel__audio-completo.mp3",
+  "artifact_schema_version": 2
 }

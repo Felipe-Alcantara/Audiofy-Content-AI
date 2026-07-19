@@ -1,5 +1,6 @@
 """Testes do contrato JSON compartilhado pelo Electron e por automações."""
 
+import json
 import sys
 import tempfile
 import unittest
@@ -141,11 +142,31 @@ class AudioChunksTest(unittest.TestCase):
             segments.mkdir()
             (segments / "001.wav").write_bytes(b"audio")
             (segments / "ignorar.txt").write_text("fora do contrato")
+            (directory / "segments.json").write_text(
+                json.dumps(
+                    {
+                        "source_key": "custom",
+                        "generation_mode": "verbatim",
+                        "segments": {
+                            "001.wav": {
+                                "kind": "chunk",
+                                "chunk_index": 1,
+                                "chunk_total": 8,
+                                "speaker": "narrador",
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
             with patch("audiofy.bridge._episode_dir", return_value=directory):
                 result = bridge._cmd_audio_chunks("item")
 
         self.assertEqual(len(result["chunks"]), 1)
         self.assertEqual(result["chunks"][0]["severity"], "critical")
+        self.assertEqual(result["chunks"][0]["chunk_total"], 8)
+        self.assertEqual(result["chunks"][0]["speaker"], "narrador")
+        self.assertEqual(result["source_key"], "custom")
         self.assertEqual(result["audit"]["critical"], 1)
 
 

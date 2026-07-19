@@ -12,6 +12,7 @@ from dataclasses import asdict, replace
 from datetime import datetime
 from pathlib import Path
 
+from .artifacts import resolve_final_audio
 from .audio_audit import audit_segments
 from .estimates import read_episode_metrics
 from .media import media_duration_seconds
@@ -49,9 +50,9 @@ def verify_episode(
     metrics = read_episode_metrics(directory)
     if metrics is None:
         raise FileNotFoundError("O episódio não tem metrics.json válido.")
-    final_audio = directory / "episode.mp3"
-    if not final_audio.is_file():
-        raise FileNotFoundError("O episódio não tem episode.mp3.")
+    final_audio = resolve_final_audio(directory, metrics.final_audio_file)
+    if final_audio is None:
+        raise FileNotFoundError("O episódio não tem um MP3 completo.")
 
     mode, turns = _turns(directory)
     script_words = sum(len(str(turn.get("text", "")).split()) for turn in turns)

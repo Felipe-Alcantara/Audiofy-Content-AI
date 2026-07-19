@@ -71,13 +71,19 @@ async function openChunkReview(itemId, title) {
     const row = document.createElement("li");
     row.className = `chunk-row severity-${chunk.severity}`;
     const detail = makeElement("div", "row-main");
-    detail.appendChild(makeElement("span", "row-title", `${index + 1}. ${chunk.file}`));
+    const chunkIndex = chunk.chunk_index || index + 1;
+    const chunkTotal = chunk.chunk_total || result.chunks.length;
+    const voice = chunk.speaker ? ` · voz ${chunk.speaker}` : "";
+    detail.appendChild(makeElement(
+      "span", "row-title", `Chunk ${chunkIndex} de ${chunkTotal}${voice}`
+    ));
     const duration = Number.isFinite(chunk.duration_seconds)
       ? `${chunk.duration_seconds.toFixed(1)}s` : "duração desconhecida";
     const silence = Number.isFinite(chunk.longest_silence_seconds)
       ? ` · maior silêncio ${chunk.longest_silence_seconds.toFixed(1)}s` : "";
     detail.appendChild(makeElement(
-      "span", "muted small", `${duration} · ${chunkSeverityLabel(chunk)}${silence}`
+      "span", "muted small", `${chunk.file} · ${duration} · ` +
+        `${chunkSeverityLabel(chunk)}${silence}`
     ));
     row.appendChild(detail);
     const play = makeElement("button", "ghost", "▶️ ouvir");
@@ -85,7 +91,8 @@ async function openChunkReview(itemId, title) {
       const player = $("chunk-player");
       player.src = projectPathToFileUrl(chunk.path);
       player.load();
-      $("chunk-now-playing").textContent = `Tocando ${index + 1}. ${chunk.file}`;
+      $("chunk-now-playing").textContent =
+        `Tocando chunk ${chunkIndex} de ${chunkTotal} · ${chunk.file}`;
       player.play().catch(() => player.focus());
     };
     row.appendChild(play);
@@ -818,9 +825,17 @@ function renderEpisodes(episodes) {
       : " · sem auditoria";
     const profile = episode.profile_name ? ` · perfil ${episode.profile_name}` : "";
     const music = episode.background_music ? ` · música ${episode.background_music}` : "";
+    const source = episode.source_key ? `fonte ${episode.source_key} · ` : "";
     production.textContent =
-      `${generationModeLabel(episode.generation_mode)} · ${cost}${profile}${words}${audit}${music}`;
-    if (episode.tts_model) production.title = `TTS: ${episode.tts_model}`;
+      `${source}${generationModeLabel(episode.generation_mode)} · ` +
+      `${cost}${profile}${words}${audit}${music}`;
+    if (episode.source_file) {
+      production.title = `Fonte preservada: ${episode.source_file}`;
+    }
+    if (episode.tts_model) {
+      production.title = `${production.title ? production.title + " · " : ""}` +
+        `TTS: ${episode.tts_model}`;
+    }
     body.appendChild(production);
     row.appendChild(body);
 

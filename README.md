@@ -185,8 +185,12 @@ Para automações e integrações, continuam disponíveis os comandos secundári
 
 Cada episódio fica em `data/episodes/<item>/` com artefatos auditáveis. A adaptação usa
 `coverage.json`, `script.json` e `audit.json`; a leitura fiel usa `prosody.json` e
-`narration-script.json`. Ambos mantêm `status.json`, `segments.json`, `segments/`, `episode.mp3`
-e `NOTES.md`; uma remixagem com trilha também registra `mix.json`. Falhas temporárias no TTS são
+`narration-script.json`. Ambos mantêm `status.json`, `segments.json`, `segments/`, o MP3 completo,
+a fonte original preservada e `NOTES.md`; uma remixagem com trilha também registra `mix.json`.
+Os arquivos transportáveis são autoexplicativos: por exemplo,
+`fonte-custom__episodio-meu-livro__modo-leitura-fiel__audio-completo.mp3` e
+`...__chunk-001-de-120__voz-orus.wav`. Assim, fonte, episódio, modo, completude, posição do
+chunk e voz continuam identificáveis mesmo fora da pasta. Falhas temporárias no TTS são
 retomadas automaticamente por fala, com backoff e
 jitter (cinco tentativas por padrão), sem refazer nem repagar segmentos concluídos. Se o limite
 terminar ou o processo for encerrado, rodar novamente continua do checkpoint; o manifesto vincula
@@ -205,6 +209,11 @@ Para rever todo o histórico sem rede nem novos créditos, rode
 contagem do roteiro, resolve a fonte local quando ela ainda existe, audita todos os chunks e grava
 `verification.json`. Custos antigos são preservados com sua procedência, pois um manifesto parcial
 não permite recriar com segurança cobranças históricas.
+
+Acervos antigos com `episode.mp3` e chunks como `001_narrador.wav` podem ser migrados localmente,
+sem regenerar áudio nem consumir créditos, com
+`python3 scripts/migrate_artifact_names.py --apply`. A leitura dos nomes legados continua
+suportada para preservar compatibilidade.
 
 No desktop, **Escolher música de fundo** abre o seletor nativo e permite regular a faixa entre
 1% e 25% (8% por padrão). O arquivo é validado e copiado para o cache privado `.audiofy/music`;

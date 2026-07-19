@@ -11,16 +11,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .artifacts import artifact_prefix, source_document_filename
 from .pipeline import episode_dir
 from .sources.base import ContentItem
 
 INSTRUCTIONS_TEMPLATE = """# Como gerar este episódio no NotebookLM (custo zero na assinatura)
 
 1. Abra https://notebooklm.google.com e crie um notebook novo.
-2. Adicione o arquivo `fonte.md` desta pasta como fonte.
+2. Adicione o arquivo `{source_file}` desta pasta como fonte.
 3. Em "Audio Overview" → "Personalizar", cole o foco abaixo.
 4. Gere, ouça e baixe o áudio.
-5. Salve o arquivo baixado nesta pasta do episódio como `episode-notebooklm.mp3`.
+5. Salve o arquivo baixado nesta pasta do episódio como `{final_audio_file}`.
 
 Limites do plano (verificados no plano técnico): gratuito ≈ 3 áudios/dia;
 Google AI Plus ≈ 6/dia; AI Pro tem limites maiores.
@@ -42,16 +43,24 @@ use o pipeline normal do Audiofy. Este modo é o caminho rápido e barato.
 """
 
 
-def export_notebooklm_pack(item: ContentItem) -> Path:
+def export_notebooklm_pack(item: ContentItem, source_key: str = "conteudo") -> Path:
     """Escreve o pacote NotebookLM na pasta do episódio e retorna o caminho."""
     pack_dir = episode_dir(item.item_id) / "notebooklm"
     pack_dir.mkdir(parents=True, exist_ok=True)
-    (pack_dir / "fonte.md").write_text(
+    source_file = source_document_filename(source_key, item.item_id)
+    final_audio_file = (
+        f"{artifact_prefix(source_key, item.item_id, 'notebooklm')}__audio-completo.mp3"
+    )
+    (pack_dir / source_file).write_text(
         f"# {item.title}\n\nFonte: {item.url}\n\n---\n\n{item.text}\n",
         encoding="utf-8",
     )
     (pack_dir / "instrucoes.md").write_text(
-        INSTRUCTIONS_TEMPLATE.format(attribution=item.attribution),
+        INSTRUCTIONS_TEMPLATE.format(
+            attribution=item.attribution,
+            source_file=source_file,
+            final_audio_file=final_audio_file,
+        ),
         encoding="utf-8",
     )
     return pack_dir

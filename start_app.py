@@ -410,7 +410,15 @@ def do_status() -> None:
     else:
         _ok("Nenhuma geração em segundo plano — nada consumindo créditos agora")
 
-    episodes = sorted(EPISODES_DIR.glob("*/episode.mp3")) if EPISODES_DIR.is_dir() else []
+    from audiofy.artifacts import resolve_final_audio
+
+    episodes = []
+    if EPISODES_DIR.is_dir():
+        episodes = [
+            audio
+            for directory in sorted(EPISODES_DIR.iterdir())
+            if directory.is_dir() and (audio := resolve_final_audio(directory)) is not None
+        ]
     _ok(f"{len(episodes)} episódio(s) finalizado(s) em {EPISODES_DIR}")
     for episode in episodes:
         status = GenerationTracker.load(episode.parent) or {}
@@ -602,6 +610,7 @@ def do_generate(
             force=force,
             generation_mode=generation_mode,
             narration_voice=narration_voice,
+            source_key=SOURCE_KEY,
         )
     except GenerationAborted:
         _warn("Geração abortada a pedido. Artefatos preservados; gere de novo para retomar.")
@@ -649,7 +658,9 @@ def do_watch(selector: str) -> None:
             if status["state"] != "rodando":
                 print()
                 if status["state"] == "concluido":
-                    _ok(f"Episódio pronto: {directory / 'episode.mp3'}")
+                    from audiofy.artifacts import resolve_final_audio
+
+                    _ok(f"Episódio pronto: {resolve_final_audio(directory) or directory}")
                 else:
                     _warn(f"Estado final: {status['state']}")
                 return
@@ -743,7 +754,7 @@ def _run_chat_action(action: dict) -> None:
         from audiofy.export import export_notebooklm_pack
 
         item = get_source(action.get("fonte", SOURCE_KEY)).get_item(action.get("item_id", ""))
-        _ok(f"Pacote NotebookLM: {export_notebooklm_pack(item)}")
+        _ok(f"Pacote NotebookLM: {export_notebooklm_pack(item, SOURCE_KEY)}")
     else:
         _warn(f"Ação desconhecida: {kind}")
 
@@ -798,10 +809,11 @@ def do_notebooklm(selector: str) -> None:
     from audiofy.export import export_notebooklm_pack
 
     item = get_source(SOURCE_KEY).get_item(item_id)
-    pack = export_notebooklm_pack(item)
+    pack = export_notebooklm_pack(item, SOURCE_KEY)
     _ok(f"Pacote pronto em {pack}")
     print(
-        f"  {DIM}Abra o instrucoes.md dessa pasta: upload do fonte.md no "
+        f"  {DIM}Abra o instrucoes.md dessa pasta e envie o arquivo "
+        f"identificado como fonte-original-completa ao "
         f"notebooklm.google.com, foco sugerido incluído. Custo: US$ 0,00.{RESET}"
     )
 
