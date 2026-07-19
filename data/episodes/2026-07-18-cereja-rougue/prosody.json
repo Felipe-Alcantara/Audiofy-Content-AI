@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "source_sha256": "6024a78c0cf6d96d12deee63bf34a04b710ee6eceff619fd4becbcc3721e1944",
+  "segments": {
+    "1:3c3660975ebd4a837df61c139cd0a0cdb3db4ed82f12511e27b05bf60e3df57b": {
+      "direction": "Tom nostálgico e lânguido no início, ritmo lento, voz quente. Acelere levemente na descrição física. Diálogos: voz grave e nojenta no assédio; resposta de Jimin seca, cortante. Retome calma cansada ao chegar em casa. Encerre com curiosidade contida ao mencionar o blog."
+    },
+    "2:d6a62e66165706f1a37aade7c21f99599010780421a9ec5661f902272b1fa26b": {
+      "direction": "Início reflexivo, pausado. Ao ler o comentário, voz suave mas com leve estranheza subjacente. Transição para sonolência: ritmo arrastado, frases longas. No despertar, voz grogue. Tensão cresce sutil ao mencionar a porta entreaberta — pausas maiores, tom grave, suspense contido."
+    },
+    "3:0dc5c116e92221dd4170a6d9b47423922bef7bfd95a56d790bc9f24e78611a93": {
+      "direction": "Telefone: pausa longa antes do alô. Voz do estranho macia, controlada, quase sussurrada — doçura venenosa. Jimin começa irritado, depois gela. Acelere nas falas dele conforme o medo cresce. Na frase sobre a porta dos fundos, quase sussurre — pausa longa antes e depois. Silêncio mortal no final."
+    },
+    "4:207b93dfac2c408b2c9e89b2707931e6ab9135c63f742400a12838160c45a150": {
+      "direction": "Intensidade alta, respiração entrecortada. Frases curtas exigem pausas secas. A máquina de costura: descreva com grave crescente, como zumbido que hipnotiza. Subida da escada em ritmo lentíssimo, cada degrau uma batida. Nos manequins virados, voz quase sem ar — horror visceral, sussurrado."
+    },
+    "5:a3b18a9818a9ab1ee7d7aa0ca5c32331dea15579dbe257ad3bba515859c6a444": {
+      "direction": "Pânico total. Voz trêmula, acelerada, quase sem fôlego. Na linha muda, desespero quebrado. Ao pegar a faca, breve firmeza. No reflexo do forno — pausa gelada, tom grave. 'Nada' no corredor: anticlímax tenso, voz incrédula. Encerre com suspense máximo, frase suspensa."
+    },
+    "6:c59201531cd87e6b3192e09536b29ec3ae8764faf7843cf71d5a80d8c8f20d25": {
+      "direction": "Descrição da máscara: voz grave, pausada, quase ritualística — nomeie cada tecido com peso. O facão: tom solene, ameaçador. Na corrida de Jimin, acelere violentamente, respiração rasgada. O mascarado caminha: contraste com lentidão assustadora, voz baixa. Esconderijo: sussurro sufocado, mínimo volume."
+    },
+    "7:f7273593a5d3a0e8dc04a8464070b9b7264356a6793c2cd793d225c3b3a1f1b6": {
+      "direction": "Sussurro extremo no início, cada estalo isolado por silêncio. Facão na parede: som arrastado na voz. Grunhido ao atacar: explosão súbita de volume. Luta física: ritmo frenético, frases-impacto. Ao perder a faca: voz que desmorona. Reflexão interna sobre 'cena final': tom resignado, amargo. Encerre em suspensão pura."
+    },
+    "8:37fd72b938ddd11c03de20afb05649078c06e16388c131533be87de3c778a06f": {
+      "direction": "Início ofegante, respiração quebrada entre frases. Acelere na corrida, corte seco no momento da lâmina — grito visceral, gutural. Dor pulsante na voz. Desacelere ao sentar no chão, tom exausto e trêmulo. Silêncio tenso. Sussurro no choro abafado. Impacto da porta: explosivo, seco. Grito final do estômago."
+    },
+    "9:9ba0ca718cfd7232349979c76342522f51e49aa55d4c69e5d5f52b3c1d54ae19": {
+      "direction": "Voz febril, quase delirante. Ritmo arrastado no raspar metódico da lâmina — pausas longas entre frases curtas. Medo como entidade viva: trêmulo e latejante. Na arrombada, explosão sonora. O assassino entrando: cadência lenta, predatória. Na fuga: velocidade caótica, tropeços na voz. Ateliê: suspiro exausto, falsa calma."
+    },
+    "10:9165784128e51af82d41b1375e9603f711f60a7c24e0da6f1755749ff796bd84": {
+      "direction": "Tom sepulcral no início, voz quase sem ar. O raspar da lâmina no corredor: narrar com lentidão cruel, cada sílaba um aviso. Soluços contidos. Maçaneta girando: pausa dramática. Diálogos do mascarado: voz grave, rouca, pausada, com prazer sádico. Jimin: voz falhada, embargada, súplica desesperada."
+    },
+    "11:6fd48aa26288777ecd9ba35dff2cf0ee1c96d4e2ee2e9dd0363498e80e67c646": {
+      "direction": "Tensão íntima e sufocante. Yoongi: sussurro grave, provocador, quase sedutor com veneno. Na revelação do pseudônimo: pausa longa, impacto interno. Narração do medo misturado a calor: ritmo lento, hipnótico, ambíguo. Lâmina na parede: batida seca. 'Você é tão lindo': sussurro rouco, perigosamente doce."
+    },
+    "12:dc89e5838b1db4c151f99d0e6271f36781308c1fd64c29f84fa10a15a220060e": {
+      "direction": "Voz entorpecida, quase em transe. 'Prova': ordem seca, grave, imperativa. O beijo: pausa longa antes, respiração suspensa. Após, tom baixo e perturbado. Transição ao epílogo: ruptura total — voz neutra, leve, quase irônica. Comentários do blog: tom casual, distante. Frase final: pausada, sugestiva, com sorriso na voz."
+    }
+  }
+}

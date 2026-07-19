@@ -1,0 +1,12 @@
+{
+  "source_words": 4780,
+  "script_words": 4780,
+  "duration_seconds": 2127.192,
+  "cost_usd": 1.1525,
+  "cost_exact": false,
+  "tts_model": "google/gemini-3.1-flash-tts-preview",
+  "profile_name": "narrador-unico",
+  "generation_mode": "verbatim",
+  "generated_at": "2026-07-18T22:38:31-03:00",
+  "cost_source": "model_pricing_fallback"
+}

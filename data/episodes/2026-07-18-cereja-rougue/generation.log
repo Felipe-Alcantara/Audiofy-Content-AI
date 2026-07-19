@@ -1,0 +1,73 @@
+
+📄 Cereja Rougue (2026-07-18)
+   Pasta do episódio: /home/felipe/Programação/Github/Repositórios/Audiofy-Content-AI/data/episodes/2026-07-18-cereja-rougue
+🎭 1/3 Planejamento de interpretação em lotes…
+    [google/gemini-2.5-flash] 4773/1218 tokens, US$ 0.0045
+    [google/gemini-2.5-flash] 3331/916 tokens, US$ 0.0033
+   12 trechos; texto original preservado integralmente.
+🎙️  2/3 Síntese da leitura fiel…
+   [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 1/12 (8%) narrador (Orus) US$ 0.008
+{"ok": false, "error": "Geração abortada a pedido do usuário."}
+
+📄 Cereja Rougue (2026-07-18)
+   Pasta do episódio: /home/felipe/Programação/Github/Repositórios/Audiofy-Content-AI/data/episodes/2026-07-18-cereja-rougue
+🎭 1/3 Planejamento de interpretação em lotes…
+    [claude-code] via assinatura — custo US$ 0,00
+    [claude-code] via assinatura — custo US$ 0,00
+   12 trechos; texto original preservado integralmente.
+🎙️  2/3 Síntese da leitura fiel…
+   [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 1/12 (8%) narrador (Orus) US$ 0.000
+   [█████░░░░░░░░░░░░░░░░░░░░░░░░░] 2/12 (16%) narrador (Orus) US$ 0.091
+   [███████░░░░░░░░░░░░░░░░░░░░░░░] 3/12 (25%) narrador (Orus) US$ 0.260
+   [██████████░░░░░░░░░░░░░░░░░░░░] 4/12 (33%) narrador (Orus) US$ 0.352
+   [████████████░░░░░░░░░░░░░░░░░░] 5/12 (41%) narrador (Orus) US$ 0.447
+   [███████████████░░░░░░░░░░░░░░░] 6/12 (50%) narrador (Orus) US$ 0.540
+   [█████████████████░░░░░░░░░░░░░] 7/12 (58%) narrador (Orus) US$ 0.635
+
+   ↻ Falha temporária na fala 7; tentativa 2/5 em 2.0s.
+   [████████████████████░░░░░░░░░░] 8/12 (66%) narrador (Orus) US$ 0.713
+   [██████████████████████░░░░░░░░] 9/12 (75%) narrador (Orus) US$ 0.806
+{"ok": false, "error": "HTTP 402 em /audio/speech: {\"error\":{\"message\":\"Insufficient credits. Add more using https://openrouter.ai/settings/credits\",\"code\":402}}"}
+
+📄 Cereja Rougue (2026-07-18)
+   Pasta do episódio: /home/felipe/Programação/Github/Repositórios/Audiofy-Content-AI/data/episodes/2026-07-18-cereja-rougue
+🎭 1/3 Planejamento de interpretação em lotes…
+   12 trechos; texto original preservado integralmente.
+🎙️  2/3 Síntese da leitura fiel…
+   [██████████████████████░░░░░░░░] 9/12 (75%) narrador (Orus) US$ 0.806
+{"ok": false, "error": "HTTP 402 em /audio/speech: {\"error\":{\"message\":\"Insufficient credits. Add more using https://openrouter.ai/settings/credits\",\"code\":402}}"}
+
+📄 Cereja Rougue (2026-07-18)
+   Pasta do episódio: /home/felipe/Programação/Github/Repositórios/Audiofy-Content-AI/data/episodes/2026-07-18-cereja-rougue
+🎭 1/3 Planejamento de interpretação em lotes…
+   12 trechos; texto original preservado integralmente.
+🎙️  2/3 Síntese da leitura fiel…
+   [██████████████████████░░░░░░░░] 9/12 (75%) narrador (Orus) US$ 0.806
+
+   ↪ Limite da ambiente; tentando Chave Audio Teste na fala 9.
+{"ok": false, "error": "HTTP 402 em /audio/speech: {\"error\":{\"message\":\"Insufficient credits. Add more using https://openrouter.ai/settings/credits\",\"code\":402}}"}
+
+📄 Cereja Rougue (2026-07-18)
+   Pasta do episódio: /home/felipe/Programação/Github/Repositórios/Audiofy-Content-AI/data/episodes/2026-07-18-cereja-rougue
+🎭 1/3 Planejamento de interpretação em lotes…
+   12 trechos; texto original preservado integralmente.
+🎙️  2/3 Síntese da leitura fiel…
+   [██████████████████████░░░░░░░░] 9/12 (75%) narrador (Orus) US$ 0.806
+{"ok": false, "error": "HTTP 402 em /audio/speech: {\"error\":{\"message\":\"Insufficient credits. Add more using https://openrouter.ai/settings/credits\",\"code\":402}}"}
+
+📄 Cereja Rougue (2026-07-18)
+   Pasta do episódio: /home/felipe/Programação/Github/Repositórios/Audiofy-Content-AI/data/episodes/2026-07-18-cereja-rougue
+🎭 1/3 Planejamento de interpretação em lotes…
+   12 trechos; texto original preservado integralmente.
+🎙️  2/3 Síntese da leitura fiel…
+   [██████████████████████░░░░░░░░] 9/12 (75%) narrador (Orus) US$ 0.806
+   [█████████████████████████░░░░░] 10/12 (83%) narrador (Orus) US$ 0.896
+   [███████████████████████████░░░] 11/12 (91%) narrador (Orus) US$ 0.992
+   [██████████████████████████████] 12/12 (100%) narrador (Orus) US$ 1.077
+
+   ↻ Falha temporária na fala 12; tentativa 2/5 em 2.1s.
+🎧 3/3 Montagem com ffmpeg…
+
+✔ Episódio gerado: /home/felipe/Programação/Github/Repositórios/Audiofy-Content-AI/data/episodes/2026-07-18-cereja-rougue/episode.mp3
+💰 Custo total registrado: US$ 1.1525
+{"ok": true, "mp3": "/home/felipe/Programação/Github/Repositórios/Audiofy-Content-AI/data/episodes/2026-07-18-cereja-rougue/episode.mp3"}

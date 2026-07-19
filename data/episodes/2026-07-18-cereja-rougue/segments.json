@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "segments": {
+    "001_narrador.wav": {
+      "fingerprint": "5a4d79060ad4b347459e5b86ad62bb02debabd8bf9063177b1b77ffda487ec17",
+      "bytes": 8618924
+    },
+    "002_narrador.wav": {
+      "fingerprint": "07af3adfce1077636a4d45d6f07d6ade0aa9d84c86ca5629033b349a66ac8d91",
+      "bytes": 8499884
+    },
+    "003_narrador.wav": {
+      "fingerprint": "7f192ff84f5bc082db3461a6053b4d3fccd366ef74f1047d157a4bef75b8f72b",
+      "bytes": 8755244
+    },
+    "004_narrador.wav": {
+      "fingerprint": "6b5e8073c95c0aa3a0fbf4a0186af2f5e3ccd596753b47ad5338a2674f0c496c",
+      "bytes": 9025964
+    },
+    "005_narrador.wav": {
+      "fingerprint": "1255eca2116d48b7f9080bad88bafcfa03b3b7f0e8f26f97dd20b453a56bbd48",
+      "bytes": 8926124
+    },
+    "006_narrador.wav": {
+      "fingerprint": "d61e1b1c953e70e89ea340cfcf403f6c759fafa8de325092c6e732f5a707a046",
+      "bytes": 9041324
+    },
+    "007_narrador.wav": {
+      "fingerprint": "cf6cefdee773efe9e9e9c56259f5705f5e3dd42ed9977e059e76bed6664ef141",
+      "bytes": 7338284
+    },
+    "008_narrador.wav": {
+      "fingerprint": "7b42111173b0e82d83a7a1c0b5b19f9fa92e67be25c775ac1fd192090f91b592",
+      "bytes": 8929964
+    },
+    "009_narrador.wav": {
+      "fingerprint": "1515bd27f3fb3c49eb9f2b63a802f0efefc82cfc39d876de561586b41f039c05",
+      "bytes": 8569004,
+      "generation_id": "gen-tts-1784424352-MdxoNuNAUOc8GT4aG3Sd",
+      "key_label": "Minha chave de emergencia",
+      "cost_usd": 0.089999,
+      "cost_exact": false
+    },
+    "010_narrador.wav": {
+      "fingerprint": "e2239502d98d6c06af837d63a55ec67164ad1f0ff4571354f339e22883022d15",
+      "bytes": 9137324,
+      "generation_id": "gen-tts-1784424451-5KEcpIcM7AIvkFQjXBB7",
+      "key_label": "Minha chave de emergencia",
+      "cost_usd": 0.095919,
+      "cost_exact": false
+    },
+    "011_narrador.wav": {
+      "fingerprint": "228ac71e214bfa343a211a7f901cf055d7da9938df85d3f966c9afbdb1040629",
+      "bytes": 8065964,
+      "generation_id": "gen-tts-1784424543-ZbkYJb9MVeu3et8ltDp7",
+      "key_label": "Minha chave de emergencia",
+      "cost_usd": 0.084747,
+      "cost_exact": false
+    },
+    "012_narrador.wav": {
+      "fingerprint": "b01b3e80d6cb9cfb00a4618fc4954986477d4b4ea26ca1d355a6c40d0a00308c",
+      "bytes": 7196204,
+      "generation_id": "gen-tts-1784424840-CC505JllzN99inDGnyl2",
+      "key_label": "Minha chave de emergencia",
+      "cost_usd": 0.0755335,
+      "cost_exact": false
+    }
+  }
+}

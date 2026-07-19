@@ -1,0 +1,22 @@
+{
+  "episode_id": "2026-07-18-cereja-rougue",
+  "pid": 231812,
+  "state": "concluido",
+  "stage": "montagem",
+  "progress": {
+    "current": 0,
+    "total": 0
+  },
+  "cost_usd": 1.1525,
+  "cost_exact": false,
+  "started_at": 1784421935.4212487,
+  "run_started_at": 1784424352.030048,
+  "updated_at": 1784425111.9595828,
+  "resume_count": 4,
+  "retry": null,
+  "last_error": null,
+  "abort_requested_at": null,
+  "generation_mode": "verbatim",
+  "narration_voice": "Orus",
+  "key_source": "Minha chave de emergencia"
+}
