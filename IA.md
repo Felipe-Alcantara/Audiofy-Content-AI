@@ -1002,3 +1002,9 @@ ao reabrir o modal depois de ouvir um chunk, o rótulo antigo de reprodução ag
 instrução neutra junto com o player vazio. A mesma inspeção encontrou nomes de chaves comprimidos
 pelos controles da fila em 380 px; os cartões agora reservam a primeira linha inteira para
 prioridade, nome e valor mascarado, deixando selo e ações na linha seguinte.
+
+**Validação final:** `python scripts/check_quality.py` aprovou lint e formatação, 237 testes
+Python com 74% de cobertura, 27 testes Electron, whitespace, JSON, links e auditorias Python/Node
+sem vulnerabilidades conhecidas. `akita-articles` é uma dependência Git privada ao PyPI e por isso
+foi explicitamente marcada pelo `pip-audit` como não auditável no índice. A mixagem também passou
+por smoke real com ffmpeg: uma trilha curta em loop produziu MP3 válido limitado à narração.
