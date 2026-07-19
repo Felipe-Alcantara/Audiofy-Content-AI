@@ -599,7 +599,7 @@ chat pesquisa e entrega o conteúdo pronto na mesma resposta:
 - **Nova ação `adicionar_texto {titulo, texto}`**: o modelo escreve ele mesmo um texto próprio,
   coeso e substancial sobre o tema (sintetizado, não copiado) e o grava direto na fonte `custom`
   via a bridge `add-text` que já existia. O validador isenta o campo `texto` do limite de 4096
-  caracteres dos identificadores curtos (o limite real de 5 MiB é aplicado por `add_text`).
+  caracteres dos identificadores curtos; textos colados não recebem teto de caracteres.
 - **System prompt reescrito** com a diretriz "AJA, NÃO PERGUNTE": nada de pedir confirmação ou
   devolver perguntas, a menos que o pedido seja impossível de interpretar; as ações rodam
   automaticamente, então o modelo não deve pedir permissão para incluí-las.
@@ -792,3 +792,38 @@ gerar conteúdo, consumir créditos ou expor o segredo. Não havia chave nomeada
 **Risco que sobrou:** verificar uma chave faz uma consulta de rede ao OpenRouter e pode falhar por
 indisponibilidade externa. A operação não gera conteúdo nem consome créditos, e a interface mantém
 a mensagem de erro restrita ao resumo seguro retornado pelo adaptador.
+
+---
+
+## 2026-07-18 — Leitura fiel e longa com direção prosódica
+
+**Problema:** o perfil `narrador-unico` continuava usando matriz, roteiro e auditoria; portanto
+adaptava a obra em vez de apenas lê-la. Enviar um livro inteiro a uma chamada também criaria um
+limite de contexto e aumentaria a deriva de voz em saídas longas.
+
+**Decisão:** `verbatim` é um formato de geração, não um perfil. A pessoa escolhe somente uma das
+vozes Gemini; modelos, chave e provedor de planejamento continuam na configuração ativa. O texto
+é persistido sem normalizar suas bordas, segmentado localmente em até 2.400 caracteres e a
+concatenação é verificada caractere por caractere contra a entrada.
+O modelo de texto recebe lotes de até 18.000 caracteres e pode devolver apenas direção vocal. O
+backend ignora qualquer texto reescrito e usa fallback local para direções ausentes.
+
+**Retomada e segurança:** `prosody.json` guarda plano incremental por hash; o manifesto de áudio
+já vincula texto, direção, voz e modelo. Trocar formato ou voz reinicia custo/cache incompatível.
+Livros não dependem de uma janela total e textos colados não recebem teto de caracteres do
+aplicativo: são persistidos e segmentados antes da IA. Downloads por URL continuam limitados a
+5 MiB. Direitos autorais da obra permanecem responsabilidade de quem a importa.
+
+**Interface:** Electron ganhou formato + narrador no cartão do item e a TUI ganhou **Leitura
+fiel**, recomendando segundo plano. A inspeção encontrou sobreposição antiga dos painéis da aba
+Conteúdo em largura compacta; a grade agora combina lista rolável e detalhe em fluxo normal.
+
+**Validação:** `scripts/check_quality.py` aprovou lint e formatação Ruff, 207 testes Python
+com 72% de cobertura, 20 testes Electron, auditorias de dependências Python/Node, whitespace,
+JSON e links internos. A aba Conteúdo foi inspecionada nos modos adaptação e leitura fiel em
+600 px e 380 px. A chave disponível estava autenticada, mas com limite mensal esgotado; por isso
+nenhuma chamada paga de planejamento ou voz foi disparada.
+
+**Risco que sobrou:** modelos TTS em preview podem variar a voz ou interpretar imperfeitamente a
+direção. Segmentos curtos reduzem, mas não eliminam, essa limitação do provedor. Uma auditoria
+pós-áudio por STT continua futura; antes de publicar uma obra longa, ainda é preciso ouvi-la.

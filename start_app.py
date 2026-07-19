@@ -7,6 +7,7 @@ Uso:
     python3 start_app.py search <termos>
     python3 start_app.py add-url <url>
     python3 start_app.py generate <item-id | número da listagem> [--bg]
+    python3 start_app.py narrate <item-id | número> [--voice=Sulafat] [--bg]
     python3 start_app.py watch <item-id>
     python3 start_app.py abort <item-id>
     python3 start_app.py notebooklm <item-id>
@@ -488,7 +489,13 @@ def _resolve_item_id(selector: str) -> str | None:
         return None
 
 
-def do_generate(selector: str, force: bool = False, background: bool = False) -> None:
+def do_generate(
+    selector: str,
+    force: bool = False,
+    background: bool = False,
+    generation_mode: str = "adaptation",
+    narration_voice: str | None = None,
+) -> None:
     ensure_synced()
     item_id = _resolve_item_id(selector)
     if item_id is None:
@@ -497,6 +504,27 @@ def do_generate(selector: str, force: bool = False, background: bool = False) ->
     item = get_source(SOURCE_KEY).get_item(item_id)
 
     settings = Settings()
+    if generation_mode == "verbatim":
+        from dataclasses import replace
+
+        from audiofy.presenters import Presenter
+        from audiofy.providers.openrouter import GEMINI_VOICES
+
+        if narration_voice is None:
+            narration_voice = _tui().choose(
+                "Escolha o narrador:",
+                [(f"{voice} — {style}", voice) for voice, style in GEMINI_VOICES.items()],
+                default=(
+                    settings.presenters[0].voice if len(settings.presenters) == 1 else "Sulafat"
+                ),
+            )
+        if narration_voice not in GEMINI_VOICES:
+            _fail("Escolha uma voz de narrador disponível no catálogo Gemini.")
+            return
+        settings = replace(
+            settings,
+            presenters=[Presenter("narrador", narration_voice, GEMINI_VOICES[narration_voice])],
+        )
     try:
         settings.require_api_key()
     except RuntimeError as error:
@@ -511,6 +539,11 @@ def do_generate(selector: str, force: bool = False, background: bool = False) ->
     print(f"{BOLD}URL:{RESET}      {item.url}")
     print(f"{BOLD}Tamanho:{RESET}  ~{item.words} palavras de prosa")
     print(f"{BOLD}Vozes:{RESET}    {presenters}")
+    if generation_mode == "verbatim":
+        print(
+            f"{BOLD}Formato:{RESET}  leitura fiel — texto preservado; "
+            "a IA planeja apenas a interpretação em lotes"
+        )
     basis = (
         f"{estimate.sample_count} episódio(s) medido(s)"
         if estimate.sample_count
@@ -534,6 +567,8 @@ def do_generate(selector: str, force: bool = False, background: bool = False) ->
                 "generate",
                 SOURCE_KEY,
                 item_id,
+                f"--mode={generation_mode}",
+                *([f"--voice={narration_voice}"] if narration_voice else []),
                 *(["--force"] if force else []),
             ],
             capture_output=True,
@@ -561,7 +596,13 @@ def do_generate(selector: str, force: bool = False, background: bool = False) ->
     from audiofy.runtime.status import GenerationAborted
 
     try:
-        generate_episode(settings, item, force=force)
+        generate_episode(
+            settings,
+            item,
+            force=force,
+            generation_mode=generation_mode,
+            narration_voice=narration_voice,
+        )
     except GenerationAborted:
         _warn("Geração abortada a pedido. Artefatos preservados; gere de novo para retomar.")
     except Exception as error:  # noqa: BLE001 — o menu reporta e preserva artefatos parciais
@@ -880,6 +921,10 @@ def menu() -> None:
                 ("📚 Listar itens — consulte o catálogo da fonte ativa", "list"),
                 ("🔍 Buscar — encontre conteúdo na fonte ativa", "search"),
                 ("🎙️ Gerar episódio — acompanhe progresso e custo ao vivo", "generate"),
+                (
+                    "📖 Leitura fiel — narre livro/fanfic sem reescrever o texto",
+                    "narrate",
+                ),
                 ("🚀 Gerar em segundo plano — libera o terminal", "generate-bg"),
                 ("👀 Acompanhar geração — veja progresso e custo", "watch"),
                 ("🛑 Abortar geração — para no próximo segmento", "abort"),
@@ -919,6 +964,19 @@ def menu() -> None:
             selector = (_tui().text("Número da listagem ou ID do item:") or "").strip()
             if selector:
                 _safe_call(do_generate, selector, background=choice == "generate-bg")
+        elif choice == "narrate":
+            selector = (_tui().text("Número da listagem ou ID do texto:") or "").strip()
+            if selector:
+                background = _tui().confirm(
+                    "Gerar em segundo plano? Recomendado para livros e textos longos.",
+                    default=True,
+                )
+                _safe_call(
+                    do_generate,
+                    selector,
+                    background=background,
+                    generation_mode="verbatim",
+                )
         elif choice == "watch":
             if selector := (_tui().text("ID do item (ou número):") or "").strip():
                 _safe_call(do_watch, selector)
@@ -970,6 +1028,22 @@ def main() -> None:
         do_search(" ".join(args[1:]))
     elif args[0] == "generate" and len(args) >= 2:
         do_generate(args[1], force="--force" in args, background="--bg" in args)
+    elif args[0] == "narrate" and len(args) >= 2:
+        voice = next(
+            (
+                argument.partition("=")[2]
+                for argument in args[2:]
+                if argument.startswith("--voice=")
+            ),
+            None,
+        )
+        do_generate(
+            args[1],
+            force="--force" in args,
+            background="--bg" in args,
+            generation_mode="verbatim",
+            narration_voice=voice,
+        )
     elif args[0] == "watch" and len(args) >= 2:
         do_watch(args[1])
     elif args[0] == "abort" and len(args) >= 2:

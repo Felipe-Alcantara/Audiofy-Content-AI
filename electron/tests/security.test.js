@@ -14,6 +14,9 @@ test("bridge aceita somente comandos públicos conhecidos", () => {
     ["keys-use-environment"]);
   assert.deepEqual(validateBridgeRequest(["keys-check", "trabalho"]),
     ["keys-check", "trabalho"]);
+  assert.deepEqual(validateBridgeRequest(
+    ["generate", "custom", "livro", "--mode=verbatim", "--voice=Sulafat"]
+  ), ["generate", "custom", "livro", "--mode=verbatim", "--voice=Sulafat"]);
   assert.throws(() => validateBridgeRequest(["run-generation", "x", "y"]));
   assert.throws(() => validateBridgeRequest("status"));
 });
@@ -21,7 +24,18 @@ test("bridge aceita somente comandos públicos conhecidos", () => {
 test("bridge limita aridade, tipo e volume da entrada", () => {
   assert.throws(() => validateBridgeRequest(["item", "fonte"]));
   assert.throws(() => validateBridgeRequest(["status"], { payload: true }));
-  assert.throws(() => validateBridgeRequest(["add-text"], "x".repeat(6 * 1024 * 1024 + 1)));
+  assert.doesNotThrow(() => validateBridgeRequest(
+    ["add-text"], "x".repeat(6 * 1024 * 1024 + 1)
+  ));
+  assert.throws(() => validateBridgeRequest(["chat"], "x".repeat(6 * 1024 * 1024 + 1)));
+});
+
+test("bridge não impõe teto de caracteres ao conteúdo colado", () => {
+  const securitySource = require("node:fs").readFileSync(
+    path.join(__dirname, "..", "security.js"), "utf8"
+  );
+  assert.match(securitySource, /args\[0\] !== "add-text"/);
+  assert.doesNotMatch(securitySource, /MAX_PASTED_TEXT/);
 });
 
 test("abertura de arquivo fica confinada ao projeto", () => {

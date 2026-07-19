@@ -26,7 +26,14 @@ class GenerationTracker:
     STATUS_FILE = "status.json"
     ABORT_FILE = "ABORT"
 
-    def __init__(self, directory: Path, episode_id: str, resume: bool = True) -> None:
+    def __init__(
+        self,
+        directory: Path,
+        episode_id: str,
+        resume: bool = True,
+        generation_mode: str = "adaptation",
+        narration_voice: str | None = None,
+    ) -> None:
         self.directory = directory
         self.directory.mkdir(parents=True, exist_ok=True)
         launch_status = self.load(directory) or {}
@@ -47,6 +54,8 @@ class GenerationTracker:
             "resume_count": int(previous.get("resume_count", 0) or 0) + bool(previous),
             "retry": None,
             "last_error": None,
+            "generation_mode": generation_mode,
+            "narration_voice": narration_voice,
         }
         # O launcher já limpou aborts antigos. Um abort pedido enquanto o worker
         # iniciava precisa sobreviver até o primeiro checkpoint do processo filho.
@@ -88,7 +97,14 @@ class GenerationTracker:
         self._write(self.directory, self._data)
 
     @classmethod
-    def mark_starting(cls, directory: Path, episode_id: str, resume: bool = True) -> None:
+    def mark_starting(
+        cls,
+        directory: Path,
+        episode_id: str,
+        resume: bool = True,
+        generation_mode: str = "adaptation",
+        narration_voice: str | None = None,
+    ) -> None:
         """Publica o início antes de lançar o worker, fechando a janela sem feedback."""
         directory.mkdir(parents=True, exist_ok=True)
         previous = (cls.load(directory) or {}) if resume else {}
@@ -115,6 +131,8 @@ class GenerationTracker:
             "resume_count": int(previous.get("resume_count", 0) or 0),
             "retry": None,
             "last_error": None,
+            "generation_mode": generation_mode,
+            "narration_voice": narration_voice,
         }
         (directory / cls.ABORT_FILE).unlink(missing_ok=True)
         cls._write(directory, data)

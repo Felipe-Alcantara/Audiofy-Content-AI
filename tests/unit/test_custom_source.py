@@ -61,6 +61,20 @@ class CustomSourceTest(unittest.TestCase):
         self.assertIn("Corpo do conteúdo", item.text)
         self.assertIn("exemplo.com", item.attribution)
 
+    def test_preserva_texto_colado_caractere_por_caractere(self):
+        text = "\n  Prólogo.\r\n\r\nCapítulo 1.  \n"
+        item_id = self.source.add_text("Livro exato", text)
+        self.assertEqual(self.source.get_item(item_id).text, text)
+
+    def test_texto_colado_nao_aplica_limite_de_bytes(self):
+        class TextWithoutByteSizing(str):
+            def encode(self, *_args, **_kwargs):
+                raise AssertionError("add_text não deve medir ou limitar os bytes do texto")
+
+        text = TextWithoutByteSizing("Texto integral de uma obra longa.")
+        item_id = self.source.add_text("Livro longo", text)
+        self.assertEqual(self.source.get_item(item_id).text, text)
+
     def test_busca(self):
         self.source.add_text("Sobre Fingerprint", "corpo")
         self.source.add_text("Outro Assunto", "corpo")

@@ -79,8 +79,11 @@
           <summary class="muted">…ou colar texto</summary>
           <input id="add-title" type="text" placeholder="Título"
             aria-label="Título do conteúdo" />
-          <textarea id="add-text" rows="5" placeholder="Cole o conteúdo aqui"
+          <textarea id="add-text" rows="8"
+            placeholder="Cole conto, fanfic ou livro; a leitura fiel processa em trechos"
             aria-label="Texto do conteúdo"></textarea>
+          <p class="muted small">Sem limite de caracteres do aplicativo: textos longos são
+            persistidos localmente e processados em chunks.</p>
           <button id="btn-add-text">➕ Adicionar texto</button>
         </details>
       </div>
@@ -93,6 +96,18 @@
         <h2 id="detail-title"></h2>
         <p class="muted" id="detail-meta"></p>
         <p id="detail-estimate" class="estimate"></p>
+        <div class="generation-options">
+          <label>Formato
+            <select id="generation-mode">
+              <option value="adaptation">Podcast adaptado</option>
+              <option value="verbatim">Leitura fiel, sem reescrita</option>
+            </select>
+          </label>
+          <label id="narration-voice-label" class="hidden">Narrador
+            <select id="narration-voice"></select>
+          </label>
+          <p id="generation-mode-note" class="muted small"></p>
+        </div>
         <div class="actions">
           <button id="btn-generate" class="primary">🎙️ Gerar episódio</button>
           <button id="btn-notebooklm" title="Pacote de custo zero na assinatura Google">
@@ -101,9 +116,10 @@
           <button id="btn-play" class="hidden">▶️ Ouvir</button>
           <button id="btn-folder" class="hidden">📂 Pasta</button>
         </div>
-        <label class="check-option" title="Ignora coverage.json, script.json e audit.json existentes">
+        <label class="check-option" id="force-option"
+          title="Ignora os artefatos de planejamento existentes">
           <input id="generate-force" type="checkbox" />
-          Regenerar cobertura, roteiro e auditoria
+          <span id="force-label">Regenerar cobertura, roteiro e auditoria</span>
         </label>
         <div id="progress-box" class="generation-status hidden" role="status" aria-live="polite">
           <div class="progress-track" id="progress-track" role="progressbar"

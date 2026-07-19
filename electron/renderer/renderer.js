@@ -350,8 +350,34 @@ function updateGenerateButton() {
   const button = $("btn-generate");
   const running = button.dataset.running === "true";
   button.disabled = generationRequestPending || running;
-  button.textContent = generationRequestPending ? "⏳ Iniciando…" : "🎙️ Gerar episódio";
+  const verbatim = $("generation-mode").value === "verbatim";
+  button.textContent = generationRequestPending
+    ? "⏳ Iniciando…" : (verbatim ? "📖 Gerar leitura fiel" : "🎙️ Gerar episódio");
 }
+
+function updateGenerationMode() {
+  const verbatim = $("generation-mode").value === "verbatim";
+  $("narration-voice-label").classList.toggle("hidden", !verbatim);
+  $("generation-mode-note").textContent = verbatim
+    ? "O texto falado é preservado integralmente. A IA planeja apenas ritmo, pausas, " +
+      "emoção e tensão em lotes retomáveis."
+    : "Cria matriz de cobertura, adapta o texto como roteiro e audita o resultado.";
+  $("force-label").textContent = verbatim
+    ? "Replanejar interpretação e regenerar áudios"
+    : "Regenerar cobertura, roteiro e auditoria";
+  updateGenerateButton();
+}
+
+function generationArgs(source, itemId, { force = false, mode = null, voice = null } = {}) {
+  const selectedMode = mode || $("generation-mode").value;
+  const selectedVoice = voice || $("narration-voice").value;
+  const args = ["generate", source, itemId, `--mode=${selectedMode}`];
+  if (selectedMode === "verbatim") args.push(`--voice=${selectedVoice}`);
+  if (force) args.push("--force");
+  return args;
+}
+
+$("generation-mode").onchange = updateGenerationMode;
 
 function showGenerationRequest(message, tone = "active") {
   const box = $("progress-box");
@@ -389,7 +415,10 @@ async function maybeAutoResume(status) {
     "A falha era de uma chave anterior. Retomando automaticamente do checkpoint…"
   );
   try {
-    const result = await bridge(["generate", item.source, item.itemId]);
+    const result = await bridge(generationArgs(item.source, item.itemId, {
+      mode: status.generation_mode || "adaptation",
+      voice: status.narration_voice,
+    }));
     if (!result.ok || (!result.started && result.reason !== "geração já em andamento")) {
       showGenerationRequest(
         `Não foi possível retomar automaticamente: ${result.reason || result.error}`,
@@ -408,17 +437,28 @@ async function maybeAutoResume(status) {
 $("btn-generate").onclick = async () => {
   if (!selectedItem) return;
   const force = $("generate-force").checked;
+  const mode = $("generation-mode").value;
+  const verbatim = mode === "verbatim";
+  const voice = $("narration-voice").value;
+  if (verbatim && !voice) {
+    alert("Escolha a voz do narrador.");
+    return;
+  }
   const confirmed = confirm(
-    `Gerar episódio de "${selectedItem.title}"?\n\n` +
+    `${verbatim ? "Gerar leitura fiel" : "Gerar episódio"} de "${selectedItem.title}"?\n\n` +
     `Custo estimado: ~US$ ${selectedItem.estimated_cost_usd.toFixed(2)} ` +
     `(faixa US$ ${selectedItem.estimate.cost_min_usd.toFixed(2)}–` +
     `${selectedItem.estimate.cost_max_usd.toFixed(2)}) ` +
     `(consome créditos do OpenRouter).` +
-    (force ? "\n\nA cobertura, o roteiro e a auditoria serão regenerados." : "")
+    (verbatim
+      ? `\n\nNarrador: ${voice}. O texto não será reescrito; somente a interpretação será planejada.`
+      : "") +
+    (force ? (verbatim
+      ? "\n\nO plano de interpretação e os áudios serão regenerados."
+      : "\n\nA cobertura, o roteiro e a auditoria serão regenerados.") : "")
   );
   if (!confirmed) return;
-  const args = ["generate", selectedItem.source, selectedItem.item_id];
-  if (force) args.push("--force");
+  const args = generationArgs(selectedItem.source, selectedItem.item_id, { force, mode, voice });
   generationRequestPending = true;
   updateGenerateButton();
   showGenerationRequest("Solicitando a retomada ao backend…");
@@ -590,6 +630,21 @@ function renderActiveConfig(info) {
 
   strip.appendChild(configChip("TTS", `${info.tts_model}${info.has_key ? "" : " · sem chave"}`,
     info.has_key ? "" : "warn"));
+
+  const voiceSelect = $("narration-voice");
+  const previousVoice = voiceSelect.value;
+  voiceSelect.replaceChildren();
+  for (const [voice, style] of Object.entries(info.gemini_voices || {})) {
+    const option = document.createElement("option");
+    option.value = voice;
+    option.textContent = `${voice} · ${style}`;
+    voiceSelect.appendChild(option);
+  }
+  const profileVoice = info.presenters.length === 1 ? info.presenters[0].voice : "";
+  const preferred = previousVoice || profileVoice || "Sulafat";
+  if ([...voiceSelect.options].some((option) => option.value === preferred)) {
+    voiceSelect.value = preferred;
+  }
 }
 
 async function loadActiveConfig() {
@@ -1058,3 +1113,4 @@ loadSources().then(loadItems);
 loadChatHistory();
 refreshStatus();
 loadActiveConfig();
+updateGenerationMode();

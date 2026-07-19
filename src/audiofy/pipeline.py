@@ -13,12 +13,22 @@ import json
 import sys
 import time
 import wave
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
 from .config import EPISODES_DIR, Settings, api_key_candidates
 from .estimates import EpisodeMetrics, estimate_tts_cost
+from .narration import (
+    PROSODY_SYSTEM,
+    fallback_direction,
+    parse_prosody_plan,
+    prosody_batches,
+    prosody_prompt,
+    split_verbatim_text,
+    tts_direction,
+)
 from .prompts import AUDIT_PROMPT, COVERAGE_PROMPT, SYSTEM_PROMPT, script_prompt
 from .providers import openrouter
 from .runtime.process import run_tool
@@ -43,12 +53,34 @@ def _load_json(path: Path) -> object | None:
     return None
 
 
-def generate_episode(settings: Settings, item: ContentItem, force: bool = False) -> Path:
+def generate_episode(
+    settings: Settings,
+    item: ContentItem,
+    force: bool = False,
+    generation_mode: str = "adaptation",
+    narration_voice: str | None = None,
+) -> Path:
     """Executa o pipeline completo para um item e retorna o MP3 final."""
+    if generation_mode not in {"adaptation", "verbatim"}:
+        raise ValueError(f"Modo de geração desconhecido: {generation_mode}")
+    if generation_mode == "verbatim" and len(settings.presenters) != 1:
+        raise ValueError("A leitura fiel exige exatamente um narrador.")
     directory = episode_dir(item.item_id)
-    tracker = GenerationTracker(directory, episode_id=item.item_id, resume=not force)
+    previous = GenerationTracker.load(directory)
+    if previous and (
+        previous.get("generation_mode", "adaptation") != generation_mode
+        or (generation_mode == "verbatim" and previous.get("narration_voice") != narration_voice)
+    ):
+        force = True
+    tracker = GenerationTracker(
+        directory,
+        episode_id=item.item_id,
+        resume=not force,
+        generation_mode=generation_mode,
+        narration_voice=narration_voice,
+    )
     try:
-        result = _run(settings, item, directory, tracker, force)
+        result = _run(settings, item, directory, tracker, force, generation_mode)
         tracker.finish("concluido")
         return result
     except Exception as error:
@@ -59,12 +91,32 @@ def generate_episode(settings: Settings, item: ContentItem, force: bool = False)
 
 
 def _run(
-    settings: Settings, item: ContentItem, directory: Path, tracker: GenerationTracker, force: bool
+    settings: Settings,
+    item: ContentItem,
+    directory: Path,
+    tracker: GenerationTracker,
+    force: bool,
+    generation_mode: str,
 ) -> Path:
     print(f"\n📄 {item.title} ({item.published_at})")
     print(f"   Pasta do episódio: {directory}")
 
     subscription = settings.text_provider not in ("", "openrouter")
+
+    def _chat_request(model: str, prompt: str, system: str = SYSTEM_PROMPT) -> dict:
+        if subscription:
+            from .providers import subscription as subscription_provider
+
+            result = subscription_provider.chat_json(settings.text_provider, system, prompt)
+            print(f"    [{settings.text_provider}] via assinatura — custo US$ 0,00")
+        else:
+            result = openrouter.chat_json(settings, model, system, prompt)
+            print(
+                f"    [{model}] {result.prompt_tokens}/{result.completion_tokens} tokens, "
+                f"US$ {result.cost_usd:.4f}"
+            )
+        tracker.add_cost(result.cost_usd)
+        return result.data
 
     def _chat_step(stage: str, path: Path, model: str, prompt: str) -> dict:
         cached = None if force else _load_json(path)
@@ -72,66 +124,72 @@ def _run(
             return cached
         tracker.stage(stage)
         tracker.checkpoint()
-        if subscription:
-            from .providers import subscription as subscription_provider
+        data = _chat_request(model, prompt)
+        _save_json(path, data)
+        return data
 
-            result = subscription_provider.chat_json(settings.text_provider, SYSTEM_PROMPT, prompt)
-            print(f"    [{settings.text_provider}] via assinatura — custo US$ 0,00")
-        else:
-            result = openrouter.chat_json(settings, model, SYSTEM_PROMPT, prompt)
-            print(
-                f"    [{model}] {result.prompt_tokens}/{result.completion_tokens} tokens, "
-                f"US$ {result.cost_usd:.4f}"
-            )
-        tracker.add_cost(result.cost_usd)
-        _save_json(path, result.data)
-        return result.data
+    if generation_mode == "verbatim":
+        print("🎭 1/3 Planejamento de interpretação em lotes…")
+        turns = _prepare_verbatim_turns(
+            settings,
+            item,
+            directory,
+            tracker,
+            force,
+            lambda prompt: _chat_request(settings.audit_model, prompt, PROSODY_SYSTEM),
+        )
+        print(f"   {len(turns)} trechos; texto original preservado integralmente.")
+        print("🎙️  2/3 Síntese da leitura fiel…")
+    else:
+        print("🧠 1/5 Matriz de cobertura…")
+        coverage = _chat_step(
+            "cobertura",
+            directory / "coverage.json",
+            settings.audit_model,
+            COVERAGE_PROMPT.format(content=item.text),
+        )
+        print(f"   {len(coverage.get('items', []))} itens de cobertura.")
 
-    print("🧠 1/5 Matriz de cobertura…")
-    coverage = _chat_step(
-        "cobertura",
-        directory / "coverage.json",
-        settings.audit_model,
-        COVERAGE_PROMPT.format(content=item.text),
-    )
-    print(f"   {len(coverage.get('items', []))} itens de cobertura.")
+        print("✍️  2/5 Roteiro…")
+        script = _chat_step(
+            "roteiro",
+            directory / "script.json",
+            settings.text_model,
+            script_prompt(settings.presenters, item.attribution).format(
+                content=item.text,
+                matrix=json.dumps(coverage, ensure_ascii=False),
+            ),
+        )
+        turns = script.get("turns", [])
+        print(f"   {len(turns)} turnos para {len(settings.presenters)} apresentador(es).")
 
-    print("✍️  2/5 Roteiro…")
-    script = _chat_step(
-        "roteiro",
-        directory / "script.json",
-        settings.text_model,
-        script_prompt(settings.presenters, item.attribution).format(
-            content=item.text,
-            matrix=json.dumps(coverage, ensure_ascii=False),
-        ),
-    )
-    turns = script.get("turns", [])
-    print(f"   {len(turns)} turnos para {len(settings.presenters)} apresentador(es).")
+        print("✅ 3/5 Auditoria do roteiro…")
+        audit = _chat_step(
+            "auditoria",
+            directory / "audit.json",
+            settings.audit_model,
+            AUDIT_PROMPT.format(
+                content=item.text,
+                matrix=json.dumps(coverage, ensure_ascii=False),
+                script=json.dumps(script, ensure_ascii=False),
+            ),
+        )
+        _report_audit(coverage, audit)
+        print("🎙️  4/5 Síntese de áudio por turno…")
 
-    print("✅ 3/5 Auditoria do roteiro…")
-    audit = _chat_step(
-        "auditoria",
-        directory / "audit.json",
-        settings.audit_model,
-        AUDIT_PROMPT.format(
-            content=item.text,
-            matrix=json.dumps(coverage, ensure_ascii=False),
-            script=json.dumps(script, ensure_ascii=False),
-        ),
-    )
-    _report_audit(coverage, audit)
-
-    print("🎙️  4/5 Síntese de áudio por turno…")
     segments = _synthesize_turns(
         settings,
         directory,
         turns,
         tracker,
-        trust_legacy_segments=not force,
+        trust_legacy_segments=not force and generation_mode != "verbatim",
     )
 
-    print("🎧 5/5 Montagem com ffmpeg…")
+    print(
+        "🎧 3/3 Montagem com ffmpeg…"
+        if generation_mode == "verbatim"
+        else "🎧 5/5 Montagem com ffmpeg…"
+    )
     tracker.stage("montagem")
     tracker.checkpoint()
     final_path = _assemble(directory, segments, item)
@@ -144,13 +202,79 @@ def _run(
         cost_exact=tracker.cost_exact,
         tts_model=settings.tts_model,
         profile_name=settings.profile_name,
+        generation_mode=generation_mode,
         generated_at=datetime.now().astimezone().isoformat(timespec="seconds"),
         cost_source=("generation_ids" if tracker.cost_exact else "model_pricing_fallback"),
     ).write(directory)
-    _write_show_notes(directory, item, tracker.cost_usd, tracker.cost_exact)
+    _write_show_notes(directory, item, tracker.cost_usd, tracker.cost_exact, generation_mode)
     print(f"\n✔ Episódio gerado: {final_path}")
     print(f"💰 Custo total registrado: US$ {tracker.cost_usd:.4f}")
     return final_path
+
+
+def _prepare_verbatim_turns(
+    settings: Settings,
+    item: ContentItem,
+    directory: Path,
+    tracker: GenerationTracker,
+    force: bool,
+    analyze: Callable[[str], dict],
+) -> list[dict]:
+    """Planeja somente a interpretação; o texto falado sempre vem da fonte original."""
+    chunks = split_verbatim_text(item.text)
+    source_digest = hashlib.sha256(item.text.encode("utf-8")).hexdigest()
+    path = directory / "prosody.json"
+    loaded = None if force else _load_json(path)
+    if not isinstance(loaded, dict) or loaded.get("source_sha256") != source_digest:
+        loaded = {"version": 1, "source_sha256": source_digest, "segments": {}}
+    entries = loaded.get("segments")
+    if not isinstance(entries, dict):
+        entries = {}
+        loaded["segments"] = entries
+
+    def cache_key(index: int, text: str) -> str:
+        digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        return f"{index}:{digest}"
+
+    cached = {
+        chunk.index
+        for chunk in chunks
+        if isinstance(entries.get(cache_key(chunk.index, chunk.text)), dict)
+        and isinstance(entries[cache_key(chunk.index, chunk.text)].get("direction"), str)
+    }
+    tracker.stage("planejamento de interpretação", total=len(chunks), current=len(cached))
+    missing = [chunk for chunk in chunks if chunk.index not in cached]
+    completed = len(cached)
+    for batch in prosody_batches(missing):
+        tracker.checkpoint()
+        planned = parse_prosody_plan(analyze(prosody_prompt(batch)), {c.index for c in batch})
+        for chunk in batch:
+            entries[cache_key(chunk.index, chunk.text)] = {
+                "direction": planned.get(chunk.index) or fallback_direction(chunk.text)
+            }
+        completed += len(batch)
+        _save_json(path, loaded)
+        tracker.advance(completed)
+
+    narrator = settings.presenters[0]
+    turns = []
+    for chunk in chunks:
+        direction = entries[cache_key(chunk.index, chunk.text)]["direction"]
+        turns.append(
+            {
+                "turn_id": f"N{chunk.index:05d}",
+                "speaker": narrator.speaker,
+                "text": chunk.text,
+                "instructions": tts_direction(direction, narrator.style),
+            }
+        )
+    if "".join(turn["text"] for turn in turns) != item.text:
+        raise AssertionError("O planejamento de interpretação alterou o texto original.")
+    _save_json(
+        directory / "narration-script.json",
+        {"mode": "verbatim", "source_sha256": source_digest, "turns": turns},
+    )
+    return turns
 
 
 def _report_audit(coverage: dict, audit: dict) -> None:
@@ -337,7 +461,14 @@ def _synthesize_turns(
         presenter = voices.get(speaker, default)
         segment = segments_dir / f"{index:03d}_{presenter.speaker}.{extension}"
         style = f", tom {presenter.style}" if presenter.style else ""
-        instructions = f"Fala natural de podcast em português brasileiro{style}."
+        supplied_instructions = turn.get("instructions")
+        if supplied_instructions is not None and (
+            not isinstance(supplied_instructions, str) or len(supplied_instructions) > 2_000
+        ):
+            raise ValueError(f"Instrução de interpretação inválida no turno {index}.")
+        instructions = supplied_instructions or (
+            f"Fala natural de podcast em português brasileiro{style}."
+        )
         fingerprint = _segment_fingerprint(
             settings,
             turn["text"],
@@ -520,13 +651,26 @@ def _assemble(directory: Path, segments: list[Path], item: ContentItem) -> Path:
 
 
 def _write_show_notes(
-    directory: Path, item: ContentItem, cost_usd: float, cost_exact: bool
+    directory: Path,
+    item: ContentItem,
+    cost_usd: float,
+    cost_exact: bool,
+    generation_mode: str = "adaptation",
 ) -> None:
+    if generation_mode == "verbatim":
+        production_note = (
+            "Leitura fiel gerada com inteligência artificial; o texto falado foi segmentado "
+            "sem reescrita e a direção vocal está em `prosody.json`."
+        )
+    else:
+        production_note = (
+            "Adaptação em áudio gerada com inteligência artificial; revise `audit.json` "
+            "antes de publicar."
+        )
     (directory / "NOTES.md").write_text(
         f"# {item.title}\n\n"
         f"{item.attribution}\n\n"
-        f"Adaptação em áudio gerada com inteligência artificial; revise `audit.json` antes de\n"
-        f"publicar. Fonte original: {item.url}\n\n"
+        f"{production_note} Fonte original: {item.url}\n\n"
         f"Custo de geração registrado: US$ {cost_usd:.4f} "
         f"({'exato por geração' if cost_exact else 'aproximado'})\n",
         encoding="utf-8",

@@ -33,7 +33,7 @@ _SKIP_TAGS = {
     "iframe",
 }
 _BLOCK_TAGS = {"p", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote", "pre"}
-_MAX_CONTENT_BYTES = 5 * 1024 * 1024
+_MAX_URL_CONTENT_BYTES = 5 * 1024 * 1024
 _MAX_REDIRECTS = 5
 
 
@@ -110,18 +110,18 @@ class CustomSource(ContentSource):
             raise ValueError("O título é obrigatório e pode ter no máximo 300 caracteres.")
         if not isinstance(text, str) or not text.strip():
             raise ValueError("O conteúdo não pode ser vazio.")
-        if len(text.encode("utf-8")) > _MAX_CONTENT_BYTES:
-            raise ValueError("O conteúdo excede o limite de 5 MiB.")
         self.inbox_dir.mkdir(parents=True, exist_ok=True)
         today = date.today().isoformat()
         base = f"{today}-{slugify(title)}"
         item_id, counter = base, 2
         while (self.inbox_dir / f"{item_id}.md").exists():
             item_id, counter = f"{base}-{counter}", counter + 1
-        (self.inbox_dir / f"{item_id}.md").write_text(
-            f"---\ntitle: {title}\nurl: {url}\ndate: {today}\n---\n\n{text}\n",
-            encoding="utf-8",
-        )
+        path = self.inbox_dir / f"{item_id}.md"
+        with path.open("w", encoding="utf-8", newline="") as output:
+            output.write(
+                f"---\ntitle: {title}\nurl: {url}\ndate: {today}\n"
+                f"content-format: exact-v1\n---\n{text}"
+            )
         return item_id
 
     def add_url(self, url: str) -> str:
@@ -152,13 +152,13 @@ class CustomSource(ContentSource):
                 declared = int(response.headers.get("content-length", 0) or 0)
             except (TypeError, ValueError):
                 declared = 0
-            if declared > _MAX_CONTENT_BYTES:
+            if declared > _MAX_URL_CONTENT_BYTES:
                 response.close()
                 raise ValueError("A página excede o limite de 5 MiB.")
             body = bytearray()
             for chunk in response.iter_content(64 * 1024):
                 body.extend(chunk)
-                if len(body) > _MAX_CONTENT_BYTES:
+                if len(body) > _MAX_URL_CONTENT_BYTES:
                     response.close()
                     raise ValueError("A página excede o limite de 5 MiB.")
             encoding = response.encoding or "utf-8"
@@ -184,15 +184,19 @@ class CustomSource(ContentSource):
         return True
 
     def _parse(self, path: Path) -> tuple[dict, str]:
-        raw = path.read_text(encoding="utf-8", errors="replace")
-        match = re.match(r"\A---\s*\n(.*?)\n---\s*\n", raw, re.DOTALL)
+        with path.open("r", encoding="utf-8", errors="replace", newline="") as source:
+            raw = source.read()
+        match = re.match(r"\A---[ \t]*\r?\n(.*?)\r?\n---[ \t]*\r?\n", raw, re.DOTALL)
         meta: dict[str, str] = {}
         if match:
             for line in match.group(1).splitlines():
                 key, _, value = line.partition(":")
                 meta[key.strip()] = value.strip()
             raw = raw[match.end() :]
-        return meta, raw.strip()
+        # Arquivos antigos tinham quebras decorativas ao redor do corpo. Novas
+        # importações marcam o formato exato para preservar inclusive as bordas.
+        text = raw if meta.get("content-format") == "exact-v1" else raw.strip()
+        return meta, text
 
     def list_items(self) -> list[ItemSummary]:
         if not self.inbox_dir.is_dir():

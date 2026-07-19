@@ -45,4 +45,17 @@ test("gerenciamento permite registrar, usar, trocar e verificar chaves", () => {
   assert.match(renderer, /\["keys-check", key\.name\]/);
   assert.match(renderer, /\["keys-check-environment"\]/);
   assert.match(styles, /\.settings-grid\s*\{[^}]*grid-template-rows:\s*repeat\(2, max-content\)/s);
+  assert.match(styles, /#tab-content\s*\{[^}]*grid-template-rows:\s*minmax\(280px, 45vh\)/s);
+});
+
+test("leitura fiel permite escolher um narrador sem enviar texto reescrito", () => {
+  const html = readRendererFile("index.html");
+  const renderer = readRendererFile("renderer.js");
+
+  assert.match(html, /id="generation-mode"/);
+  assert.match(html, /value="verbatim">Leitura fiel, sem reescrita/);
+  assert.match(html, /id="narration-voice"/);
+  assert.match(renderer, /`--mode=\$\{selectedMode\}`/);
+  assert.match(renderer, /`--voice=\$\{selectedVoice\}`/);
+  assert.match(renderer, /O texto não será reescrito/);
 });

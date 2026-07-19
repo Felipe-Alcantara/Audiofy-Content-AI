@@ -7,7 +7,7 @@ import unittest
 import wave
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -15,6 +15,7 @@ from audiofy.pipeline import (  # noqa: E402
     _assemble,
     _concat_line,
     _media_duration_seconds,
+    _prepare_verbatim_turns,
     _synthesize_turns,
     _wait_for_retry,
 )
@@ -146,6 +147,25 @@ class ResumableSynthesisTest(unittest.TestCase):
 
         self.assertEqual(text_to_speech.call_count, original_calls + 1)
 
+    @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
+    @patch(
+        "audiofy.pipeline.openrouter.text_to_speech",
+        return_value=SpeechResult(b"\x00\x00" * 300, "gen-direcao"),
+    )
+    def test_turno_pode_fornecer_direcao_vocal_sem_alterar_texto(
+        self, text_to_speech, _generation_cost
+    ):
+        _synthesize_turns(
+            _settings(),
+            self.directory,
+            [{"speaker": "ana", "text": "Texto literal.", "instructions": "Suspense lento."}],
+            self.tracker,
+        )
+
+        call = text_to_speech.call_args
+        self.assertEqual(call.args[1], "Texto literal.")
+        self.assertEqual(call.kwargs["instructions"], "Suspense lento.")
+
     @patch("audiofy.pipeline.estimate_tts_cost", return_value=0.02)
     @patch(
         "audiofy.pipeline.openrouter.generation_cost_usd",
@@ -243,6 +263,39 @@ class AtomicAssemblyTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaisesRegex(ValueError, "segmento"):
                 _assemble(Path(tmp), [], SimpleNamespace(title="x", attribution="y"))
+
+
+class VerbatimPreparationTest(unittest.TestCase):
+    def test_planeja_em_lotes_preserva_texto_e_reaproveita_cache(self):
+        text = ("Capítulo um. O perigo aumentava lentamente...\n\n" * 150) + "Fim."
+        item = SimpleNamespace(text=text)
+        analyzer = Mock(
+            return_value={
+                "segments": [
+                    {"id": index, "direction": f"direção {index}", "text": "reescrito"}
+                    for index in range(1, 20)
+                ]
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            tracker = GenerationTracker(directory, "livro", generation_mode="verbatim")
+
+            turns = _prepare_verbatim_turns(_settings(), item, directory, tracker, False, analyzer)
+
+            cached_analyzer = Mock()
+            resumed = GenerationTracker(directory, "livro", generation_mode="verbatim")
+            cached_turns = _prepare_verbatim_turns(
+                _settings(), item, directory, resumed, False, cached_analyzer
+            )
+
+            script = json.loads((directory / "narration-script.json").read_text(encoding="utf-8"))
+        self.assertEqual("".join(turn["text"] for turn in turns), text)
+        self.assertEqual(cached_turns, turns)
+        self.assertEqual(script["mode"], "verbatim")
+        self.assertNotIn("reescrito", str(turns))
+        analyzer.assert_called_once()
+        cached_analyzer.assert_not_called()
 
 
 class FailureIsNeverSilentTest(unittest.TestCase):

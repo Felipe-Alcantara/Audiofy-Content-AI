@@ -1,7 +1,7 @@
 # 🎙️ Plano técnico — Akita on Rails to Podcast
 
 > **Estado:** proposta arquitetural  
-> **Atualizado em:** 16 de julho de 2026  
+> **Atualizado em:** 18 de julho de 2026
 > **Objetivo:** registrar uma solução auditável para transformar artigos em podcasts sem tratar
 > resumo automático como garantia de fidelidade.
 
@@ -113,6 +113,11 @@ tabelas e repetições podem exigir adaptação oral. O contrato correto é:
 
 > Não omitir nem distorcer conceitos, argumentos, exemplos, ressalvas, evidências, números e
 > conclusões necessários para reconstruir o sentido do artigo.
+
+Esse contrato vale para **podcast adaptado**. O produto também possui **leitura fiel**, voltada a
+prosa pronta como livros e fanfics: nesse modo, nenhum modelo pode produzir o texto falado. O
+backend divide o original localmente e exige que a concatenação dos trechos seja idêntica à
+entrada; a IA devolve somente direções prosódicas separadas.
 
 ### Classes de cobertura
 
@@ -299,6 +304,14 @@ flowchart TD
 - escolhe voz, estilo, pausa inicial e pausa final;
 - gera IDs determinísticos para cache e reprocessamento.
 
+### Planejador de leitura fiel
+
+- divide prosa por parágrafo ou fim de frase, com corte duro somente quando necessário;
+- comprova que os trechos recompõem o texto original sem remoção ou reordenação;
+- analisa lotes limitados, sem exigir que a obra completa caiba no contexto do modelo;
+- aceita do modelo somente direção de ritmo, pausa, emoção, tensão e diálogo;
+- persiste `prosody.json` e `narration-script.json` para retomada e auditoria.
+
 ### Adaptador TTS
 
 - chama `/api/v1/audio/speech`;
@@ -371,6 +384,17 @@ flowchart TD
     "tone": "curioso",
     "pace": "normal"
   }
+}
+```
+
+### Trecho de leitura fiel
+
+```json
+{
+  "turn_id": "N00001",
+  "speaker": "narrador",
+  "text": "Fatia exata do texto original.",
+  "instructions": "Direção vocal separada; nunca é lida como texto."
 }
 ```
 
@@ -456,6 +480,9 @@ já aprovadas. Retorne JSON válido conforme o schema.
 - nenhum fato externo não identificado como contexto adicional;
 - nomes, números, links e termos técnicos conferidos;
 - duração estimada compatível com o volume do artigo.
+
+Na leitura fiel, os portões editoriais acima são substituídos por igualdade integral entre
+entrada e concatenação dos trechos, uma única voz válida, instruções curtas e ids determinísticos.
 
 ### Depois do TTS
 

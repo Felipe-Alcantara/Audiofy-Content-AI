@@ -59,6 +59,12 @@ O gerenciamento de chaves tem regressões em três fronteiras: o cofre testa per
 precedência; a bridge testa seleção e verificação sem devolver o segredo; o Electron testa a
 allowlist dos comandos e a presença das ações de registrar, usar, trocar e verificar.
 
+A leitura fiel também tem três fronteiras: funções puras provam recomposição exata e lotes
+limitados; a importação preserva espaços e quebras nas bordas; o pipeline prova que respostas do
+planejador nunca substituem o texto e que o cache é retomável; bridge/Electron validam modo, voz,
+ausência de teto para texto colado e controles responsivos. A inspeção manual da aba Conteúdo
+precisa exercitar os dois formatos em 600 px e 380 px.
+
 Gerações reais com OpenRouter não rodam na CI porque consomem créditos e exigem segredo. Mudanças
 no pipeline devem usar mocks nos testes e, quando necessário, registrar no `IA.md` o smoke test
 real executado sem incluir conteúdo sensível ou chaves.

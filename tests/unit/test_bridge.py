@@ -192,6 +192,14 @@ class ChatHistoryContractTest(unittest.TestCase):
 
 
 class ForcedGenerationTest(unittest.TestCase):
+    def test_opcoes_da_leitura_fiel_exigem_voz_conhecida(self):
+        self.assertEqual(
+            bridge._generation_options(["--mode=verbatim", "--voice=Sulafat", "--force"]),
+            (True, "verbatim", "Sulafat"),
+        )
+        with self.assertRaisesRegex(ValueError, "voz de narrador"):
+            bridge._generation_options(["--mode=verbatim"])
+
     @patch("audiofy.pipeline.generate_episode", return_value=Path("episode.mp3"))
     @patch("audiofy.bridge.get_source")
     def test_run_generation_repassa_force(self, get_source, generate_episode):
@@ -199,6 +207,22 @@ class ForcedGenerationTest(unittest.TestCase):
         result = bridge._cmd_run_generation("custom", "item", force=True)
         self.assertEqual(result, {"mp3": "episode.mp3"})
         self.assertTrue(generate_episode.call_args.kwargs["force"])
+        self.assertEqual(generate_episode.call_args.kwargs["generation_mode"], "adaptation")
+
+    @patch("audiofy.pipeline.generate_episode", return_value=Path("livro.mp3"))
+    @patch("audiofy.bridge.get_source")
+    def test_worker_configura_um_narrador_e_preserva_modo(self, get_source, generate_episode):
+        get_source.return_value.get_item.return_value = object()
+
+        result = bridge._cmd_run_generation(
+            "custom", "livro", generation_mode="verbatim", narration_voice="Sulafat"
+        )
+
+        settings = generate_episode.call_args.args[0]
+        self.assertEqual(len(settings.presenters), 1)
+        self.assertEqual(settings.presenters[0].voice, "Sulafat")
+        self.assertEqual(generate_episode.call_args.kwargs["generation_mode"], "verbatim")
+        self.assertEqual(result, {"mp3": "livro.mp3"})
 
     def test_generate_inclui_force_no_subprocesso(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -216,6 +240,28 @@ class ForcedGenerationTest(unittest.TestCase):
         self.assertIn("--force", popen.call_args.args[0])
         self.assertEqual(status["state"], "rodando")
         self.assertEqual(status["stage"], "iniciando")
+
+    def test_generate_repassa_modo_e_voz_ao_subprocesso(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / "livro"
+            with (
+                patch("audiofy.bridge._episode_dir", return_value=directory),
+                patch("audiofy.bridge.Settings", return_value=Mock()),
+                patch("audiofy.runtime.process.subprocess.Popen") as popen,
+            ):
+                result = bridge._cmd_generate(
+                    "custom",
+                    "livro",
+                    generation_mode="verbatim",
+                    narration_voice="Sulafat",
+                )
+
+            status = bridge.GenerationTracker.load(directory)
+        command = popen.call_args.args[0]
+        self.assertIn("--mode=verbatim", command)
+        self.assertIn("--voice=Sulafat", command)
+        self.assertEqual(result["generation_mode"], "verbatim")
+        self.assertEqual(status["narration_voice"], "Sulafat")
 
     def test_worker_e_lancado_desanexado_de_forma_portatil(self):
         """O worker não pode usar start_new_session (POSIX-only) e travar no Windows."""

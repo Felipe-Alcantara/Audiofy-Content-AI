@@ -49,6 +49,7 @@ class EpisodeMetrics:
     cost_exact: bool
     tts_model: str
     profile_name: str
+    generation_mode: str = "adaptation"
     generated_at: str = ""
     cost_source: str = "generation_ids"
 

@@ -8,7 +8,8 @@
     python3 -m audiofy.bridge search <fonte> <termos…>
     python3 -m audiofy.bridge item <fonte> <item-id>
     python3 -m audiofy.bridge generate <fonte> <item-id> [--force]
-    python3 -m audiofy.bridge run-generation <fonte> <item-id> [--force]  # uso interno
+        [--mode=adaptation|verbatim] [--voice=<voz>]
+    python3 -m audiofy.bridge run-generation <fonte> <item-id> [opções]  # uso interno
     python3 -m audiofy.bridge status [<item-id>]
     python3 -m audiofy.bridge abort <item-id>
     python3 -m audiofy.bridge tts-catalog
@@ -54,6 +55,8 @@ def _episode_summary(directory: Path) -> dict:
         "retry": status.get("retry"),
         "last_error": status.get("last_error"),
         "resume_count": status.get("resume_count", 0),
+        "generation_mode": status.get("generation_mode", "adaptation"),
+        "narration_voice": status.get("narration_voice"),
         "updated_at": status.get("updated_at"),
         "mp3": (
             str(completed_mp3)
@@ -95,16 +98,70 @@ def _cmd_item(source_key: str, item_id: str) -> dict:
     return payload
 
 
-def _cmd_generate(source_key: str, item_id: str, force: bool = False) -> dict:
+def _validate_generation_options(
+    generation_mode: str, narration_voice: str | None
+) -> tuple[str, str | None]:
+    if generation_mode not in {"adaptation", "verbatim"}:
+        raise ValueError(f"Modo de geração desconhecido: {generation_mode}")
+    if generation_mode == "adaptation":
+        return generation_mode, None
+    from .providers.openrouter import GEMINI_VOICES
+
+    if narration_voice not in GEMINI_VOICES:
+        raise ValueError("Escolha uma voz de narrador disponível no catálogo Gemini.")
+    return generation_mode, narration_voice
+
+
+def _generation_options(arguments: list[str]) -> tuple[bool, str, str | None]:
+    force = False
+    generation_mode = "adaptation"
+    narration_voice = None
+    for argument in arguments:
+        if argument == "--force":
+            force = True
+        elif argument.startswith("--mode="):
+            generation_mode = argument.partition("=")[2]
+        elif argument.startswith("--voice="):
+            narration_voice = argument.partition("=")[2]
+        else:
+            raise ValueError(f"Opção de geração desconhecida: {argument}")
+    mode, voice = _validate_generation_options(generation_mode, narration_voice)
+    return force, mode, voice
+
+
+def _cmd_generate(
+    source_key: str,
+    item_id: str,
+    force: bool = False,
+    generation_mode: str = "adaptation",
+    narration_voice: str | None = None,
+) -> dict:
+    generation_mode, narration_voice = _validate_generation_options(
+        generation_mode, narration_voice
+    )
     directory = _episode_dir(item_id)
     # reconcile: um "rodando" órfão (worker morto) não pode bloquear a nova
     # geração — era isso que fazia todo clique responder "já em andamento".
     status = GenerationTracker.reconcile(directory)
     if status and status.get("state") == "rodando":
         return {"started": False, "reason": "geração já em andamento", "dir": str(directory)}
+    previous_mode = status.get("generation_mode", "adaptation") if status else None
+    previous_voice = status.get("narration_voice") if status else None
+    if status and (
+        previous_mode != generation_mode
+        or (generation_mode == "verbatim" and previous_voice != narration_voice)
+    ):
+        # Trocar formato ou voz muda todos os segmentos e precisa reiniciar a contabilidade.
+        force = True
     Settings().require_api_key()
     directory.mkdir(parents=True, exist_ok=True)
-    GenerationTracker.mark_starting(directory, item_id, resume=not force)
+    GenerationTracker.mark_starting(
+        directory,
+        item_id,
+        resume=not force,
+        generation_mode=generation_mode,
+        narration_voice=narration_voice,
+    )
     child_args = [
         sys.executable,
         "-m",
@@ -115,6 +172,9 @@ def _cmd_generate(source_key: str, item_id: str, force: bool = False) -> dict:
     ]
     if force:
         child_args.append("--force")
+    child_args.append(f"--mode={generation_mode}")
+    if narration_voice:
+        child_args.append(f"--voice={narration_voice}")
     import os
 
     from .runtime.process import launch_detached
@@ -141,18 +201,47 @@ def _cmd_generate(source_key: str, item_id: str, force: bool = False) -> dict:
     return {
         "started": True,
         "force": force,
+        "generation_mode": generation_mode,
+        "narration_voice": narration_voice,
         "dir": str(directory),
         "log": str(directory / "generation.log"),
     }
 
 
-def _cmd_run_generation(source_key: str, item_id: str, force: bool = False) -> dict:
+def _cmd_run_generation(
+    source_key: str,
+    item_id: str,
+    force: bool = False,
+    generation_mode: str = "adaptation",
+    narration_voice: str | None = None,
+) -> dict:
+    generation_mode, narration_voice = _validate_generation_options(
+        generation_mode, narration_voice
+    )
     from .pipeline import generate_episode
 
     try:
         settings = Settings()
+        if generation_mode == "verbatim":
+            from dataclasses import replace
+
+            from .presenters import Presenter
+            from .providers.openrouter import GEMINI_VOICES
+
+            settings = replace(
+                settings,
+                presenters=[
+                    Presenter("narrador", narration_voice or "", GEMINI_VOICES[narration_voice])
+                ],
+            )
         item = get_source(source_key).get_item(item_id)
-        final = generate_episode(settings, item, force=force)
+        final = generate_episode(
+            settings,
+            item,
+            force=force,
+            generation_mode=generation_mode,
+            narration_voice=narration_voice,
+        )
     except Exception as error:
         # Falha antes/fora do pipeline (fonte, configuração, imports tardios):
         # sem esta marca o status ficaria "rodando" para sempre.
@@ -190,6 +279,7 @@ def _cmd_settings_info() -> dict:
     import os
 
     from .config import api_key_source
+    from .providers.openrouter import GEMINI_VOICES
     from .providers.subscription import SUBSCRIPTION_CLIS, configured_model
 
     settings = Settings()
@@ -214,6 +304,7 @@ def _cmd_settings_info() -> dict:
         "presenters": [
             {"speaker": p.speaker, "voice": p.voice, "style": p.style} for p in settings.presenters
         ],
+        "gemini_voices": GEMINI_VOICES,
         "has_key": bool(settings.api_key),
         "key_source": api_key_source(),
         "overrides": overrides,
@@ -383,9 +474,11 @@ def main() -> None:
         elif command == "item" and len(rest) >= 2:
             result = _cmd_item(rest[0], rest[1])
         elif command == "generate" and len(rest) >= 2:
-            result = _cmd_generate(rest[0], rest[1], force="--force" in rest[2:])
+            force, mode, voice = _generation_options(rest[2:])
+            result = _cmd_generate(rest[0], rest[1], force, mode, voice)
         elif command == "run-generation" and len(rest) >= 2:
-            result = _cmd_run_generation(rest[0], rest[1], force="--force" in rest[2:])
+            force, mode, voice = _generation_options(rest[2:])
+            result = _cmd_run_generation(rest[0], rest[1], force, mode, voice)
         elif command == "status":
             result = _cmd_status(rest[0] if rest else None)
         elif command == "abort" and rest:
