@@ -52,6 +52,8 @@ class EpisodeMetrics:
     generation_mode: str = "adaptation"
     generated_at: str = ""
     cost_source: str = "generation_ids"
+    background_music: str | None = None
+    background_volume: float | None = None
 
     def write(self, directory: Path) -> Path:
         target = directory / "metrics.json"

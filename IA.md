@@ -953,3 +953,22 @@ nas etapas OpenRouter de texto quanto no TTS, registrando somente o nome seguro 
 **Validação:** 76 testes Python focados e 25 testes Electron passaram, incluindo migração,
 persistência da ordem, reordenação, contrato IPC e fallback simulado em `402`/`403`. Nenhuma chave
 real foi lida pelos testes e nenhuma chamada paga foi executada.
+
+---
+
+## 2026-07-19 — Música de fundo local com remixagem retomável
+
+**Decisão:** o detalhe de Conteúdo ganhou seletor nativo de arquivo, remoção e volume entre 1% e
+25%. MP3, WAV, M4A, AAC, FLAC e OGG de até 500 MiB são copiados pelo launcher para
+`.audiofy/music/<sha256>.<ext>`; o worker rejeita qualquer caminho fora desse diretório. Isso evita
+persistir caminhos pessoais e mantém a retomada funcional depois que o seletor fecha.
+
+**Montagem:** a narração continua normalizada e a faixa, a 8% por padrão, é repetida pelo ffmpeg
+somente até o fim da voz. A opção altera apenas a montagem: chunks compatíveis são reutilizados e
+não geram novo custo TTS. `mix.json` registra nome original, hash, volume e regra de duração;
+`metrics.json`, `status.json` e `NOTES.md` expõem metadados seguros e o aviso de direitos autorais.
+
+**Segurança e validação parcial:** o IPC continua em allowlist e ganhou somente dois argumentos
+limitados no comando `generate`; o renderer não recebe acesso genérico ao sistema de arquivos.
+79 testes Python focados e 27 testes Electron passaram. A validação integral e a inspeção em
+600 px/380 px serão registradas ao fim da entrega.

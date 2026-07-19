@@ -186,7 +186,8 @@ Para automações e integrações, continuam disponíveis os comandos secundári
 Cada episódio fica em `data/episodes/<item>/` com artefatos auditáveis. A adaptação usa
 `coverage.json`, `script.json` e `audit.json`; a leitura fiel usa `prosody.json` e
 `narration-script.json`. Ambos mantêm `status.json`, `segments.json`, `segments/`, `episode.mp3`
-e `NOTES.md`. Falhas temporárias no TTS são retomadas automaticamente por fala, com backoff e
+e `NOTES.md`; uma remixagem com trilha também registra `mix.json`. Falhas temporárias no TTS são
+retomadas automaticamente por fala, com backoff e
 jitter (cinco tentativas por padrão), sem refazer nem repagar segmentos concluídos. Se o limite
 terminar ou o processo for encerrado, rodar novamente continua do checkpoint; o manifesto vincula
 cada áudio ao texto, modelo, voz e formato usados. A política pode ser ajustada com
@@ -198,6 +199,12 @@ Antes da montagem, todos os chunks passam por detecção objetiva de silêncio. 
 Pausas a partir de 5 segundos ou chunks com pelo menos 35% de silêncio recebem alerta crítico. O
 botão **Revisar chunks** abre um modal com os achados e permite ouvir cada arquivo separadamente;
 a auditoria aponta problemas, mas não altera nem descarta áudio automaticamente.
+
+No desktop, **Escolher música de fundo** abre o seletor nativo e permite regular a faixa entre
+1% e 25% (8% por padrão). O arquivo é validado e copiado para o cache privado `.audiofy/music`;
+somente nome, hash e volume entram nos artefatos do episódio. O ffmpeg repete a faixa até o fim da
+narração, sem prolongar o episódio, e reaproveita os chunks existentes sem novo custo de TTS.
+Confirme os direitos de uso da música antes de publicar.
 
 ## 🧭 Guia rápido
 
@@ -233,7 +240,8 @@ abas:
 - **💬 Chat** — o assistente de pesquisa: qualquer tema, com ações executadas automaticamente
   (adicionar URL, buscar, gerar, exportar NotebookLM);
 - **📚 Conteúdo** — seletor e prontidão da fonte, busca, adicionar por URL ou texto colado,
-  estimativa, podcast adaptado ou leitura fiel com escolha de narrador, log vivo e NotebookLM;
+  estimativa, podcast adaptado ou leitura fiel com escolha de narrador, música de fundo local,
+  log vivo e NotebookLM;
 - **🎧 Episódios** — todos os episódios com estado, progresso, custo, abortar, ouvir e abrir
   pasta, além da revisão individual de chunks e alertas de silêncio;
 - **⚙️ Configurações** — contador e origem efetiva das chaves, cadastro, troca, verificação

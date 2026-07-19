@@ -36,6 +36,16 @@ test("bridge limita aridade, tipo e volume da entrada", () => {
   assert.throws(() => validateBridgeRequest(["chat"], "x".repeat(6 * 1024 * 1024 + 1)));
 });
 
+test("generate aceita música e volume sem liberar argumentos ilimitados", () => {
+  assert.doesNotThrow(() => validateBridgeRequest([
+    "generate", "custom", "livro", "--mode=verbatim", "--voice=Sulafat", "--force",
+    "--background-music=/tmp/trilha.mp3", "--background-volume=0.08",
+  ]));
+  assert.throws(() => validateBridgeRequest([
+    "generate", "custom", "livro", "--mode=adaptation", "--force", "x", "y", "z", "extra",
+  ]));
+});
+
 test("bridge não impõe teto de caracteres ao conteúdo colado", () => {
   const securitySource = require("node:fs").readFileSync(
     path.join(__dirname, "..", "security.js"), "utf8"

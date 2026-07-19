@@ -267,7 +267,7 @@ class ForcedGenerationTest(unittest.TestCase):
     def test_opcoes_da_leitura_fiel_exigem_voz_conhecida(self):
         self.assertEqual(
             bridge._generation_options(["--mode=verbatim", "--voice=Sulafat", "--force"]),
-            (True, "verbatim", "Sulafat"),
+            (True, "verbatim", "Sulafat", None, 0.08),
         )
         with self.assertRaisesRegex(ValueError, "voz de narrador"):
             bridge._generation_options(["--mode=verbatim"])
@@ -280,6 +280,34 @@ class ForcedGenerationTest(unittest.TestCase):
         self.assertEqual(result, {"mp3": "episode.mp3"})
         self.assertTrue(generate_episode.call_args.kwargs["force"])
         self.assertEqual(generate_episode.call_args.kwargs["generation_mode"], "adaptation")
+
+    def test_musica_e_validada_copiada_e_restrita_ao_cache_privado(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "trilha.mp3"
+            source.write_bytes(b"audio")
+            with (
+                patch("audiofy.bridge.PROJECT_ROOT", root),
+                patch("audiofy.bridge.STATE_DIR", root / ".audiofy"),
+            ):
+                relative, name = bridge._cache_background_music(str(source))
+                cached = bridge._cached_background_path(relative)
+                with self.assertRaisesRegex(ValueError, "cache privado"):
+                    bridge._cached_background_path("trilha.mp3")
+                self.assertEqual(cached.read_bytes(), b"audio")
+
+        self.assertEqual(name, "trilha.mp3")
+        self.assertTrue(relative.startswith(".audiofy/music/"))
+
+    def test_opcoes_de_musica_limitam_volume(self):
+        self.assertEqual(
+            bridge._generation_options(
+                ["--background-music=/tmp/trilha.mp3", "--background-volume=0.12"]
+            ),
+            (False, "adaptation", None, "/tmp/trilha.mp3", 0.12),
+        )
+        with self.assertRaisesRegex(ValueError, "1% e 25%"):
+            bridge._generation_options(["--background-volume=0.5"])
 
     @patch("audiofy.pipeline.generate_episode", return_value=Path("livro.mp3"))
     @patch("audiofy.bridge.get_source")
@@ -295,6 +323,24 @@ class ForcedGenerationTest(unittest.TestCase):
         self.assertEqual(settings.presenters[0].voice, "Sulafat")
         self.assertEqual(generate_episode.call_args.kwargs["generation_mode"], "verbatim")
         self.assertEqual(result, {"mp3": "livro.mp3"})
+
+    @patch("audiofy.pipeline.generate_episode", return_value=Path("livro.mp3"))
+    @patch("audiofy.bridge._cached_background_path", return_value=Path("cache/trilha.mp3"))
+    @patch("audiofy.bridge.get_source")
+    def test_worker_repassa_musica_cacheada_e_volume(
+        self, get_source, cached_background_path, generate_episode
+    ):
+        get_source.return_value.get_item.return_value = object()
+
+        bridge._cmd_run_generation(
+            "custom", "livro", background_music=".audiofy/music/hash.mp3", background_volume=0.12
+        )
+
+        cached_background_path.assert_called_once_with(".audiofy/music/hash.mp3")
+        self.assertEqual(
+            generate_episode.call_args.kwargs["background_music"], Path("cache/trilha.mp3")
+        )
+        self.assertEqual(generate_episode.call_args.kwargs["background_volume"], 0.12)
 
     @patch("audiofy.bridge.api_key_source", return_value="ambiente")
     def test_generate_inclui_force_no_subprocesso(self, _key_source):

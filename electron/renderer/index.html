@@ -107,6 +107,22 @@
             <select id="narration-voice"></select>
           </label>
           <p id="generation-mode-note" class="muted small"></p>
+          <div class="background-music-options">
+            <div class="background-music-picker">
+              <button id="btn-background-music" type="button">🎵 Escolher música de fundo</button>
+              <button id="btn-clear-background-music" type="button" class="ghost hidden">
+                Remover</button>
+              <span id="background-music-name" class="muted small">Sem música de fundo</span>
+            </div>
+            <label class="background-volume">Volume da música
+              <input id="background-volume" type="range" min="1" max="25" value="8"
+                aria-describedby="background-music-rights" />
+              <output id="background-volume-value" for="background-volume">8%</output>
+            </label>
+            <p id="background-music-rights" class="muted small">
+              A faixa fica baixa, repete somente até o fim da narração e não gera custo de TTS.
+              Use apenas áudio que você tenha direito de publicar.</p>
+          </div>
         </div>
         <div class="actions">
           <button id="btn-generate" class="primary">🎙️ Gerar episódio</button>

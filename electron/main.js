@@ -2,7 +2,7 @@
 // Toda a lógica vive no backend Python; esta camada só chama a bridge JSON
 // (python3 -m audiofy.bridge <cmd>) e repassa o resultado ao renderer.
 
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, shell } = require("electron");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -108,9 +108,21 @@ async function openProjectPath(target) {
   }
 }
 
+async function chooseBackgroundMusic() {
+  const result = await dialog.showOpenDialog({
+    title: "Escolher música de fundo",
+    properties: ["openFile"],
+    filters: [
+      { name: "Áudio", extensions: ["mp3", "wav", "m4a", "aac", "flac", "ogg"] },
+    ],
+  });
+  return result.canceled ? null : result.filePaths[0];
+}
+
 app.whenReady().then(() => {
   ipcMain.handle("bridge", (_event, args, stdinData) => bridge(args, stdinData));
   ipcMain.handle("open-path", (_event, target) => openProjectPath(target));
+  ipcMain.handle("choose-background-music", () => chooseBackgroundMusic());
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -126,6 +126,27 @@ class GenerationTrackerTest(unittest.TestCase):
         self.assertEqual(self._read()["key_source"], "trabalho")
         self.assertNotIn("sk-or-", self._read()["key_source"])
 
+    def test_status_preserva_apenas_metadados_seguros_da_musica(self):
+        GenerationTracker.mark_starting(
+            self.directory,
+            "ep-teste",
+            background_music="trilha.mp3",
+            background_music_cache=".audiofy/music/hash.mp3",
+            background_volume=0.08,
+        )
+        worker = GenerationTracker(
+            self.directory,
+            "ep-teste",
+            background_music="trilha.mp3",
+            background_music_cache=".audiofy/music/hash.mp3",
+            background_volume=0.08,
+        )
+
+        data = self._read()
+        self.assertEqual(worker.background_music, "trilha.mp3")
+        self.assertEqual(data["background_music_cache"], ".audiofy/music/hash.mp3")
+        self.assertEqual(data["background_volume"], 0.08)
+
     def test_execucao_forcada_inicia_novo_custo(self):
         self.tracker.stage("tts", total=2)
         self.tracker.add_cost(0.35)

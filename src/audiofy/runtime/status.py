@@ -34,6 +34,9 @@ class GenerationTracker:
         generation_mode: str = "adaptation",
         narration_voice: str | None = None,
         key_source: str | None = None,
+        background_music: str | None = None,
+        background_music_cache: str | None = None,
+        background_volume: float | None = None,
     ) -> None:
         self.directory = directory
         self.directory.mkdir(parents=True, exist_ok=True)
@@ -59,6 +62,9 @@ class GenerationTracker:
             "generation_mode": generation_mode,
             "narration_voice": narration_voice,
             "key_source": key_source if key_source is not None else launch_status.get("key_source"),
+            "background_music": background_music,
+            "background_music_cache": background_music_cache,
+            "background_volume": background_volume,
         }
         # O launcher já limpou aborts antigos. Um abort pedido enquanto o worker
         # iniciava precisa sobreviver até o primeiro checkpoint do processo filho.
@@ -108,6 +114,9 @@ class GenerationTracker:
         generation_mode: str = "adaptation",
         narration_voice: str | None = None,
         key_source: str | None = None,
+        background_music: str | None = None,
+        background_music_cache: str | None = None,
+        background_volume: float | None = None,
     ) -> None:
         """Publica o início antes de lançar o worker, fechando a janela sem feedback."""
         directory.mkdir(parents=True, exist_ok=True)
@@ -139,6 +148,9 @@ class GenerationTracker:
             "generation_mode": generation_mode,
             "narration_voice": narration_voice,
             "key_source": key_source,
+            "background_music": background_music,
+            "background_music_cache": background_music_cache,
+            "background_volume": background_volume,
         }
         (directory / cls.ABORT_FILE).unlink(missing_ok=True)
         cls._write(directory, data)
@@ -290,6 +302,18 @@ class GenerationTracker:
     @property
     def key_source(self) -> str | None:
         return self._data.get("key_source")
+
+    @property
+    def background_music(self) -> str | None:
+        return self._data.get("background_music")
+
+    @property
+    def background_music_cache(self) -> str | None:
+        return self._data.get("background_music_cache")
+
+    @property
+    def background_volume(self) -> float | None:
+        return self._data.get("background_volume")
 
     @staticmethod
     def load(directory: Path) -> dict | None:

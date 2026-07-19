@@ -98,3 +98,18 @@ test("modal permite auditar e ouvir chunks individualmente", () => {
   assert.match(renderer, /chunk\.longest_silence_seconds/);
   assert.doesNotMatch(renderer, /\.innerHTML\s*=/);
 });
+
+test("música de fundo usa seletor nativo, volume limitado e confirma direitos", () => {
+  const html = readRendererFile("index.html");
+  const renderer = readRendererFile("renderer.js");
+  const preload = fs.readFileSync(path.resolve(__dirname, "../preload.js"), "utf8");
+  const main = fs.readFileSync(path.resolve(__dirname, "../main.js"), "utf8");
+
+  assert.match(html, /id="btn-background-music"/);
+  assert.match(html, /id="background-volume"[^>]*min="1"[^>]*max="25"/s);
+  assert.match(html, /direito de publicar/);
+  assert.match(preload, /chooseBackgroundMusic/);
+  assert.match(main, /dialog\.showOpenDialog/);
+  assert.match(renderer, /`--background-music=\$\{backgroundMusic\}`/);
+  assert.match(renderer, /`--background-volume=\$\{volume \|\| 0\.08\}`/);
+});

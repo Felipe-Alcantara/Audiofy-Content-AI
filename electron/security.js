@@ -7,7 +7,7 @@ const MAX_STDIN_LENGTH = 6 * 1024 * 1024;
 
 const COMMAND_ARITY = Object.freeze({
   "sources": [1, 1], "sync": [2, 2], "items": [2, 2], "search": [3, 3],
-  "item": [3, 3], "generate": [3, 6], "status": [1, 2], "abort": [2, 2],
+  "item": [3, 3], "generate": [3, 8], "status": [1, 2], "abort": [2, 2],
   "generation-log": [2, 2],
   "audio-chunks": [2, 2],
   "tts-catalog": [1, 1], "notebooklm": [3, 3], "add-url": [2, 2],

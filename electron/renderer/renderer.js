@@ -107,6 +107,8 @@ let pollTimer = null;
 let sourcesByKey = new Map();
 let generationRequestPending = false;
 let generationLogRequest = 0;
+let backgroundMusicPath = null;
+let backgroundMusicName = null;
 const automaticResumeAttempts = new Set();
 const AUTOMATIC_RESUME_RECHECK_MS = 60 * 1000;
 
@@ -332,6 +334,7 @@ async function selectItem(item, row) {
   row.classList.add("selected");
   const detail = await bridge(["item", currentSource, item.item_id]);
   if (!detail.ok) return;
+  clearBackgroundMusic();
   selectedItem = { ...detail, source: currentSource };
   $("detail-empty").classList.add("hidden");
   $("detail").classList.remove("hidden");
@@ -441,16 +444,45 @@ function updateGenerationMode() {
   updateGenerateButton();
 }
 
-function generationArgs(source, itemId, { force = false, mode = null, voice = null } = {}) {
+function generationArgs(
+  source,
+  itemId,
+  { force = false, mode = null, voice = null, backgroundMusic = null, volume = null } = {}
+) {
   const selectedMode = mode || $("generation-mode").value;
   const selectedVoice = voice || $("narration-voice").value;
   const args = ["generate", source, itemId, `--mode=${selectedMode}`];
   if (selectedMode === "verbatim") args.push(`--voice=${selectedVoice}`);
   if (force) args.push("--force");
+  if (backgroundMusic) {
+    args.push(`--background-music=${backgroundMusic}`);
+    args.push(`--background-volume=${volume || 0.08}`);
+  }
   return args;
 }
 
 $("generation-mode").onchange = updateGenerationMode;
+
+function clearBackgroundMusic() {
+  backgroundMusicPath = null;
+  backgroundMusicName = null;
+  $("background-music-name").textContent = "Sem música de fundo";
+  $("btn-clear-background-music").classList.add("hidden");
+}
+
+$("btn-background-music").onclick = async () => {
+  const selected = await window.audiofy.chooseBackgroundMusic();
+  if (!selected) return;
+  backgroundMusicPath = selected;
+  backgroundMusicName = String(selected).split(/[\\/]/).pop();
+  $("background-music-name").textContent = backgroundMusicName;
+  $("btn-clear-background-music").classList.remove("hidden");
+};
+
+$("btn-clear-background-music").onclick = clearBackgroundMusic;
+$("background-volume").oninput = () => {
+  $("background-volume-value").textContent = `${$("background-volume").value}%`;
+};
 
 function showGenerationRequest(message, tone = "active") {
   const box = $("progress-box");
@@ -491,6 +523,8 @@ async function maybeAutoResume(status) {
     const result = await bridge(generationArgs(item.source, item.itemId, {
       mode: status.generation_mode || "adaptation",
       voice: status.narration_voice,
+      backgroundMusic: status.background_music_cache,
+      volume: status.background_volume,
     }));
     if (!result.ok || (!result.started && result.reason !== "geração já em andamento")) {
       showGenerationRequest(
@@ -513,6 +547,7 @@ $("btn-generate").onclick = async () => {
   const mode = $("generation-mode").value;
   const verbatim = mode === "verbatim";
   const voice = $("narration-voice").value;
+  const backgroundVolume = Number($("background-volume").value) / 100;
   const estimate = selectedEstimate();
   if (verbatim && !voice) {
     alert("Escolha a voz do narrador.");
@@ -527,12 +562,22 @@ $("btn-generate").onclick = async () => {
     (verbatim
       ? `\n\nNarrador: ${voice}. O texto não será reescrito; somente a interpretação será planejada.`
       : "") +
+    (backgroundMusicName
+      ? `\n\nMúsica de fundo: ${backgroundMusicName} a ${Math.round(backgroundVolume * 100)}%. ` +
+        "Os chunks de voz serão reaproveitados quando compatíveis."
+      : "") +
     (force ? (verbatim
       ? "\n\nO plano de interpretação e os áudios serão regenerados."
       : "\n\nA cobertura, o roteiro e a auditoria serão regenerados.") : "")
   );
   if (!confirmed) return;
-  const args = generationArgs(selectedItem.source, selectedItem.item_id, { force, mode, voice });
+  const args = generationArgs(selectedItem.source, selectedItem.item_id, {
+    force,
+    mode,
+    voice,
+    backgroundMusic: backgroundMusicPath,
+    volume: backgroundVolume,
+  });
   generationRequestPending = true;
   updateGenerateButton();
   showGenerationRequest("Solicitando a retomada ao backend…");

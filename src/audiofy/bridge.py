@@ -9,6 +9,7 @@
     python3 -m audiofy.bridge item <fonte> <item-id>
     python3 -m audiofy.bridge generate <fonte> <item-id> [--force]
         [--mode=adaptation|verbatim] [--voice=<voz>]
+        [--background-music=<arquivo>] [--background-volume=0.01..0.25]
     python3 -m audiofy.bridge run-generation <fonte> <item-id> [opções]  # uso interno
     python3 -m audiofy.bridge status [<item-id>]
     python3 -m audiofy.bridge generation-log <item-id>
@@ -20,13 +21,16 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import re
+import shutil
 import sys
 from dataclasses import asdict
 from pathlib import Path
 
-from .config import EPISODES_DIR, Settings, api_key_source
+from .config import EPISODES_DIR, PROJECT_ROOT, STATE_DIR, Settings, api_key_source
 from .runtime.status import GenerationTracker
 from .sources import available_sources, get_source
 
@@ -37,6 +41,8 @@ _LOG_SECRET_PATTERNS = (
     re.compile(r"AIza[0-9A-Za-z_-]+"),
     re.compile(r"(?i)(?:OPENROUTER_API_KEY\s*=\s*|Authorization:\s*Bearer\s+)\S+"),
 )
+_BACKGROUND_AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg"}
+_MAX_BACKGROUND_AUDIO_BYTES = 500 * 1024 * 1024
 
 
 def _emit(payload: dict) -> None:
@@ -73,6 +79,9 @@ def _episode_summary(directory: Path) -> dict:
         "generation_mode": status.get("generation_mode", "adaptation"),
         "narration_voice": status.get("narration_voice"),
         "key_source": status.get("key_source"),
+        "background_music": status.get("background_music"),
+        "background_music_cache": status.get("background_music_cache"),
+        "background_volume": status.get("background_volume"),
         "audio_audit": audio_audit.get("summary") if audio_audit else None,
         "updated_at": status.get("updated_at"),
         "mp3": (
@@ -220,10 +229,63 @@ def _validate_generation_options(
     return generation_mode, narration_voice
 
 
-def _generation_options(arguments: list[str]) -> tuple[bool, str, str | None]:
+def _cache_background_music(value: str) -> tuple[str, str]:
+    """Valida e copia música externa para cache privado, retornando caminho relativo e nome."""
+    source = Path(value).expanduser().resolve(strict=True)
+    if not source.is_file() or source.suffix.lower() not in _BACKGROUND_AUDIO_EXTENSIONS:
+        raise ValueError("Escolha um arquivo de áudio MP3, WAV, M4A, AAC, FLAC ou OGG.")
+    if source.stat().st_size > _MAX_BACKGROUND_AUDIO_BYTES:
+        raise ValueError("A música de fundo excede o limite de 500 MiB.")
+    digest = hashlib.sha256()
+    with source.open("rb") as audio:
+        for block in iter(lambda: audio.read(1024 * 1024), b""):
+            digest.update(block)
+    cache_directory = STATE_DIR / "music"
+    cache_directory.mkdir(parents=True, exist_ok=True)
+    target = cache_directory / f"{digest.hexdigest()}{source.suffix.lower()}"
+    if source != target and (
+        not target.is_file() or target.stat().st_size != source.stat().st_size
+    ):
+        temporary = target.with_suffix(f"{target.suffix}.{os.getpid()}.tmp")
+        try:
+            shutil.copyfile(source, temporary)
+            os.replace(temporary, target)
+        finally:
+            temporary.unlink(missing_ok=True)
+    return target.relative_to(PROJECT_ROOT).as_posix(), source.name
+
+
+def _cached_background_path(value: str) -> Path:
+    """Aceita no worker apenas um arquivo previamente copiado para o cache privado."""
+    cache_directory = (STATE_DIR / "music").resolve()
+    candidate = (PROJECT_ROOT / value).resolve()
+    if (
+        candidate.parent != cache_directory
+        or candidate.suffix.lower() not in _BACKGROUND_AUDIO_EXTENSIONS
+        or not candidate.is_file()
+    ):
+        raise ValueError("A música do worker precisa vir do cache privado do Audiofy.")
+    return candidate
+
+
+def _background_volume(value: str | float) -> float:
+    try:
+        volume = float(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError("O volume da música precisa ser numérico.") from error
+    if not 0.01 <= volume <= 0.25:
+        raise ValueError("O volume da música precisa ficar entre 1% e 25%.")
+    return volume
+
+
+def _generation_options(
+    arguments: list[str],
+) -> tuple[bool, str, str | None, str | None, float]:
     force = False
     generation_mode = "adaptation"
     narration_voice = None
+    background_music = None
+    background_volume = 0.08
     for argument in arguments:
         if argument == "--force":
             force = True
@@ -231,10 +293,14 @@ def _generation_options(arguments: list[str]) -> tuple[bool, str, str | None]:
             generation_mode = argument.partition("=")[2]
         elif argument.startswith("--voice="):
             narration_voice = argument.partition("=")[2]
+        elif argument.startswith("--background-music="):
+            background_music = argument.partition("=")[2]
+        elif argument.startswith("--background-volume="):
+            background_volume = _background_volume(argument.partition("=")[2])
         else:
             raise ValueError(f"Opção de geração desconhecida: {argument}")
     mode, voice = _validate_generation_options(generation_mode, narration_voice)
-    return force, mode, voice
+    return force, mode, voice, background_music, background_volume
 
 
 def _cmd_generate(
@@ -243,10 +309,17 @@ def _cmd_generate(
     force: bool = False,
     generation_mode: str = "adaptation",
     narration_voice: str | None = None,
+    background_music: str | None = None,
+    background_volume: float = 0.08,
 ) -> dict:
     generation_mode, narration_voice = _validate_generation_options(
         generation_mode, narration_voice
     )
+    background_volume = _background_volume(background_volume)
+    background_cache = None
+    background_name = None
+    if background_music:
+        background_cache, background_name = _cache_background_music(background_music)
     directory = _episode_dir(item_id)
     # reconcile: um "rodando" órfão (worker morto) não pode bloquear a nova
     # geração — era isso que fazia todo clique responder "já em andamento".
@@ -270,6 +343,9 @@ def _cmd_generate(
         generation_mode=generation_mode,
         narration_voice=narration_voice,
         key_source=api_key_source(),
+        background_music=background_name,
+        background_music_cache=background_cache,
+        background_volume=background_volume if background_cache else None,
     )
     child_args = [
         sys.executable,
@@ -284,8 +360,9 @@ def _cmd_generate(
     child_args.append(f"--mode={generation_mode}")
     if narration_voice:
         child_args.append(f"--voice={narration_voice}")
-    import os
-
+    if background_cache:
+        child_args.append(f"--background-music={background_cache}")
+        child_args.append(f"--background-volume={background_volume}")
     from .runtime.process import launch_detached
 
     try:
@@ -314,6 +391,8 @@ def _cmd_generate(
         "force": force,
         "generation_mode": generation_mode,
         "narration_voice": narration_voice,
+        "background_music": background_name,
+        "background_volume": background_volume if background_cache else None,
         "dir": str(directory),
         "log": str(directory / "generation.log"),
     }
@@ -325,6 +404,8 @@ def _cmd_run_generation(
     force: bool = False,
     generation_mode: str = "adaptation",
     narration_voice: str | None = None,
+    background_music: str | None = None,
+    background_volume: float = 0.08,
 ) -> dict:
     generation_mode, narration_voice = _validate_generation_options(
         generation_mode, narration_voice
@@ -352,6 +433,10 @@ def _cmd_run_generation(
             force=force,
             generation_mode=generation_mode,
             narration_voice=narration_voice,
+            background_music=(
+                _cached_background_path(background_music) if background_music else None
+            ),
+            background_volume=_background_volume(background_volume),
         )
     except Exception as error:
         # Falha antes/fora do pipeline (fonte, configuração, imports tardios):
@@ -605,11 +690,11 @@ def main() -> None:
         elif command == "item" and len(rest) >= 2:
             result = _cmd_item(rest[0], rest[1])
         elif command == "generate" and len(rest) >= 2:
-            force, mode, voice = _generation_options(rest[2:])
-            result = _cmd_generate(rest[0], rest[1], force, mode, voice)
+            force, mode, voice, music, volume = _generation_options(rest[2:])
+            result = _cmd_generate(rest[0], rest[1], force, mode, voice, music, volume)
         elif command == "run-generation" and len(rest) >= 2:
-            force, mode, voice = _generation_options(rest[2:])
-            result = _cmd_run_generation(rest[0], rest[1], force, mode, voice)
+            force, mode, voice, music, volume = _generation_options(rest[2:])
+            result = _cmd_run_generation(rest[0], rest[1], force, mode, voice, music, volume)
         elif command == "status":
             result = _cmd_status(rest[0] if rest else None)
         elif command == "generation-log" and rest:

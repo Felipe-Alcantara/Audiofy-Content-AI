@@ -61,6 +61,8 @@ def generate_episode(
     force: bool = False,
     generation_mode: str = "adaptation",
     narration_voice: str | None = None,
+    background_music: Path | None = None,
+    background_volume: float = 0.08,
 ) -> Path:
     """Executa o pipeline completo para um item e retorna o MP3 final."""
     if generation_mode not in {"adaptation", "verbatim"}:
@@ -85,9 +87,29 @@ def generate_episode(
             if previous and previous.get("stage") == "iniciando"
             else api_key_source()
         ),
+        background_music=(
+            previous.get("background_music")
+            if previous and previous.get("stage") == "iniciando"
+            else (background_music.name if background_music else None)
+        ),
+        background_music_cache=(
+            previous.get("background_music_cache")
+            if previous and previous.get("stage") == "iniciando"
+            else None
+        ),
+        background_volume=background_volume if background_music else None,
     )
     try:
-        result = _run(settings, item, directory, tracker, force, generation_mode)
+        result = _run(
+            settings,
+            item,
+            directory,
+            tracker,
+            force,
+            generation_mode,
+            background_music,
+            background_volume,
+        )
         tracker.finish("concluido")
         return result
     except Exception as error:
@@ -104,6 +126,8 @@ def _run(
     tracker: GenerationTracker,
     force: bool,
     generation_mode: str,
+    background_music: Path | None,
+    background_volume: float,
 ) -> Path:
     print(f"\n📄 {item.title} ({item.published_at})")
     print(f"   Pasta do episódio: {directory}")
@@ -208,7 +232,14 @@ def _run(
         )
     tracker.stage("montagem")
     tracker.checkpoint()
-    final_path = _assemble(directory, segments, item)
+    final_path = _assemble(
+        directory,
+        segments,
+        item,
+        background_music,
+        background_volume,
+        tracker.background_music,
+    )
     duration_seconds = media_duration_seconds(final_path)
     EpisodeMetrics(
         source_words=item.words,
@@ -221,8 +252,18 @@ def _run(
         generation_mode=generation_mode,
         generated_at=datetime.now().astimezone().isoformat(timespec="seconds"),
         cost_source=("generation_ids" if tracker.cost_exact else "model_pricing_fallback"),
+        background_music=tracker.background_music,
+        background_volume=tracker.background_volume,
     ).write(directory)
-    _write_show_notes(directory, item, tracker.cost_usd, tracker.cost_exact, generation_mode)
+    _write_show_notes(
+        directory,
+        item,
+        tracker.cost_usd,
+        tracker.cost_exact,
+        generation_mode,
+        tracker.background_music,
+        tracker.background_volume,
+    )
     print(f"\n✔ Episódio gerado: {final_path}")
     print(f"💰 Custo total registrado: US$ {tracker.cost_usd:.4f}")
     return final_path
@@ -625,7 +666,14 @@ def _concat_line(path: Path) -> str:
     return f"file '{text}'\n"
 
 
-def _assemble(directory: Path, segments: list[Path], item: ContentItem) -> Path:
+def _assemble(
+    directory: Path,
+    segments: list[Path],
+    item: ContentItem,
+    background_music: Path | None = None,
+    background_volume: float = 0.08,
+    background_music_name: str | None = None,
+) -> Path:
     if not segments:
         raise ValueError("Não há segmentos de áudio para montar o episódio.")
     concat_list = directory / "segments.txt"
@@ -634,18 +682,40 @@ def _assemble(directory: Path, segments: list[Path], item: ContentItem) -> Path:
     temporary = directory / "episode.tmp.mp3"
     temporary.unlink(missing_ok=True)
     try:
-        run_tool(
-            "ffmpeg",
+        arguments = [
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(concat_list),
+        ]
+        if background_music:
+            if not background_music.is_file():
+                raise ValueError("A música de fundo selecionada não está mais disponível.")
+            if not 0.01 <= background_volume <= 0.25:
+                raise ValueError("O volume da música precisa ficar entre 1% e 25%.")
+            arguments.extend(
+                [
+                    "-stream_loop",
+                    "-1",
+                    "-i",
+                    str(background_music),
+                    "-filter_complex",
+                    (
+                        f"[1:a]volume={background_volume:.4f}[music];"
+                        "[0:a][music]amix=inputs=2:duration=first:dropout_transition=2[mixed];"
+                        "[mixed]loudnorm=I=-16:TP=-1.5:LRA=11[out]"
+                    ),
+                    "-map",
+                    "[out]",
+                ]
+            )
+        else:
+            arguments.extend(["-af", "loudnorm=I=-16:TP=-1.5:LRA=11"])
+        arguments.extend(
             [
-                "-y",
-                "-f",
-                "concat",
-                "-safe",
-                "0",
-                "-i",
-                str(concat_list),
-                "-af",
-                "loudnorm=I=-16:TP=-1.5:LRA=11",
                 "-metadata",
                 f"title={item.title}",
                 "-metadata",
@@ -657,10 +727,28 @@ def _assemble(directory: Path, segments: list[Path], item: ContentItem) -> Path:
                 "-b:a",
                 "128k",
                 str(temporary),
-            ],
-            timeout=_FFMPEG_TIMEOUT,
+            ]
         )
+        run_tool("ffmpeg", arguments, timeout=_FFMPEG_TIMEOUT)
         temporary.replace(final_path)
+        mix_path = directory / "mix.json"
+        if background_music:
+            digest = hashlib.sha256()
+            with background_music.open("rb") as audio:
+                for block in iter(lambda: audio.read(1024 * 1024), b""):
+                    digest.update(block)
+            _save_json(
+                mix_path,
+                {
+                    "version": 1,
+                    "background_music": background_music_name or background_music.name,
+                    "background_sha256": digest.hexdigest(),
+                    "background_volume": background_volume,
+                    "mix_duration": "narration",
+                },
+            )
+        else:
+            mix_path.unlink(missing_ok=True)
     except Exception:
         temporary.unlink(missing_ok=True)
         raise
@@ -673,6 +761,8 @@ def _write_show_notes(
     cost_usd: float,
     cost_exact: bool,
     generation_mode: str = "adaptation",
+    background_music: str | None = None,
+    background_volume: float | None = None,
 ) -> None:
     if generation_mode == "verbatim":
         production_note = (
@@ -684,11 +774,17 @@ def _write_show_notes(
             "Adaptação em áudio gerada com inteligência artificial; revise `audit.json` "
             "antes de publicar."
         )
+    music_note = ""
+    if background_music and background_volume is not None:
+        music_note = (
+            f"\n\nMúsica de fundo: `{background_music}` a {background_volume:.0%}. "
+            "Confirme os direitos de uso antes de publicar."
+        )
     (directory / "NOTES.md").write_text(
         f"# {item.title}\n\n"
         f"{item.attribution}\n\n"
         f"{production_note} Fonte original: {item.url}\n\n"
         f"Custo de geração registrado: US$ {cost_usd:.4f} "
-        f"({'exato por geração' if cost_exact else 'aproximado'})\n",
+        f"({'exato por geração' if cost_exact else 'aproximado'}){music_note}\n",
         encoding="utf-8",
     )

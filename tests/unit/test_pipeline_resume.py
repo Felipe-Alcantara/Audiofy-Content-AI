@@ -308,6 +308,38 @@ class AtomicAssemblyTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "segmento"):
                 _assemble(Path(tmp), [], SimpleNamespace(title="x", attribution="y"))
 
+    @patch("audiofy.pipeline.run_tool")
+    def test_mistura_musica_baixa_ate_o_fim_da_narracao_e_audita_mix(self, run_tool):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            segment = directory / "001.wav"
+            music = directory / "trilha.mp3"
+            _valid_wav(segment)
+            music.write_bytes(b"musica")
+
+            def create_output(_name, arguments, **_kwargs):
+                Path(arguments[-1]).write_bytes(b"mix")
+
+            run_tool.side_effect = create_output
+            _assemble(
+                directory,
+                [segment],
+                SimpleNamespace(title="Episódio", attribution="Fonte"),
+                music,
+                0.08,
+            )
+
+            arguments = run_tool.call_args.args[1]
+            manifest = json.loads((directory / "mix.json").read_text(encoding="utf-8"))
+
+        self.assertIn("-stream_loop", arguments)
+        self.assertIn("[0:a][music]amix=inputs=2:duration=first", " ".join(arguments))
+        self.assertIn("[1:a]volume=0.0800", " ".join(arguments))
+        self.assertIn("[mixed]loudnorm=I=-16", " ".join(arguments))
+        self.assertEqual(manifest["background_music"], "trilha.mp3")
+        self.assertEqual(manifest["background_volume"], 0.08)
+        self.assertEqual(len(manifest["background_sha256"]), 64)
+
 
 class VerbatimPreparationTest(unittest.TestCase):
     def test_planeja_em_lotes_preserva_texto_e_reaproveita_cache(self):
