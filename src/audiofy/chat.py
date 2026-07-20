@@ -216,9 +216,7 @@ def _default_provider(system: str, user: str, settings: Settings) -> str:
         try:
             result = run_cli(command, stdin)
         except subprocess.TimeoutExpired as error:
-            raise RuntimeError(
-                f"{cli.name} excedeu o tempo limite de resposta."
-            ) from error
+            raise RuntimeError(f"{cli.name} excedeu o tempo limite de resposta.") from error
         except OSError as error:
             raise RuntimeError(
                 f"Não foi possível executar a CLI '{cli.binary}' ({cli.name}): {error}"

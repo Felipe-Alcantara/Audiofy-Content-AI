@@ -86,8 +86,7 @@ host maintains their described personality.""",
 }
 
 
-def script_prompt(presenters: list[Presenter], attribution: str,
-                  language: str = "pt-BR") -> str:
+def script_prompt(presenters: list[Presenter], attribution: str, language: str = "pt-BR") -> str:
     lang = language if language in _LANG_LABELS else "pt-BR"
     if len(presenters) == 1:
         opening = _SCRIPT_SINGLE[lang].format(speakers=presenters[0].speaker)

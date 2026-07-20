@@ -629,6 +629,7 @@ def do_watch(selector: str) -> None:
 
     item_id = _resolve_item_id(selector) or selector
     from audiofy.config import Settings as _S
+
     directory = episode_dir(item_id, _S().language)
     print(
         f"{DIM}Acompanhando {item_id} — Ctrl+C sai do acompanhamento (NÃO aborta a geração).{RESET}"
@@ -678,6 +679,7 @@ def do_abort(selector: str) -> None:
 
     item_id = _resolve_item_id(selector) or selector
     from audiofy.config import Settings as _S
+
     directory = episode_dir(item_id, _S().language)
     status = GenerationTracker.load(directory)
     if not status or status.get("state") != "rodando":

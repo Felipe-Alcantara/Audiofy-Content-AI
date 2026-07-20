@@ -140,10 +140,7 @@ class ChatSessionTest(unittest.TestCase):
             session.send("x" * 50_001, None, call_provider=self._fake_provider("não chamado"))
 
     def test_historico_nao_contem_blocos_acao_crus(self):
-        reply = (
-            "Achei.\n\n```acao\n"
-            '{"tipo": "adicionar_url", "url": "https://ex.com"}\n```'
-        )
+        reply = 'Achei.\n\n```acao\n{"tipo": "adicionar_url", "url": "https://ex.com"}\n```'
         session = ChatSession("t", chat_dir=self.chat_dir)
         session.send("Busca", None, call_provider=self._fake_provider(reply))
         stored = session.messages[-1]["content"]

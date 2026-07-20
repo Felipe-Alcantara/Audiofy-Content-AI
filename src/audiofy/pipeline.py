@@ -153,9 +153,7 @@ def repair_episode(
     directory = episode_dir(item.item_id, settings.language)
     audit = read_audio_audit(directory)
     if not audit:
-        raise FileNotFoundError(
-            "Não há auditoria de áudio para este episódio. Gere-o primeiro."
-        )
+        raise FileNotFoundError("Não há auditoria de áudio para este episódio. Gere-o primeiro.")
     bad_files = {
         seg["file"]
         for seg in audit.get("segments", [])

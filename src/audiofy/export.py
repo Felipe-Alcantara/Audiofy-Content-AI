@@ -43,8 +43,9 @@ use o pipeline normal do Audiofy. Este modo é o caminho rápido e barato.
 """
 
 
-def export_notebooklm_pack(item: ContentItem, source_key: str = "conteudo",
-                           language: str = "pt-BR") -> Path:
+def export_notebooklm_pack(
+    item: ContentItem, source_key: str = "conteudo", language: str = "pt-BR"
+) -> Path:
     """Escreve o pacote NotebookLM na pasta do episódio e retorna o caminho."""
     pack_dir = episode_dir(item.item_id, language) / "notebooklm"
     pack_dir.mkdir(parents=True, exist_ok=True)

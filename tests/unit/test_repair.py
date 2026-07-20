@@ -92,15 +92,17 @@ def _setup_episode(directory: Path, total: int = 3, bad_indices: tuple = (2,)):
             "speaker": "ana",
         }
         severity = "critical" if i in bad_indices else "ok"
-        audit_segments.append({
-            "file": name,
-            "duration_seconds": 5.0,
-            "silence_seconds": 5.0 if severity != "ok" else 0.0,
-            "silence_ratio": 1.0 if severity != "ok" else 0.0,
-            "longest_silence_seconds": 5.0 if severity != "ok" else 0.0,
-            "severity": severity,
-            "silences": [],
-        })
+        audit_segments.append(
+            {
+                "file": name,
+                "duration_seconds": 5.0,
+                "silence_seconds": 5.0 if severity != "ok" else 0.0,
+                "silence_ratio": 1.0 if severity != "ok" else 0.0,
+                "longest_silence_seconds": 5.0 if severity != "ok" else 0.0,
+                "severity": severity,
+                "silences": [],
+            }
+        )
 
     (directory / "segments.json").write_text(
         json.dumps(manifest, ensure_ascii=False), encoding="utf-8"
@@ -118,9 +120,7 @@ def _setup_episode(directory: Path, total: int = 3, bad_indices: tuple = (2,)):
         },
         "segments": audit_segments,
     }
-    (directory / AUDIT_FILE).write_text(
-        json.dumps(audit, ensure_ascii=False), encoding="utf-8"
-    )
+    (directory / AUDIT_FILE).write_text(json.dumps(audit, ensure_ascii=False), encoding="utf-8")
 
     # MP3 final (dummy)
     final_name = final_audio_filename("conteudo", directory.name.replace("__", "/"), "adaptation")
@@ -161,9 +161,7 @@ class RepairEpisodeTest(unittest.TestCase):
             "segments": [],
         }
 
-        result = repair_episode(
-            _settings(), _item("ep-001"), source_key="conteudo"
-        )
+        result = repair_episode(_settings(), _item("ep-001"), source_key="conteudo")
 
         # TTS chamado apenas 1 vez (o segmento 2 que era critical)
         self.assertEqual(tts_mock.call_count, 1)
@@ -182,9 +180,7 @@ class RepairEpisodeTest(unittest.TestCase):
         _setup_episode(self.directory, total=3, bad_indices=())
         episode_dir_mock.return_value = self.directory
 
-        result = repair_episode(
-            _settings(), _item("ep-001"), source_key="conteudo"
-        )
+        result = repair_episode(_settings(), _item("ep-001"), source_key="conteudo")
 
         # Retorna o MP3 existente sem chamar TTS
         self.assertTrue(result.is_file())

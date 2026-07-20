@@ -74,7 +74,9 @@ class EpisodeEstimateTest(unittest.TestCase):
                     encoding="utf-8",
                 )
 
-            estimate = estimate_episode(2_000, "google/tts", root, profile_name="gemini-duo-economico")
+            estimate = estimate_episode(
+                2_000, "google/tts", root, profile_name="gemini-duo-economico"
+            )
 
         self.assertEqual(estimate.sample_count, 1)
         self.assertEqual(estimate.cost_usd, 1.0)

@@ -61,11 +61,13 @@ class ProfileStoreTest(unittest.TestCase):
 
     def test_podcast_trio_tem_tres_apresentadores(self):
         from audiofy.presenters import parse_presenters
+
         trio = self.store.get("gemini-trio")
         self.assertEqual(len(parse_presenters(trio.presenters_spec)), 3)
 
     def test_podcast_mesa_redonda_tem_quatro_apresentadores(self):
         from audiofy.presenters import parse_presenters
+
         mesa = self.store.get("gemini-mesa-redonda")
         self.assertEqual(len(parse_presenters(mesa.presenters_spec)), 4)
 
@@ -79,6 +81,7 @@ class ProfileStoreTest(unittest.TestCase):
 
     def test_narrador_assinatura_e_solo(self):
         from audiofy.presenters import parse_presenters
+
         solo = self.store.get("claude-code-narrador")
         self.assertEqual(len(parse_presenters(solo.presenters_spec)), 1)
         self.assertEqual(solo.text_provider, "claude-code")

@@ -42,9 +42,7 @@ _GPT4O = "openai/gpt-4o"
 _GPT4O_MINI = "openai/gpt-4o-mini"
 
 _TRIO_SPEC = (
-    "apresentador_a:Kore:curioso, "
-    "apresentador_b:Puck:animado, "
-    "apresentador_c:Gacrux:analítico"
+    "apresentador_a:Kore:curioso, apresentador_b:Puck:animado, apresentador_c:Gacrux:analítico"
 )
 _MESA_SPEC = (
     "mediador:Kore:neutro, "
@@ -64,8 +62,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec=DEFAULT_SPEC,
         description=(
-            "Dois apresentadores via assinatura Claude Code "
-            "— custo zero no texto, só TTS paga"
+            "Dois apresentadores via assinatura Claude Code — custo zero no texto, só TTS paga"
         ),
         text_provider="claude-code",
     ),
@@ -75,10 +72,7 @@ BUILTIN_PROFILES: list[Profile] = [
         audit_model="(assinatura)",
         tts_model=_TTS,
         presenters_spec=_TRIO_SPEC,
-        description=(
-            "Três vozes via assinatura Claude Code "
-            "— trio sem custo de texto"
-        ),
+        description=("Três vozes via assinatura Claude Code — trio sem custo de texto"),
         text_provider="claude-code",
     ),
     Profile(
@@ -88,8 +82,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec=_MESA_SPEC,
         description=(
-            "Mediador + três debatedores via assinatura Claude Code "
-            "— debate sem custo de texto"
+            "Mediador + três debatedores via assinatura Claude Code — debate sem custo de texto"
         ),
         text_provider="claude-code",
     ),
@@ -100,8 +93,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec="narrador:Sulafat:caloroso",
         description=(
-            "Voz solo calorosa (Sulafat) via assinatura Claude Code "
-            "— narração sem custo de texto"
+            "Voz solo calorosa (Sulafat) via assinatura Claude Code — narração sem custo de texto"
         ),
         text_provider="claude-code",
     ),
@@ -115,8 +107,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec=DEFAULT_SPEC,
         description=(
-            "Dois apresentadores via assinatura Codex (OpenAI) "
-            "— custo zero no texto, só TTS paga"
+            "Dois apresentadores via assinatura Codex (OpenAI) — custo zero no texto, só TTS paga"
         ),
         text_provider="codex",
     ),
@@ -126,10 +117,7 @@ BUILTIN_PROFILES: list[Profile] = [
         audit_model="(assinatura)",
         tts_model=_TTS,
         presenters_spec=_TRIO_SPEC,
-        description=(
-            "Três vozes via assinatura Codex "
-            "— trio sem custo de texto"
-        ),
+        description=("Três vozes via assinatura Codex — trio sem custo de texto"),
         text_provider="codex",
     ),
     Profile(
@@ -139,8 +127,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec="narrador:Sulafat:caloroso",
         description=(
-            "Voz solo calorosa (Sulafat) via assinatura Codex "
-            "— narração sem custo de texto"
+            "Voz solo calorosa (Sulafat) via assinatura Codex — narração sem custo de texto"
         ),
         text_provider="codex",
     ),
@@ -154,8 +141,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec=DEFAULT_SPEC,
         description=(
-            "Dois apresentadores via assinatura Gemini CLI "
-            "— custo zero no texto, só TTS paga"
+            "Dois apresentadores via assinatura Gemini CLI — custo zero no texto, só TTS paga"
         ),
         text_provider="gemini-cli",
     ),
@@ -165,10 +151,7 @@ BUILTIN_PROFILES: list[Profile] = [
         audit_model="(assinatura)",
         tts_model=_TTS,
         presenters_spec=_TRIO_SPEC,
-        description=(
-            "Três vozes via assinatura Gemini CLI "
-            "— trio sem custo de texto"
-        ),
+        description=("Três vozes via assinatura Gemini CLI — trio sem custo de texto"),
         text_provider="gemini-cli",
     ),
     Profile(
@@ -178,8 +161,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec="narrador:Sulafat:caloroso",
         description=(
-            "Voz solo calorosa (Sulafat) via assinatura Gemini CLI "
-            "— narração sem custo de texto"
+            "Voz solo calorosa (Sulafat) via assinatura Gemini CLI — narração sem custo de texto"
         ),
         text_provider="gemini-cli",
     ),
@@ -204,8 +186,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec=DEFAULT_SPEC,
         description=(
-            "Dois apresentadores no Gemini Flash para tudo "
-            "— ideal para rascunhos e testes rápidos"
+            "Dois apresentadores no Gemini Flash para tudo — ideal para rascunhos e testes rápidos"
         ),
     ),
     Profile(
@@ -215,8 +196,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec=_TRIO_SPEC,
         description=(
-            "Três vozes (curioso, animado, analítico) com Gemini Pro "
-            "— dinâmica rica de conversa"
+            "Três vozes (curioso, animado, analítico) com Gemini Pro — dinâmica rica de conversa"
         ),
     ),
     Profile(
@@ -225,10 +205,7 @@ BUILTIN_PROFILES: list[Profile] = [
         audit_model=_FLASH,
         tts_model=_TTS,
         presenters_spec=_TRIO_SPEC,
-        description=(
-            "Três vozes no Gemini Flash "
-            "— trio econômico para rascunhos"
-        ),
+        description=("Três vozes no Gemini Flash — trio econômico para rascunhos"),
     ),
     Profile(
         name="gemini-mesa-redonda",
@@ -237,8 +214,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec=_MESA_SPEC,
         description=(
-            "Mediador + três debatedores com Gemini Pro "
-            "— formato de debate com quatro vozes"
+            "Mediador + três debatedores com Gemini Pro — formato de debate com quatro vozes"
         ),
     ),
     Profile(
@@ -247,10 +223,7 @@ BUILTIN_PROFILES: list[Profile] = [
         audit_model=_FLASH,
         tts_model=_TTS,
         presenters_spec="narrador:Sulafat:caloroso",
-        description=(
-            "Voz solo calorosa (Sulafat) com Gemini Pro "
-            "— estilo audiolivro"
-        ),
+        description=("Voz solo calorosa (Sulafat) com Gemini Pro — estilo audiolivro"),
     ),
     Profile(
         name="gemini-narrador-economico",
@@ -258,10 +231,7 @@ BUILTIN_PROFILES: list[Profile] = [
         audit_model=_FLASH,
         tts_model=_TTS,
         presenters_spec="narrador:Sulafat:caloroso",
-        description=(
-            "Voz solo (Sulafat) no Gemini Flash "
-            "— narração barata para testes"
-        ),
+        description=("Voz solo (Sulafat) no Gemini Flash — narração barata para testes"),
     ),
     Profile(
         name="gemini-narrador-premium",
@@ -294,10 +264,7 @@ BUILTIN_PROFILES: list[Profile] = [
         audit_model=_FLASH,
         tts_model=_TTS,
         presenters_spec=DEFAULT_SPEC,
-        description=(
-            "Dois apresentadores com Claude Sonnet "
-            "— custo moderado com estilo Anthropic"
-        ),
+        description=("Dois apresentadores com Claude Sonnet — custo moderado com estilo Anthropic"),
     ),
     Profile(
         name="claude-trio",
@@ -317,8 +284,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec=_MESA_SPEC,
         description=(
-            "Mediador + três debatedores com Claude Opus "
-            "— debate com máxima qualidade Anthropic"
+            "Mediador + três debatedores com Claude Opus — debate com máxima qualidade Anthropic"
         ),
     ),
     Profile(
@@ -327,10 +293,7 @@ BUILTIN_PROFILES: list[Profile] = [
         audit_model=_FLASH,
         tts_model=_TTS,
         presenters_spec="narrador:Sulafat:caloroso",
-        description=(
-            "Voz solo calorosa (Sulafat) com Claude Opus "
-            "— narração premium Anthropic"
-        ),
+        description=("Voz solo calorosa (Sulafat) com Claude Opus — narração premium Anthropic"),
     ),
     # ╔══════════════════════════════════════════════════════════════════════╗
     # ║  OpenAI — modelos OpenAI via OpenRouter API                        ║
@@ -342,8 +305,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec=DEFAULT_SPEC,
         description=(
-            "Dois apresentadores com GPT SOL e auditoria Gemini Flash "
-            "— máxima qualidade OpenAI"
+            "Dois apresentadores com GPT SOL e auditoria Gemini Flash — máxima qualidade OpenAI"
         ),
     ),
     Profile(
@@ -352,10 +314,7 @@ BUILTIN_PROFILES: list[Profile] = [
         audit_model=_FLASH,
         tts_model=_TTS,
         presenters_spec=DEFAULT_SPEC,
-        description=(
-            "Dois apresentadores com GPT-4o "
-            "— custo moderado com estilo OpenAI"
-        ),
+        description=("Dois apresentadores com GPT-4o — custo moderado com estilo OpenAI"),
     ),
     Profile(
         name="openai-trio",
@@ -375,8 +334,7 @@ BUILTIN_PROFILES: list[Profile] = [
         tts_model=_TTS,
         presenters_spec=_MESA_SPEC,
         description=(
-            "Mediador + três debatedores com GPT SOL "
-            "— debate com máxima qualidade OpenAI"
+            "Mediador + três debatedores com GPT SOL — debate com máxima qualidade OpenAI"
         ),
     ),
     Profile(
@@ -385,10 +343,7 @@ BUILTIN_PROFILES: list[Profile] = [
         audit_model=_FLASH,
         tts_model=_TTS,
         presenters_spec="narrador:Sulafat:caloroso",
-        description=(
-            "Voz solo calorosa (Sulafat) com GPT SOL "
-            "— narração premium OpenAI"
-        ),
+        description=("Voz solo calorosa (Sulafat) com GPT SOL — narração premium OpenAI"),
     ),
 ]
 

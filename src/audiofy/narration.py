@@ -10,6 +10,7 @@ MAX_TTS_CHARS = 2_400
 MAX_PROSODY_BATCH_CHARS = 18_000
 MAX_DIRECTION_CHARS = 600
 
+
 def prosody_system(language: str = "pt-BR") -> str:
     if language == "en":
         return (
@@ -148,8 +149,7 @@ def fallback_direction(text: str) -> str:
     return "; ".join(directions) + "."
 
 
-def tts_direction(direction: str, narrator_style: str = "",
-                   language: str = "pt-BR") -> str:
+def tts_direction(direction: str, narrator_style: str = "", language: str = "pt-BR") -> str:
     style = f" Perfil geral do narrador: {narrator_style}." if narrator_style else ""
     if language == "en":
         style = f" General narrator profile: {narrator_style}." if narrator_style else ""

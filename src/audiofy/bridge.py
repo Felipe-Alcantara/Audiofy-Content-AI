@@ -59,6 +59,7 @@ def _episode_dir(item_id: str, language: str = "") -> Path:
 
     if not language:
         from .config import profile_store
+
         language = profile_store().active().language
     return episode_dir(item_id, language)
 
@@ -498,6 +499,7 @@ def _cmd_run_generation(
         settings = Settings()
         if language != "pt-BR":
             from dataclasses import replace as _replace_lang
+
             settings = _replace_lang(settings, language=language)
         if generation_mode == "verbatim":
             from dataclasses import replace
@@ -546,11 +548,12 @@ def _cmd_repair(source_key: str, item_id: str, language: str = "") -> dict:
 
     audit = read_audio_audit(directory)
     if not audit:
-        return {"started": False, "reason": "nenhuma auditoria encontrada — gere o episódio primeiro"}
+        return {
+            "started": False,
+            "reason": "nenhuma auditoria encontrada — gere o episódio primeiro",
+        }
     bad_count = sum(
-        1
-        for seg in audit.get("segments", [])
-        if seg.get("severity") in ("critical", "warning")
+        1 for seg in audit.get("segments", []) if seg.get("severity") in ("critical", "warning")
     )
     if bad_count == 0:
         return {"started": False, "reason": "nenhum segmento com problema detectado"}
@@ -913,8 +916,7 @@ def main() -> None:
             result = _cmd_generate(rest[0], rest[1], force, mode, voice, music, volume, lang)
         elif command == "run-generation" and len(rest) >= 2:
             force, mode, voice, music, volume, lang = _generation_options(rest[2:])
-            result = _cmd_run_generation(
-                rest[0], rest[1], force, mode, voice, music, volume, lang)
+            result = _cmd_run_generation(rest[0], rest[1], force, mode, voice, music, volume, lang)
         elif command == "status":
             result = _cmd_status(rest[0] if rest else None)
         elif command == "generation-log" and rest:
@@ -948,8 +950,8 @@ def main() -> None:
 
             item = get_source(rest[0]).get_item(rest[1])
             from .config import profile_store as _ps
-            result = {"pack": str(export_notebooklm_pack(
-                item, rest[0], _ps().active().language))}
+
+            result = {"pack": str(export_notebooklm_pack(item, rest[0], _ps().active().language))}
         elif command == "add-url" and rest:
             from .sources.custom import CustomSource
 
