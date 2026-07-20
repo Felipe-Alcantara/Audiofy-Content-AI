@@ -51,6 +51,135 @@ _MESA_SPEC = (
 
 BUILTIN_PROFILES: list[Profile] = [
     # ╔══════════════════════════════════════════════════════════════════════╗
+    # ║  Assinatura Claude Code — texto grátis via CLI, só TTS paga        ║
+    # ╚══════════════════════════════════════════════════════════════════════╝
+    Profile(
+        name="claude-code-duo",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec=DEFAULT_SPEC,
+        description=(
+            "Dois apresentadores via assinatura Claude Code "
+            "— custo zero no texto, só TTS paga"
+        ),
+        text_provider="claude-code",
+    ),
+    Profile(
+        name="claude-code-trio",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec=_TRIO_SPEC,
+        description=(
+            "Três vozes via assinatura Claude Code "
+            "— trio sem custo de texto"
+        ),
+        text_provider="claude-code",
+    ),
+    Profile(
+        name="claude-code-mesa-redonda",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec=_MESA_SPEC,
+        description=(
+            "Mediador + três debatedores via assinatura Claude Code "
+            "— debate sem custo de texto"
+        ),
+        text_provider="claude-code",
+    ),
+    Profile(
+        name="claude-code-narrador",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec="narrador:Sulafat:caloroso",
+        description=(
+            "Voz solo calorosa (Sulafat) via assinatura Claude Code "
+            "— narração sem custo de texto"
+        ),
+        text_provider="claude-code",
+    ),
+    # ╔══════════════════════════════════════════════════════════════════════╗
+    # ║  Assinatura Codex — texto grátis via CLI OpenAI, só TTS paga       ║
+    # ╚══════════════════════════════════════════════════════════════════════╝
+    Profile(
+        name="codex-duo",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec=DEFAULT_SPEC,
+        description=(
+            "Dois apresentadores via assinatura Codex (OpenAI) "
+            "— custo zero no texto, só TTS paga"
+        ),
+        text_provider="codex",
+    ),
+    Profile(
+        name="codex-trio",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec=_TRIO_SPEC,
+        description=(
+            "Três vozes via assinatura Codex "
+            "— trio sem custo de texto"
+        ),
+        text_provider="codex",
+    ),
+    Profile(
+        name="codex-narrador",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec="narrador:Sulafat:caloroso",
+        description=(
+            "Voz solo calorosa (Sulafat) via assinatura Codex "
+            "— narração sem custo de texto"
+        ),
+        text_provider="codex",
+    ),
+    # ╔══════════════════════════════════════════════════════════════════════╗
+    # ║  Assinatura Gemini CLI — texto grátis via CLI Google, só TTS paga  ║
+    # ╚══════════════════════════════════════════════════════════════════════╝
+    Profile(
+        name="gemini-cli-duo",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec=DEFAULT_SPEC,
+        description=(
+            "Dois apresentadores via assinatura Gemini CLI "
+            "— custo zero no texto, só TTS paga"
+        ),
+        text_provider="gemini-cli",
+    ),
+    Profile(
+        name="gemini-cli-trio",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec=_TRIO_SPEC,
+        description=(
+            "Três vozes via assinatura Gemini CLI "
+            "— trio sem custo de texto"
+        ),
+        text_provider="gemini-cli",
+    ),
+    Profile(
+        name="gemini-cli-narrador",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec="narrador:Sulafat:caloroso",
+        description=(
+            "Voz solo calorosa (Sulafat) via assinatura Gemini CLI "
+            "— narração sem custo de texto"
+        ),
+        text_provider="gemini-cli",
+    ),
+    # ╔══════════════════════════════════════════════════════════════════════╗
     # ║  Gemini — modelos Google via OpenRouter API                        ║
     # ╚══════════════════════════════════════════════════════════════════════╝
     Profile(
@@ -256,135 +385,6 @@ BUILTIN_PROFILES: list[Profile] = [
             "Voz solo calorosa (Sulafat) com GPT-4o "
             "— narração estilo OpenAI"
         ),
-    ),
-    # ╔══════════════════════════════════════════════════════════════════════╗
-    # ║  Assinatura Claude Code — texto grátis via CLI, só TTS paga        ║
-    # ╚══════════════════════════════════════════════════════════════════════╝
-    Profile(
-        name="claude-code-duo",
-        text_model="(assinatura)",
-        audit_model="(assinatura)",
-        tts_model=_TTS,
-        presenters_spec=DEFAULT_SPEC,
-        description=(
-            "Dois apresentadores via assinatura Claude Code "
-            "— custo zero no texto, só TTS paga"
-        ),
-        text_provider="claude-code",
-    ),
-    Profile(
-        name="claude-code-trio",
-        text_model="(assinatura)",
-        audit_model="(assinatura)",
-        tts_model=_TTS,
-        presenters_spec=_TRIO_SPEC,
-        description=(
-            "Três vozes via assinatura Claude Code "
-            "— trio sem custo de texto"
-        ),
-        text_provider="claude-code",
-    ),
-    Profile(
-        name="claude-code-mesa-redonda",
-        text_model="(assinatura)",
-        audit_model="(assinatura)",
-        tts_model=_TTS,
-        presenters_spec=_MESA_SPEC,
-        description=(
-            "Mediador + três debatedores via assinatura Claude Code "
-            "— debate sem custo de texto"
-        ),
-        text_provider="claude-code",
-    ),
-    Profile(
-        name="claude-code-narrador",
-        text_model="(assinatura)",
-        audit_model="(assinatura)",
-        tts_model=_TTS,
-        presenters_spec="narrador:Sulafat:caloroso",
-        description=(
-            "Voz solo calorosa (Sulafat) via assinatura Claude Code "
-            "— narração sem custo de texto"
-        ),
-        text_provider="claude-code",
-    ),
-    # ╔══════════════════════════════════════════════════════════════════════╗
-    # ║  Assinatura Codex — texto grátis via CLI OpenAI, só TTS paga       ║
-    # ╚══════════════════════════════════════════════════════════════════════╝
-    Profile(
-        name="codex-duo",
-        text_model="(assinatura)",
-        audit_model="(assinatura)",
-        tts_model=_TTS,
-        presenters_spec=DEFAULT_SPEC,
-        description=(
-            "Dois apresentadores via assinatura Codex (OpenAI) "
-            "— custo zero no texto, só TTS paga"
-        ),
-        text_provider="codex",
-    ),
-    Profile(
-        name="codex-trio",
-        text_model="(assinatura)",
-        audit_model="(assinatura)",
-        tts_model=_TTS,
-        presenters_spec=_TRIO_SPEC,
-        description=(
-            "Três vozes via assinatura Codex "
-            "— trio sem custo de texto"
-        ),
-        text_provider="codex",
-    ),
-    Profile(
-        name="codex-narrador",
-        text_model="(assinatura)",
-        audit_model="(assinatura)",
-        tts_model=_TTS,
-        presenters_spec="narrador:Sulafat:caloroso",
-        description=(
-            "Voz solo calorosa (Sulafat) via assinatura Codex "
-            "— narração sem custo de texto"
-        ),
-        text_provider="codex",
-    ),
-    # ╔══════════════════════════════════════════════════════════════════════╗
-    # ║  Assinatura Gemini CLI — texto grátis via CLI Google, só TTS paga  ║
-    # ╚══════════════════════════════════════════════════════════════════════╝
-    Profile(
-        name="gemini-cli-duo",
-        text_model="(assinatura)",
-        audit_model="(assinatura)",
-        tts_model=_TTS,
-        presenters_spec=DEFAULT_SPEC,
-        description=(
-            "Dois apresentadores via assinatura Gemini CLI "
-            "— custo zero no texto, só TTS paga"
-        ),
-        text_provider="gemini-cli",
-    ),
-    Profile(
-        name="gemini-cli-trio",
-        text_model="(assinatura)",
-        audit_model="(assinatura)",
-        tts_model=_TTS,
-        presenters_spec=_TRIO_SPEC,
-        description=(
-            "Três vozes via assinatura Gemini CLI "
-            "— trio sem custo de texto"
-        ),
-        text_provider="gemini-cli",
-    ),
-    Profile(
-        name="gemini-cli-narrador",
-        text_model="(assinatura)",
-        audit_model="(assinatura)",
-        tts_model=_TTS,
-        presenters_spec="narrador:Sulafat:caloroso",
-        description=(
-            "Voz solo calorosa (Sulafat) via assinatura Gemini CLI "
-            "— narração sem custo de texto"
-        ),
-        text_provider="gemini-cli",
     ),
 ]
 
