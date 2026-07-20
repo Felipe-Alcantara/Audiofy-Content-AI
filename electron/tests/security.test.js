@@ -10,8 +10,18 @@ test("bridge aceita somente comandos públicos conhecidos", () => {
   assert.deepEqual(validateBridgeRequest(["status"], undefined), ["status"]);
   assert.deepEqual(validateBridgeRequest(["generation-log", "livro"]),
     ["generation-log", "livro"]);
+  assert.deepEqual(validateBridgeRequest(["generation-log", "livro", "--language=en"]),
+    ["generation-log", "livro", "--language=en"]);
   assert.deepEqual(validateBridgeRequest(["audio-chunks", "livro"]),
     ["audio-chunks", "livro"]);
+  assert.deepEqual(validateBridgeRequest(["audio-chunks", "livro", "--language=en"]),
+    ["audio-chunks", "livro", "--language=en"]);
+  assert.deepEqual(validateBridgeRequest(["abort", "livro", "--language=en"]),
+    ["abort", "livro", "--language=en"]);
+  assert.deepEqual(validateBridgeRequest(["repair", "custom", "livro"]),
+    ["repair", "custom", "livro"]);
+  assert.deepEqual(validateBridgeRequest(["repair", "custom", "livro", "--language=en"]),
+    ["repair", "custom", "livro", "--language=en"]);
   assert.deepEqual(validateBridgeRequest(["keys-use", "trabalho"]),
     ["keys-use", "trabalho"]);
   assert.deepEqual(validateBridgeRequest(["keys-use-environment"]),

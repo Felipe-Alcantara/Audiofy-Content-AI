@@ -95,7 +95,7 @@ test("modal permite auditar e ouvir chunks individualmente", () => {
 
   assert.match(html, /<dialog id="chunk-modal"/);
   assert.match(html, /id="chunk-player"[^>]*controls/);
-  assert.match(renderer, /\["audio-chunks", itemId\]/);
+  assert.match(renderer, /"audio-chunks", itemId/);
   assert.match(renderer, /projectPathToFileUrl\(chunk\.path\)/);
   assert.match(renderer, /chunk\.longest_silence_seconds/);
   assert.match(renderer, /Chunk \$\{chunkIndex\} de \$\{chunkTotal\}/);
