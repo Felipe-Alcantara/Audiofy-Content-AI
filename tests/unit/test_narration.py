@@ -9,11 +9,27 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from audiofy.narration import (  # noqa: E402
     NarrationChunk,
     fallback_direction,
+    is_speakable,
     parse_prosody_plan,
     prosody_batches,
     split_verbatim_text,
     tts_direction,
 )
+
+
+class TextoFalavelTest(unittest.TestCase):
+    """Trechos sem fala travariam o TTS, que devolve áudio vazio para eles."""
+
+    def test_aceita_texto_com_palavras(self):
+        self.assertTrue(is_speakable("Orwell chegou a Barcelona."))
+        self.assertTrue(is_speakable("Ano 1937"))
+
+    def test_recusa_numeracao_e_simbolos_soltos(self):
+        for vazio in ("   8   ", " . — ", "", "42", "•••", "\n\t "):
+            self.assertFalse(is_speakable(vazio), vazio)
+
+    def test_recusa_valor_que_nao_e_texto(self):
+        self.assertFalse(is_speakable(None))
 
 
 class VerbatimSegmentationTest(unittest.TestCase):

@@ -423,6 +423,55 @@ class FailureIsNeverSilentTest(unittest.TestCase):
         self.assertIn("ffmpeg", status["last_error"])
 
 
+class TrechoSemAudioTest(unittest.TestCase):
+    """Um trecho que o TTS não consegue pronunciar não pode derrubar o episódio.
+
+    Caso real: um PDF de livro deixou um rodapé de diagramação sozinho num
+    trecho; o TTS devolvia resposta vazia, as 5 tentativas falhavam igual e a
+    geração morria depois de 14 falas já pagas.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.directory = Path(self._tmp.name)
+        self.tracker = GenerationTracker(self.directory, "episodio")
+        self.addCleanup(self._tmp.cleanup)
+
+    def _turns(self, quantidade):
+        return [{"speaker": "ana", "text": f"fala {n}"} for n in range(1, quantidade + 1)]
+
+    @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_pula_o_trecho_sem_audio_e_conclui_os_demais(self, text_to_speech, _cost):
+        vazio = OpenRouterError("TTS retornou resposta vazia ou curta demais.", retryable=True)
+        text_to_speech.side_effect = [
+            SpeechResult(b"\x00\x00" * 300, "gen-1"),
+            *[vazio] * 3,  # esgota as tentativas do trecho 2
+            SpeechResult(b"\x00\x00" * 300, "gen-3"),
+        ]
+
+        paths = _synthesize_turns(_settings(), self.directory, self._turns(3), self.tracker)
+
+        self.assertEqual(len(paths), 2, "o trecho sem áudio não entra na montagem")
+        self.assertTrue(all(path.is_file() for path in paths))
+        status = GenerationTracker.load(self.directory)
+        self.assertEqual(status["state"], "rodando")
+
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_erro_diferente_continua_derrubando_a_geracao(self, text_to_speech):
+        text_to_speech.side_effect = OpenRouterError("Provider returned 500", retryable=False)
+        with self.assertRaises(OpenRouterError):
+            _synthesize_turns(_settings(), self.directory, self._turns(2), self.tracker)
+
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_nenhum_trecho_com_audio_vira_erro_explicito(self, text_to_speech):
+        text_to_speech.side_effect = OpenRouterError(
+            "TTS retornou resposta vazia ou curta demais.", retryable=True
+        )
+        with self.assertRaisesRegex(ValueError, "Nenhuma fala gerou áudio"):
+            _synthesize_turns(_settings(), self.directory, self._turns(2), self.tracker)
+
+
 class ConcatLineTest(unittest.TestCase):
     def test_usa_barras_normais_para_o_ffmpeg(self):
         line = _concat_line(Path("/tmp/ep/001.wav"))

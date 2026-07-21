@@ -30,11 +30,18 @@ from .config import EPISODES_DIR, Settings, api_key_candidates, api_key_source
 from .estimates import EpisodeMetrics, estimate_tts_cost
 from .media import media_duration_seconds
 from .narration import (
+    MAX_TTS_CHARS,
+    fallback_commentary,
     fallback_direction,
     parse_prosody_plan,
+    parse_reflexive_commentary,
     prosody_batches,
     prosody_prompt,
     prosody_system,
+    reflexive_batches,
+    reflexive_prompt,
+    reflexive_system,
+    split_into_paragraphs,
     split_verbatim_text,
     tts_direction,
 )
@@ -76,15 +83,18 @@ def generate_episode(
     source_key: str = "conteudo",
 ) -> Path:
     """Executa o pipeline completo para um item e retorna o MP3 final."""
-    if generation_mode not in {"adaptation", "verbatim"}:
+    if generation_mode not in {"adaptation", "verbatim", "reflexive"}:
         raise ValueError(f"Modo de geração desconhecido: {generation_mode}")
-    if generation_mode == "verbatim" and len(settings.presenters) != 1:
-        raise ValueError("A leitura fiel exige exatamente um narrador.")
+    if generation_mode in {"verbatim", "reflexive"} and len(settings.presenters) != 1:
+        raise ValueError("A leitura reflexiva e a leitura fiel exigem exatamente um narrador.")
     directory = episode_dir(item.item_id, settings.language)
     previous = GenerationTracker.load(directory)
     if previous and (
         previous.get("generation_mode", "adaptation") != generation_mode
-        or (generation_mode == "verbatim" and previous.get("narration_voice") != narration_voice)
+        or (
+            generation_mode in {"verbatim", "reflexive"}
+            and previous.get("narration_voice") != narration_voice
+        )
     ):
         force = True
     tracker = GenerationTracker(
@@ -263,8 +273,11 @@ def _run(
         if subscription:
             from .providers import subscription as subscription_provider
 
-            result = subscription_provider.chat_json(settings.text_provider, system, prompt)
-            print(f"    [{settings.text_provider}] via assinatura — custo US$ 0,00")
+            result = subscription_provider.chat_json(
+                settings.text_provider, system, prompt, settings.subscription_model
+            )
+            label = settings.subscription_model or "modelo padrão da CLI"
+            print(f"    [{settings.text_provider}: {label}] via assinatura — custo US$ 0,00")
         else:
             result = _chat_with_key_fallback(settings, model, system, prompt, tracker)
             print(
@@ -296,6 +309,21 @@ def _run(
         )
         print(f"   {len(turns)} trechos; texto original preservado integralmente.")
         print("🎙️  2/3 Síntese da leitura fiel…")
+    elif generation_mode == "reflexive":
+        print("🎭 1/3 Planejamento de leitura reflexiva em lotes…")
+        turns = _prepare_reflexive_turns(
+            settings,
+            item,
+            directory,
+            tracker,
+            force,
+            lambda prompt: _chat_request(settings.audit_model, prompt, prosody_system(lang)),
+            lambda prompt: _chat_request(settings.audit_model, prompt, reflexive_system(lang)),
+        )
+        verbatim_count = sum(1 for t in turns if t.get("kind") == "verbatim")
+        commentary_count = len(turns) - verbatim_count
+        print(f"   {verbatim_count} trechos verbatim + {commentary_count} comentários reflexivos.")
+        print("🎙️  2/3 Síntese da leitura reflexiva…")
     else:
         print("🧠 1/5 Matriz de cobertura…")
         coverage = _chat_step(
@@ -346,7 +374,7 @@ def _run(
 
     print(
         "🎧 3/3 Montagem com ffmpeg…"
-        if generation_mode == "verbatim"
+        if generation_mode in {"verbatim", "reflexive"}
         else "🎧 5/5 Montagem com ffmpeg…"
     )
     tracker.stage("auditoria_audio", total=len(segments), current=0)
@@ -470,6 +498,181 @@ def _prepare_verbatim_turns(
     return turns
 
 
+def _prepare_reflexive_turns(
+    settings: Settings,
+    item: ContentItem,
+    directory: Path,
+    tracker: GenerationTracker,
+    force: bool,
+    analyze_prosody: Callable[[str], dict],
+    analyze_reflexive: Callable[[str], dict],
+) -> list[dict]:
+    """Lê cada parágrafo verbatim e intercala um breve comentário reflexivo após cada um."""
+    paragraphs = split_into_paragraphs(item.text)
+    if not paragraphs:
+        raise ValueError("O texto não contém parágrafos para a leitura reflexiva.")
+
+    # Divide parágrafos longos em sub-chunks para o limite do TTS.
+    # Cada parágrafo lógico tem um id; sub-chunks compartilham o mesmo para-id.
+    para_chunks: list[tuple[int, str]] = []  # (para_id, text)
+    for para_id, para in enumerate(paragraphs, 1):
+        if len(para) <= MAX_TTS_CHARS:
+            para_chunks.append((para_id, para))
+        else:
+            sub_chunks = split_verbatim_text(para)
+            for sub in sub_chunks:
+                para_chunks.append((para_id, sub.text))
+
+    source_digest = hashlib.sha256(item.text.encode("utf-8")).hexdigest()
+    path = directory / "reflexive.json"
+    loaded = None if force else _load_json(path)
+    if not isinstance(loaded, dict) or loaded.get("source_sha256") != source_digest:
+        loaded = {
+            "version": 1,
+            "source_sha256": source_digest,
+            "prosody": {},
+            "commentary": {},
+        }
+
+    prosody_cache: dict = loaded.get("prosody") or {}
+    commentary_cache: dict = loaded.get("commentary") or {}
+
+    def _chunk_key(para_id: int, text: str) -> str:
+        digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        return f"{para_id}:{digest}"
+
+    def _para_key(para_id: int, text: str) -> str:
+        digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        return f"{para_id}:{digest}"
+
+    # ── 1. Planejamento de prosódia para os chunks verbatim ──────────────────
+    from .narration import NarrationChunk
+
+    narration_chunks = [NarrationChunk(i + 1, text) for i, (_, text) in enumerate(para_chunks)]
+    cached_prosody = {
+        i + 1
+        for i, (para_id, text) in enumerate(para_chunks)
+        if isinstance(prosody_cache.get(_chunk_key(para_id, text)), dict)
+        and isinstance(prosody_cache[_chunk_key(para_id, text)].get("direction"), str)
+    }
+    tracker.stage(
+        "planejamento de interpretação",
+        total=len(narration_chunks),
+        current=len(cached_prosody),
+    )
+    missing_prosody = [c for c in narration_chunks if c.index not in cached_prosody]
+    completed = len(cached_prosody)
+    for batch in prosody_batches(missing_prosody):
+        tracker.checkpoint()
+        planned = parse_prosody_plan(
+            analyze_prosody(prosody_prompt(batch)), {c.index for c in batch}
+        )
+        for chunk in batch:
+            para_id, text = para_chunks[chunk.index - 1]
+            key = _chunk_key(para_id, text)
+            prosody_cache[key] = {"direction": planned.get(chunk.index) or fallback_direction(text)}
+        completed += len(batch)
+        _save_json(path, loaded)
+        tracker.advance(completed)
+
+    # ── 2. Geração de comentários reflexivos por parágrafo ───────────────────
+    unique_paras = list(
+        dict.fromkeys(
+            (para_id, para)
+            for para_id, para in [(pid, paragraphs[pid - 1]) for pid, _ in para_chunks]
+        )
+    )
+    cached_commentary = {
+        para_id
+        for para_id, para_text in unique_paras
+        if isinstance(commentary_cache.get(_para_key(para_id, para_text)), dict)
+        and isinstance(commentary_cache[_para_key(para_id, para_text)].get("commentary"), str)
+    }
+    missing_commentary = [(pid, text) for pid, text in unique_paras if pid not in cached_commentary]
+    tracker.stage(
+        "geração de comentários reflexivos",
+        total=len(unique_paras),
+        current=len(cached_commentary),
+    )
+    completed = len(cached_commentary)
+    for batch in reflexive_batches(missing_commentary):
+        tracker.checkpoint()
+        batch_ids = {pid for pid, _ in batch}
+        generated = parse_reflexive_commentary(
+            analyze_reflexive(reflexive_prompt(batch, settings.language)),
+            batch_ids,
+        )
+        for para_id, para_text in batch:
+            key = _para_key(para_id, para_text)
+            commentary_cache[key] = {
+                "commentary": generated.get(para_id) or fallback_commentary(settings.language)
+            }
+        completed += len(batch)
+        _save_json(path, loaded)
+        tracker.advance(completed)
+
+    # ── 3. Montagem dos turnos ───────────────────────────────────────────────
+    narrator = settings.presenters[0]
+    lang = settings.language
+    turns: list[dict] = []
+
+    for i, (para_id, chunk_text) in enumerate(para_chunks):
+        direction = prosody_cache[_chunk_key(para_id, chunk_text)]["direction"]
+        turns.append(
+            {
+                "turn_id": f"R{len(turns) + 1:05d}",
+                "speaker": narrator.speaker,
+                "text": chunk_text,
+                "instructions": tts_direction(direction, narrator.style, lang),
+                "kind": "verbatim",
+            }
+        )
+        # Adiciona o comentário somente ao final do último chunk de cada parágrafo.
+        is_last_chunk_of_para = i == len(para_chunks) - 1 or para_chunks[i + 1][0] != para_id
+        if is_last_chunk_of_para:
+            para_text = paragraphs[para_id - 1]
+            commentary = commentary_cache[_para_key(para_id, para_text)]["commentary"]
+            if lang == "en":
+                commentary_instructions = (
+                    "Natural, reflective speech in English — "
+                    "as if sharing a brief thought after reading the passage aloud."
+                    + (f" Narrator profile: {narrator.style}." if narrator.style else "")
+                )
+            else:
+                commentary_instructions = (
+                    "Fala natural e reflexiva em português brasileiro — "
+                    "como se compartilhasse um breve pensamento após ler o trecho em voz alta."
+                    + (f" Perfil do narrador: {narrator.style}." if narrator.style else "")
+                )
+            turns.append(
+                {
+                    "turn_id": f"R{len(turns) + 1:05d}",
+                    "speaker": narrator.speaker,
+                    "text": commentary,
+                    "instructions": commentary_instructions,
+                    "kind": "commentary",
+                }
+            )
+
+    # Os turnos verbatim precisam reproduzir os trechos originais na ordem exata;
+    # só os comentários podem ser texto novo.
+    verbatim_texts = [t["text"] for t in turns if t.get("kind") == "verbatim"]
+    if verbatim_texts != [text for _, text in para_chunks]:
+        raise AssertionError("A montagem reflexiva alterou o texto original.")
+
+    _save_json(
+        directory / "reflexive.json",
+        {
+            "version": 1,
+            "source_sha256": source_digest,
+            "prosody": prosody_cache,
+            "commentary": commentary_cache,
+            "turns": turns,
+        },
+    )
+    return turns
+
+
 def _report_audit(coverage: dict, audit: dict) -> None:
     criticality = {i["id"]: i.get("criticality", "contextual") for i in coverage.get("items", [])}
     problems = [
@@ -547,6 +750,11 @@ def _wait_for_retry(delay_seconds: float, tracker: GenerationTracker) -> None:
         step = min(1.0, remaining)
         time.sleep(step)
         remaining -= step
+
+
+def _is_empty_audio_error(error: openrouter.OpenRouterError) -> bool:
+    """Identifica a resposta de TTS sem áudio, que repetir não resolve."""
+    return "vazia ou curta demais" in str(error)
 
 
 def _is_key_exhaustion_error(error: openrouter.OpenRouterError) -> bool:
@@ -773,6 +981,7 @@ def _synthesize_turns(
     tracker.stage("tts", total=len(turns), current=completed)
 
     paths = [plan["segment"] for plan in plans]
+    skipped: list[int] = []
     for plan in plans:
         tracker.checkpoint()
         index = plan["index"]
@@ -782,14 +991,33 @@ def _synthesize_turns(
         presenter = plan["presenter"]
         cost_label = f"US$ {tracker.cost_usd:.3f}"
         _progress_bar(index, len(turns), f"{presenter.speaker} ({presenter.voice}) {cost_label}")
-        synthesis = _synthesize_with_retry(
-            settings,
-            plan["turn"]["text"],
-            presenter.voice,
-            plan["instructions"],
-            index,
-            tracker,
-        )
+        try:
+            synthesis = _synthesize_with_retry(
+                settings,
+                plan["turn"]["text"],
+                presenter.voice,
+                plan["instructions"],
+                index,
+                tracker,
+            )
+        except openrouter.OpenRouterError as error:
+            # Alguns trechos são impronunciáveis para o modelo (rodapés de
+            # diagramação, nomes de arquivo, marcas de página que sobram na
+            # extração). O erro é determinístico: já esgotou as tentativas, e
+            # abortar aqui jogaria fora todo o áudio pago até agora.
+            if not _is_empty_audio_error(error):
+                raise
+            skipped.append(index)
+            paths.remove(segment)
+            entries.pop(segment.name, None)
+            print(
+                f"\n   ⚠ Fala {index} pulada: o TTS não gerou áudio para este trecho "
+                f"({plan['turn']['text'].strip()[:60]!r}).",
+                flush=True,
+            )
+            completed += 1
+            tracker.advance(completed)
+            continue
         speech = synthesis.speech
         speech_settings = synthesis.settings
         temporary = segment.with_suffix(segment.suffix + ".tmp")
@@ -834,6 +1062,17 @@ def _synthesize_turns(
         _save_json(manifest_path, manifest)
         completed += 1
         tracker.advance(completed)
+    if skipped:
+        _save_json(manifest_path, manifest)
+        print(
+            f"\n⚠ {len(skipped)} fala(s) sem áudio foram puladas "
+            f"(fala {', '.join(str(i) for i in skipped)}); o episódio segue sem esses trechos.",
+            flush=True,
+        )
+    if not paths:
+        raise ValueError(
+            "Nenhuma fala gerou áudio: o texto não tem conteúdo que o TTS consiga pronunciar."
+        )
     return paths
 
 
@@ -962,6 +1201,12 @@ def _write_show_notes(
         production_note = (
             "Leitura fiel gerada com inteligência artificial; o texto falado foi segmentado "
             "sem reescrita e a direção vocal está em `prosody.json`."
+        )
+    elif generation_mode == "reflexive":
+        production_note = (
+            "Leitura reflexiva gerada com inteligência artificial; o texto foi lido integralmente "
+            "e comentários breves foram intercalados entre os parágrafos. "
+            "O plano de leitura está em `reflexive.json`."
         )
     else:
         production_note = (

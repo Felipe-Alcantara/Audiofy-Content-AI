@@ -9,6 +9,7 @@ Variáveis de ambiente `AUDIOFY_*` continuam tendo prioridade sobre o perfil.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,10 @@ class Profile:
     text_provider: str = "openrouter"
     # Idioma do episódio gerado: "pt-BR" ou "en".
     language: str = "pt-BR"
+    # Modelo passado à CLI de assinatura (ex.: "opus", "gemini-2.5-pro"). Vazio
+    # mantém o que a própria CLI tem configurado. Ignorado quando o provedor é
+    # o OpenRouter, que usa text_model/audit_model.
+    subscription_model: str = ""
 
 
 _TTS = "google/gemini-3.1-flash-tts-preview"
@@ -97,6 +102,17 @@ BUILTIN_PROFILES: list[Profile] = [
         ),
         text_provider="claude-code",
     ),
+    Profile(
+        name="claude-code-leitor-reflexivo",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec="narrador:Sulafat:reflexivo e envolvente",
+        description=(
+            "Leitura reflexiva via assinatura Claude Code — lê o texto e comenta cada parágrafo, sem custo de texto"
+        ),
+        text_provider="claude-code",
+    ),
     # ╔══════════════════════════════════════════════════════════════════════╗
     # ║  Assinatura Codex — texto grátis via CLI OpenAI, só TTS paga       ║
     # ╚══════════════════════════════════════════════════════════════════════╝
@@ -131,6 +147,17 @@ BUILTIN_PROFILES: list[Profile] = [
         ),
         text_provider="codex",
     ),
+    Profile(
+        name="codex-leitor-reflexivo",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec="narrador:Sulafat:reflexivo e envolvente",
+        description=(
+            "Leitura reflexiva via assinatura Codex — lê o texto e comenta cada parágrafo, sem custo de texto"
+        ),
+        text_provider="codex",
+    ),
     # ╔══════════════════════════════════════════════════════════════════════╗
     # ║  Assinatura Gemini CLI — texto grátis via CLI Google, só TTS paga  ║
     # ╚══════════════════════════════════════════════════════════════════════╝
@@ -162,6 +189,17 @@ BUILTIN_PROFILES: list[Profile] = [
         presenters_spec="narrador:Sulafat:caloroso",
         description=(
             "Voz solo calorosa (Sulafat) via assinatura Gemini CLI — narração sem custo de texto"
+        ),
+        text_provider="gemini-cli",
+    ),
+    Profile(
+        name="gemini-cli-leitor-reflexivo",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model=_TTS,
+        presenters_spec="narrador:Sulafat:reflexivo e envolvente",
+        description=(
+            "Leitura reflexiva via assinatura Gemini CLI — lê o texto e comenta cada parágrafo, sem custo de texto"
         ),
         text_provider="gemini-cli",
     ),
@@ -244,6 +282,16 @@ BUILTIN_PROFILES: list[Profile] = [
             "— máxima qualidade de texto"
         ),
     ),
+    Profile(
+        name="gemini-leitor-reflexivo",
+        text_model=_PRO,
+        audit_model=_FLASH,
+        tts_model=_TTS,
+        presenters_spec="narrador:Sulafat:reflexivo e envolvente",
+        description=(
+            "Leitura reflexiva com Gemini Pro — lê o texto integralmente e comenta cada parágrafo"
+        ),
+    ),
     # ╔══════════════════════════════════════════════════════════════════════╗
     # ║  Claude — modelos Anthropic via OpenRouter API                     ║
     # ╚══════════════════════════════════════════════════════════════════════╝
@@ -295,6 +343,16 @@ BUILTIN_PROFILES: list[Profile] = [
         presenters_spec="narrador:Sulafat:caloroso",
         description=("Voz solo calorosa (Sulafat) com Claude Opus — narração premium Anthropic"),
     ),
+    Profile(
+        name="claude-leitor-reflexivo",
+        text_model=_OPUS,
+        audit_model=_FLASH,
+        tts_model=_TTS,
+        presenters_spec="narrador:Sulafat:reflexivo e envolvente",
+        description=(
+            "Leitura reflexiva com Claude Opus — lê o texto integralmente e comenta cada parágrafo"
+        ),
+    ),
     # ╔══════════════════════════════════════════════════════════════════════╗
     # ║  OpenAI — modelos OpenAI via OpenRouter API                        ║
     # ╚══════════════════════════════════════════════════════════════════════╝
@@ -345,6 +403,16 @@ BUILTIN_PROFILES: list[Profile] = [
         presenters_spec="narrador:Sulafat:caloroso",
         description=("Voz solo calorosa (Sulafat) com GPT SOL — narração premium OpenAI"),
     ),
+    Profile(
+        name="openai-leitor-reflexivo",
+        text_model=_GPT_SOL,
+        audit_model=_FLASH,
+        tts_model=_TTS,
+        presenters_spec="narrador:Sulafat:reflexivo e envolvente",
+        description=(
+            "Leitura reflexiva com GPT SOL — lê o texto integralmente e comenta cada parágrafo"
+        ),
+    ),
 ]
 
 
@@ -383,6 +451,20 @@ def profile_from_payload(payload: dict[str, Any]) -> Profile:
     else:
         text_model = audit_model = "(assinatura)"
 
+    # Vira argumento de linha de comando da CLI: aceita só o alfabeto de nomes de
+    # modelo, para que nada possa virar uma flag ou um argumento extra.
+    subscription_model = str(payload.get("subscription_model", "")).strip()
+    if provider == "openrouter":
+        subscription_model = ""
+    elif subscription_model and (
+        len(subscription_model) > 100
+        or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]*", subscription_model)
+    ):
+        raise ValueError(
+            "O modelo da assinatura deve começar com letra ou número e usar apenas "
+            "letras, números, '.', '_', ':' ou '-' (máx. 100 caracteres)."
+        )
+
     description = str(payload.get("description", "")).strip()
     if len(description) > 300:
         raise ValueError("A descrição pode ter no máximo 300 caracteres.")
@@ -398,6 +480,7 @@ def profile_from_payload(payload: dict[str, Any]) -> Profile:
         description=description,
         text_provider=provider,
         language=language,
+        subscription_model=subscription_model,
     )
 
 
