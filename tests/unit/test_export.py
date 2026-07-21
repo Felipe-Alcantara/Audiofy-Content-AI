@@ -1,5 +1,6 @@
 """Testes do pacote NotebookLM — o caminho de custo zero para gerar o áudio."""
 
+import json
 import sys
 import tempfile
 import unittest
@@ -84,6 +85,87 @@ class NotebookLmPackTest(unittest.TestCase):
         self._export()
         pack = self._export()
         self.assertEqual(len(list(pack.iterdir())), 2)
+
+
+class CoverageGuideTest(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.episodes = Path(self._tmp.name)
+        patcher = patch("audiofy.pipeline.EPISODES_DIR", self.episodes)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _episode_dir(self):
+        from audiofy.pipeline import episode_dir
+
+        directory = episode_dir(ITEM.item_id, "pt-BR")
+        directory.mkdir(parents=True, exist_ok=True)
+        return directory
+
+    def _write_coverage(self, items):
+        (self._episode_dir() / "coverage.json").write_text(
+            json.dumps({"items": items}, ensure_ascii=False), encoding="utf-8"
+        )
+
+    def _guide(self, pack):
+        return pack / "cobertura-para-o-notebooklm.md"
+
+    def test_inclui_pontos_criticos_e_importantes_da_matriz(self):
+        self._write_coverage(
+            [
+                {"id": "C1", "criticality": "critica", "statement": "Tese central do autor."},
+                {"id": "C2", "criticality": "importante", "statement": "Número que sustenta."},
+                {"id": "C3", "criticality": "contextual", "statement": "Detalhe secundário."},
+            ]
+        )
+        pack = export_notebooklm_pack(ITEM, "custom", "pt-BR")
+        guide = self._guide(pack).read_text(encoding="utf-8")
+        self.assertIn("Tese central do autor.", guide)
+        self.assertIn("Número que sustenta.", guide)
+        # O contextual é ruído para o foco do NotebookLM e fica de fora.
+        self.assertNotIn("Detalhe secundário.", guide)
+
+    def test_instrucoes_apontam_para_o_guia_quando_ele_existe(self):
+        self._write_coverage(
+            [{"id": "C1", "criticality": "critica", "statement": "Ponto essencial."}]
+        )
+        pack = export_notebooklm_pack(ITEM, "custom", "pt-BR")
+        instrucoes = (pack / "instrucoes.md").read_text(encoding="utf-8")
+        self.assertIn("cobertura-para-o-notebooklm.md", instrucoes)
+
+    def test_sem_matriz_o_pacote_nao_ganha_o_guia(self):
+        pack = export_notebooklm_pack(ITEM, "custom", "pt-BR")
+        self.assertFalse(self._guide(pack).exists())
+        self.assertNotIn(
+            "cobertura-para-o-notebooklm.md",
+            (pack / "instrucoes.md").read_text(encoding="utf-8"),
+        )
+
+    def test_matriz_so_com_contextual_nao_gera_guia(self):
+        self._write_coverage(
+            [{"id": "C1", "criticality": "contextual", "statement": "Só contexto."}]
+        )
+        pack = export_notebooklm_pack(ITEM, "custom", "pt-BR")
+        self.assertFalse(self._guide(pack).exists())
+
+    def test_guia_antigo_some_quando_a_matriz_deixa_de_existir(self):
+        # Reexportar após a matriz sumir não pode deixar um guia obsoleto prometendo
+        # cobertura que já não acompanha o conteúdo.
+        self._write_coverage(
+            [{"id": "C1", "criticality": "critica", "statement": "Ponto essencial."}]
+        )
+        pack = export_notebooklm_pack(ITEM, "custom", "pt-BR")
+        self.assertTrue(self._guide(pack).exists())
+        (self._episode_dir() / "coverage.json").unlink()
+        pack = export_notebooklm_pack(ITEM, "custom", "pt-BR")
+        self.assertFalse(self._guide(pack).exists())
+
+    def test_coverage_json_corrompido_nao_derruba_a_exportacao(self):
+        (self._episode_dir() / "coverage.json").write_text("{ inválido", encoding="utf-8")
+        pack = export_notebooklm_pack(ITEM, "custom", "pt-BR")
+        self.assertTrue((pack / "instrucoes.md").is_file())
+        self.assertFalse(self._guide(pack).exists())
 
 
 if __name__ == "__main__":
