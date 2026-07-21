@@ -1465,3 +1465,47 @@ Electron verdes, lint e formatação limpos, cobertura 72%, `pip-audit` e `npm a
 vulnerabilidades, JSONs válidos e links internos íntegros. A geração real que motivou as
 correções anteriores (livro em PDF, modo reflexivo) concluiu com sucesso: MP3 final gerado,
 US$ 1,65, com os 2 trechos impronunciáveis pulados em vez de derrubarem o episódio.
+
+---
+
+## 2026-07-21 — Faixa da estimativa honesta e matriz no pacote NotebookLM
+
+**O que mudou:** dois ajustes pequenos motivados por uso real.
+
+- **Estimativa com uma amostra usa a variância real do TTS**, não um ±15%/±20% fixo. A
+  estimativa já lia todos os `metrics.json` do histórico (média ponderada por modo e por
+  modelo); o que faltava era a faixa: modos novos (reflexive, verbatim) têm uma amostra só, e
+  o intervalo virava um chute arbitrário. Agora, quando o modo tem menos de duas amostras, a
+  dispersão vem do histórico completo daquele TTS — a taxa de fala e o preço por palavra
+  atravessam os formatos porque a voz é a mesma. Sem histórico suficiente, cai para o padrão.
+- **O pacote NotebookLM ganha a matriz de cobertura quando ela existe.** Se o episódio já
+  passou pelo pipeline, `coverage.json` lista os pontos críticos e importantes; eles viram um
+  checklist (`cobertura-para-o-notebooklm.md`) para colar junto do foco, orientando o
+  NotebookLM a cobrir tudo em vez de resumir livremente. O texto exportado já era o
+  processado (`item.text`, pós-extração com limpeza de rodapé), então esse lado do pedido já
+  estava atendido.
+
+**Decisões:**
+
+- **A faixa por variância do TTS ignora o modo de propósito.** Misturar formatos seria errado
+  para a *média* (podcast tem proporção texto/roteiro diferente da leitura literal), mas a
+  *dispersão* da voz é compartilhada — usar todos os episódios do TTS dá uma incerteza medida
+  em vez de inventada. A interface passa a dizer "faixa pela variância do histórico do TTS"
+  quando isso acontece, para a origem ficar clara.
+- **O guia de cobertura só entra com pontos críticos/importantes.** O "contextual" é ruído
+  para o foco do NotebookLM. E um guia antigo é apagado quando a matriz some, para o pacote
+  nunca prometer cobertura que não acompanha mais o conteúdo.
+- **`coverage.json` corrompido não derruba a exportação** — o pacote sai sem o guia, porque o
+  NotebookLM continua útil só com a fonte.
+
+**Validação:** `scripts/check_quality.py` aprovado; 20 testes novos/afetados verdes (7 de
+estimativa cobrindo a variância histórica e o fallback padrão; 13 de exportação cobrindo o
+guia de cobertura, o descarte do guia obsoleto e o JSON inválido). Verificado com dados reais:
+a estimativa reflexive de 5000 palavras dá ~US$ 1,67 / ~41 min, coerente com o Orwell medido
+(US$ 1,65 / 40,5 min); o guia gerado a partir de um `coverage.json` real trouxe os pontos
+essenciais formatados.
+
+**Risco que sobrou:** a variância do TTS só melhora a faixa enquanto houver ao menos dois
+episódios daquele modelo; um TTS estreante ainda cai no ±15%/±20% padrão. A qualidade do guia
+de cobertura depende da matriz que o pipeline extraiu — se o `coverage.json` for pobre, o guia
+herda isso.
