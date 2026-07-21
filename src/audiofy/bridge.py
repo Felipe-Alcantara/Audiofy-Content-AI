@@ -8,7 +8,7 @@
     python3 -m audiofy.bridge search <fonte> <termos…>
     python3 -m audiofy.bridge item <fonte> <item-id>
     python3 -m audiofy.bridge generate <fonte> <item-id> [--force]
-        [--mode=adaptation|verbatim] [--voice=<voz>]
+        [--mode=adaptation|verbatim|reflexive] [--voice=<voz>]
         [--background-music=<arquivo>] [--background-volume=0.01..0.25]
     python3 -m audiofy.bridge run-generation <fonte> <item-id> [opções]  # uso interno
     python3 -m audiofy.bridge repair <fonte> <item-id>
@@ -18,6 +18,7 @@
     python3 -m audiofy.bridge audio-chunks <item-id>
     python3 -m audiofy.bridge abort <item-id>
     python3 -m audiofy.bridge tts-catalog
+    python3 -m audiofy.bridge add-file <caminho-do-arquivo>
     python3 -m audiofy.bridge setup-check|setup-install
 """
 
@@ -276,7 +277,7 @@ def _cmd_item(source_key: str, item_id: str) -> dict:
             settings.tts_model,
             generation_mode=mode,
         )
-        for mode in ("adaptation", "verbatim")
+        for mode in ("adaptation", "verbatim", "reflexive")
     }
     estimate = estimates["adaptation"]
     payload = asdict(item)
@@ -292,7 +293,7 @@ def _cmd_item(source_key: str, item_id: str) -> dict:
 def _validate_generation_options(
     generation_mode: str, narration_voice: str | None
 ) -> tuple[str, str | None]:
-    if generation_mode not in {"adaptation", "verbatim"}:
+    if generation_mode not in {"adaptation", "verbatim", "reflexive"}:
         raise ValueError(f"Modo de geração desconhecido: {generation_mode}")
     if generation_mode == "adaptation":
         return generation_mode, None
@@ -501,7 +502,7 @@ def _cmd_run_generation(
             from dataclasses import replace as _replace_lang
 
             settings = _replace_lang(settings, language=language)
-        if generation_mode == "verbatim":
+        if generation_mode in {"verbatim", "reflexive"}:
             from dataclasses import replace
 
             from .presenters import Presenter
@@ -716,6 +717,7 @@ def _cmd_settings_info() -> dict:
         name
         for name in (
             "AUDIOFY_TEXT_PROVIDER",
+            "AUDIOFY_SUBSCRIPTION_MODEL",
             "AUDIOFY_TEXT_MODEL",
             "AUDIOFY_AUDIT_MODEL",
             "AUDIOFY_TTS_MODEL",
@@ -726,7 +728,11 @@ def _cmd_settings_info() -> dict:
     return {
         "profile": settings.profile_name,
         "text_provider": settings.text_provider or "openrouter",
-        "subscription_model": configured_model(settings.text_provider),
+        # O modelo escolhido no perfil vence o que a CLI tem configurado.
+        "subscription_model": (
+            settings.subscription_model or configured_model(settings.text_provider)
+        ),
+        "profile_subscription_model": settings.subscription_model,
         "text_model": settings.text_model,
         "audit_model": settings.audit_model,
         "tts_model": settings.tts_model,
@@ -744,6 +750,8 @@ def _cmd_settings_info() -> dict:
                 "name": c.name,
                 "available": c.is_available(),
                 "configured_model": configured_model(c.key),
+                "model_suggestions": list(c.model_suggestions),
+                "supports_model": bool(c.model_flag),
             }
             for c in SUBSCRIPTION_CLIS
         ],
@@ -965,6 +973,28 @@ def main() -> None:
                 payload["title"], payload["text"], payload.get("url", "")
             )
             result = {"item_id": item_id, "source": "custom"}
+        elif command == "add-file" and rest:
+            from .file_extraction import extract_file
+            from .sources.custom import CustomSource
+
+            extraction = extract_file(Path(rest[0]))
+            if extraction.needs_fallback:
+                result = {
+                    "added": False,
+                    "needs_fallback": True,
+                    "reason": extraction.reason,
+                    "title": extraction.title,
+                }
+            else:
+                item_id = CustomSource().add_text(extraction.title, extraction.text)
+                result = {
+                    "added": True,
+                    "item_id": item_id,
+                    "source": "custom",
+                    "title": extraction.title,
+                    "method": extraction.method,
+                    "words": len(extraction.text.split()),
+                }
         elif command == "chat":
             from .chat import ChatSession
 

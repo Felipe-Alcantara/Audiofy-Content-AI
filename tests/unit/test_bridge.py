@@ -12,8 +12,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from audiofy import bridge  # noqa: E402
 from audiofy.catalog import Model  # noqa: E402
 from audiofy.estimates import EpisodeEstimate, EpisodeMetrics  # noqa: E402
-from audiofy.profiles import profile_from_payload  # noqa: E402
+from audiofy.profiles import Profile, profile_from_payload  # noqa: E402
 from audiofy.sources.base import ContentItem  # noqa: E402
+
+
+def _subscription_profile(subscription_model: str) -> Profile:
+    """Perfil de assinatura para testes que não podem depender do disco."""
+    return Profile(
+        name="teste",
+        text_model="(assinatura)",
+        audit_model="(assinatura)",
+        tts_model="vendor/tts",
+        presenters_spec="narrador:Kore",
+        text_provider="codex",
+        subscription_model=subscription_model,
+    )
 
 
 class ProfilePayloadTest(unittest.TestCase):
@@ -191,12 +204,30 @@ class CatalogContractTest(unittest.TestCase):
 
 class SettingsInfoTest(unittest.TestCase):
     @patch("audiofy.providers.subscription.configured_model", return_value="gpt-test")
-    @patch.dict("os.environ", {"AUDIOFY_TEXT_PROVIDER": "codex"})
-    def test_informa_override_e_modelo_da_assinatura(self, _configured_model):
-        result = bridge._cmd_settings_info()
+    @patch.dict("os.environ", {"AUDIOFY_TEXT_PROVIDER": "codex", "AUDIOFY_SUBSCRIPTION_MODEL": ""})
+    def test_sem_modelo_no_perfil_reporta_o_configurado_na_cli(self, _configured_model):
+        with patch("audiofy.config.profile_store") as store:
+            store.return_value.active.return_value = _subscription_profile("")
+            result = bridge._cmd_settings_info()
         self.assertEqual(result["text_provider"], "codex")
         self.assertEqual(result["subscription_model"], "gpt-test")
+        self.assertEqual(result["profile_subscription_model"], "")
         self.assertIn("AUDIOFY_TEXT_PROVIDER", result["overrides"])
+
+    @patch("audiofy.providers.subscription.configured_model", return_value="gpt-test")
+    @patch.dict("os.environ", {"AUDIOFY_TEXT_PROVIDER": "codex", "AUDIOFY_SUBSCRIPTION_MODEL": ""})
+    def test_modelo_do_perfil_vence_o_configurado_na_cli(self, _configured_model):
+        with patch("audiofy.config.profile_store") as store:
+            store.return_value.active.return_value = _subscription_profile("o3")
+            result = bridge._cmd_settings_info()
+        self.assertEqual(result["subscription_model"], "o3")
+        self.assertEqual(result["profile_subscription_model"], "o3")
+
+    def test_expoe_sugestoes_de_modelo_por_cli(self):
+        result = bridge._cmd_settings_info()
+        for cli in result["subscription_clis"]:
+            self.assertTrue(cli["model_suggestions"], cli["key"])
+            self.assertTrue(cli["supports_model"], cli["key"])
 
 
 class KeyManagementContractTest(unittest.TestCase):
@@ -623,6 +654,16 @@ class ItemEstimateTest(unittest.TestCase):
                 cost_max_usd=1.1,
                 sample_count=1,
             ),
+            EpisodeEstimate(
+                duration_minutes=22,
+                duration_min_minutes=20,
+                duration_max_minutes=24,
+                speaking_rate_wpm=148,
+                cost_usd=1.2,
+                cost_min_usd=0.9,
+                cost_max_usd=1.5,
+                sample_count=0,
+            ),
         ]
 
         result = bridge._cmd_item("custom", "item")
@@ -631,9 +672,10 @@ class ItemEstimateTest(unittest.TestCase):
         self.assertEqual(result["estimate"]["sample_count"], 2)
         self.assertEqual(result["estimate"]["duration_minutes"], 20)
         self.assertEqual(result["estimates"]["verbatim"]["sample_count"], 1)
+        self.assertEqual(result["estimates"]["reflexive"]["sample_count"], 0)
         self.assertEqual(
             [call.kwargs["generation_mode"] for call in estimate_episode.call_args_list],
-            ["adaptation", "verbatim"],
+            ["adaptation", "verbatim", "reflexive"],
         )
 
 

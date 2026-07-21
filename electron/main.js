@@ -119,10 +119,31 @@ async function chooseBackgroundMusic() {
   return result.canceled ? null : result.filePaths[0];
 }
 
+async function chooseContentFiles() {
+  const result = await dialog.showOpenDialog({
+    title: "Enviar arquivos de conteúdo",
+    properties: ["openFile", "multiSelections"],
+    filters: [
+      {
+        name: "Documentos e imagens",
+        extensions: [
+          "pdf", "docx", "epub", "txt", "md", "markdown", "text",
+          "png", "jpg", "jpeg", "webp", "tif", "tiff", "bmp",
+        ],
+      },
+      { name: "Documentos", extensions: ["pdf", "docx", "epub"] },
+      { name: "Texto", extensions: ["txt", "md", "markdown", "text"] },
+      { name: "Imagens", extensions: ["png", "jpg", "jpeg", "webp", "tif", "tiff", "bmp"] },
+    ],
+  });
+  return result.canceled ? [] : result.filePaths;
+}
+
 app.whenReady().then(() => {
   ipcMain.handle("bridge", (_event, args, stdinData) => bridge(args, stdinData));
   ipcMain.handle("open-path", (_event, target) => openProjectPath(target));
   ipcMain.handle("choose-background-music", () => chooseBackgroundMusic());
+  ipcMain.handle("choose-content-files", () => chooseContentFiles());
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

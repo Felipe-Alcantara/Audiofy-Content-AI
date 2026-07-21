@@ -12,7 +12,7 @@ const COMMAND_ARITY = Object.freeze({
   "audio-chunks": [2, 3],
   "repair": [3, 4],
   "tts-catalog": [1, 1], "notebooklm": [3, 3], "add-url": [2, 2],
-  "add-text": [1, 1], "chat": [1, 2], "chat-history": [1, 2],
+  "add-text": [1, 1], "add-file": [2, 2], "chat": [1, 2], "chat-history": [1, 2],
   "chat-clear": [1, 2], "settings-info": [1, 1], "keys-list": [1, 1],
   "keys-add": [2, 2], "keys-activate": [2, 2], "keys-use": [2, 2],
   "keys-use-environment": [1, 1], "keys-check": [2, 2],
