@@ -257,6 +257,10 @@ const _MODE_PREFIXES = {
     "[MODO NARRAÇÃO] Pesquise o tema abaixo, escreva um texto completo e adicione " +
     "via adicionar_texto. Depois, gere o episódio em modo verbatim via ação " +
     "gerar. Não peça confirmação, execute tudo.\n\n",
+  reflexiva:
+    "[MODO LEITURA REFLEXIVA] Pesquise o tema abaixo, escreva um texto completo e adicione " +
+    "via adicionar_texto. Depois, gere o episódio em modo reflexive via ação " +
+    "gerar. Não peça confirmação, execute tudo.\n\n",
   url:
     "[MODO URL] O texto abaixo contém uma ou mais URLs. Adicione cada uma como " +
     "conteúdo via ação adicionar_url. Não pergunte nada.\n\n",
@@ -266,6 +270,7 @@ const _MODE_PLACEHOLDERS = {
   pesquisa: "Digite o tema para pesquisar e adicionar como conteúdo…",
   podcast: "Digite o tema — será pesquisado e gerado como podcast adaptado…",
   narracao: "Digite o tema — será pesquisado e gerado como leitura fiel…",
+  reflexiva: "Digite o tema — será pesquisado e gerado como leitura reflexiva com comentários…",
   url: "Cole a URL para adicionar como conteúdo…",
 };
 
@@ -341,7 +346,7 @@ async function loadSources() {
   for (const source of result.sources) {
     const option = document.createElement("option");
     option.value = source.key;
-    option.textContent = `${source.name}${source.ready ? "  ·  pronta" : "  ·  requer sync"}`;
+    option.textContent = source.name;
     option.title = source.description;
     select.appendChild(option);
   }
@@ -352,13 +357,15 @@ async function loadSources() {
 function renderSourceStatus(message = "") {
   const source = sourcesByKey.get(currentSource);
   const status = $("source-status");
-  if (message) {
-    status.textContent = message;
-    return;
+  const badge = $("source-status-badge");
+  if (source) {
+    badge.textContent = source.ready ? "✓ pronta" : "⚠ requer sync";
+    badge.className = `badge ${source.ready ? "ok" : "warn"}`;
+  } else {
+    badge.textContent = "";
+    badge.className = "badge hidden";
   }
-  status.textContent = source
-    ? `${source.ready ? "✓ Fonte pronta" : "⚠ Fonte ainda não sincronizada"} · ${source.description}`
-    : "";
+  status.textContent = message || source?.description || "";
 }
 
 $("source-select").onchange = () => {
@@ -373,21 +380,30 @@ $("source-select").onchange = () => {
 
 async function loadItems(query = "") {
   const command = query ? ["search", currentSource, query] : ["items", currentSource];
-  const result = await bridge(command);
   const list = $("items");
+  const count = $("items-count");
   list.replaceChildren();
+  count.textContent = "";
+  const result = await bridge(command);
   if (!result.ok) {
-    list.appendChild(makeElement("li", "muted", `Erro: ${result.error}`));
+    list.appendChild(makeElement("li", "muted empty-state", `✖ Erro: ${result.error}`));
     return;
   }
   if (!result.items.length) {
-    list.appendChild(makeElement("li", "muted",
-      "Nenhum item — adicione conteúdo acima ou peça sugestões no Chat."));
+    list.appendChild(makeElement("li", "muted empty-state",
+      query
+        ? "Nenhum resultado para essa busca."
+        : "Nenhum item — adicione conteúdo acima ou peça sugestões no Chat."));
+    return;
   }
+  count.textContent = `${result.items.length} item${result.items.length === 1 ? "" : "ns"}`;
   for (const item of result.items) {
     const row = document.createElement("li");
-    row.appendChild(makeElement("span", "date", item.published_at));
-    row.appendChild(makeElement("span", "item-title", item.title));
+    row.className = "item-row";
+    const main = makeElement("div", "item-main");
+    main.appendChild(makeElement("span", "item-title", item.title));
+    main.appendChild(makeElement("span", "date", item.published_at));
+    row.appendChild(main);
     row.onclick = () => selectItem(item, row);
     list.appendChild(row);
   }
@@ -427,7 +443,7 @@ function renderItemEstimate() {
       `${(actual.duration_seconds / 60).toFixed(1)} min`;
   } else {
     const basis = estimate.sample_count
-      ? `${estimate.sample_count} episódio(s) de ${mode === "verbatim" ? "leitura fiel" : "adaptação"}`
+      ? `${estimate.sample_count} episódio(s) de ${generationModeLabel(mode)}`
       : "piloto medido";
     $("detail-estimate").textContent =
       `Estimativa: ~US$ ${estimate.cost_usd.toFixed(2)} ` +
@@ -483,6 +499,83 @@ $("btn-add-text").onclick = async () => {
   }
 };
 
+// ── Envio de arquivos ─────────────────────────────────────────────────────
+// A extração roda por bibliotecas locais (pypdf/python-docx/ebooklib/OCR).
+// A IA só é sugerida quando nada local funcionou, porque um livro ou dezenas
+// de páginas escaneadas custariam caro e demorariam muito para transcrever.
+
+function fileBaseName(filePath) {
+  return String(filePath).split(/[\\/]/).pop() || filePath;
+}
+
+function describeExtraction(result) {
+  const methodLabels = {
+    "pypdf": "PDF lido localmente",
+    "python-docx": "DOCX lido localmente",
+    "ebooklib": "EPUB lido localmente",
+    "plain-text": "texto lido diretamente",
+    "tesseract-ocr": "OCR local (Tesseract)",
+  };
+  const method = methodLabels[result.method] || result.method;
+  return `${result.title} — ${result.words} palavras · ${method}`;
+}
+
+async function askAgentToExtract(filePath, reason) {
+  const name = fileBaseName(filePath);
+  const confirmed = confirm(
+    `Não consegui extrair o texto de "${name}" localmente.\n\n${reason}\n\n` +
+    "Quer que o agente de IA leia e transcreva o arquivo?\n\n" +
+    "⚠️ Isso consome créditos e pode ficar lento/caro em arquivos grandes " +
+    "(livros, dezenas de páginas ou muitas imagens). " +
+    "Alternativa sem custo: instalar o OCR local em Configurações → Diagnóstico, " +
+    "ou colar o texto manualmente."
+  );
+  if (!confirmed) return { skipped: true };
+  const instruction =
+    `[EXTRAÇÃO DE ARQUIVO] Leia o arquivo em "${filePath}" e transcreva o texto ` +
+    "integralmente, sem resumir nem reescrever. Depois adicione o resultado como " +
+    "conteúdo via ação adicionar_texto, usando o título do próprio documento. " +
+    "Não peça confirmação.";
+  activateTab($("tab-button-chat"));
+  $("chat-text").value = instruction;
+  $("chat-text").focus();
+  addChatMessage("system",
+    `Transcrição de "${name}" preparada no chat — revise e envie para o agente executar.`);
+  return { delegated: true };
+}
+
+$("btn-add-files").onclick = async () => {
+  const paths = await window.audiofy.chooseContentFiles();
+  if (!paths.length) return;
+  const button = $("btn-add-files");
+  const status = $("add-files-status");
+  button.disabled = true;
+  const added = [];
+  const failed = [];
+  const pending = [];
+  for (const [index, filePath] of paths.entries()) {
+    status.textContent =
+      `Extraindo ${index + 1}/${paths.length}: ${fileBaseName(filePath)}…`;
+    const result = await bridge(["add-file", filePath]);
+    if (!result.ok) {
+      failed.push(`${fileBaseName(filePath)}: ${result.error}`);
+    } else if (result.added) {
+      added.push(describeExtraction(result));
+    } else {
+      pending.push({ filePath, reason: result.reason });
+    }
+  }
+  button.disabled = false;
+  const lines = [];
+  if (added.length) lines.push(`✓ ${added.length} adicionado(s): ${added.join(" · ")}`);
+  if (failed.length) lines.push(`✖ ${failed.length} com erro: ${failed.join(" · ")}`);
+  status.textContent = lines.join("  |  ") || "Nenhum arquivo processado.";
+  if (added.length) loadItems();
+  for (const { filePath, reason } of pending) {
+    await askAgentToExtract(filePath, reason);
+  }
+};
+
 // ── Geração, episódios e status ───────────────────────────────────────────
 
 function updateGenerateButton() {
@@ -490,25 +583,35 @@ function updateGenerateButton() {
   const running = button.dataset.running === "true";
   const done = button.dataset.done === "true";
   button.disabled = generationRequestPending || running;
-  const verbatim = $("generation-mode").value === "verbatim";
+  const mode = $("generation-mode").value;
   if (generationRequestPending) {
     button.textContent = "⏳ Iniciando…";
   } else if (done) {
-    button.textContent = verbatim ? "📖 Re-gerar leitura fiel" : "🔄 Re-gerar episódio";
+    button.textContent = mode === "verbatim" ? "📖 Re-gerar leitura fiel"
+      : mode === "reflexive" ? "📖 Re-gerar leitura reflexiva"
+      : "🔄 Re-gerar episódio";
   } else {
-    button.textContent = verbatim ? "📖 Gerar leitura fiel" : "🎙️ Gerar episódio";
+    button.textContent = mode === "verbatim" ? "📖 Gerar leitura fiel"
+      : mode === "reflexive" ? "📖 Gerar leitura reflexiva"
+      : "🎙️ Gerar episódio";
   }
 }
 
 function updateGenerationMode() {
-  const verbatim = $("generation-mode").value === "verbatim";
-  $("narration-voice-label").classList.toggle("hidden", !verbatim);
-  $("generation-mode-note").textContent = verbatim
+  const mode = $("generation-mode").value;
+  const needsNarrator = mode === "verbatim" || mode === "reflexive";
+  $("narration-voice-label").classList.toggle("hidden", !needsNarrator);
+  $("generation-mode-note").textContent = mode === "verbatim"
     ? "O texto falado é preservado integralmente. A IA planeja apenas ritmo, pausas, " +
       "emoção e tensão em lotes retomáveis."
+    : mode === "reflexive"
+    ? "O texto é lido integralmente, parágrafo a parágrafo. Após cada parágrafo, " +
+      "o narrador acrescenta um breve comentário reflexivo, explicativo ou contextual."
     : "Cria matriz de cobertura, adapta o texto como roteiro e audita o resultado.";
-  $("force-label").textContent = verbatim
+  $("force-label").textContent = mode === "verbatim"
     ? "Replanejar interpretação e regenerar áudios"
+    : mode === "reflexive"
+    ? "Replanejar leitura reflexiva e regenerar áudios"
     : "Regenerar cobertura, roteiro e auditoria";
   renderItemEstimate();
   updateGenerateButton();
@@ -524,7 +627,7 @@ function generationArgs(
   const selectedVoice = voice || $("narration-voice").value;
   const selectedLang = language || $("generation-language").value;
   const args = ["generate", source, itemId, `--mode=${selectedMode}`];
-  if (selectedMode === "verbatim") args.push(`--voice=${selectedVoice}`);
+  if (selectedMode === "verbatim" || selectedMode === "reflexive") args.push(`--voice=${selectedVoice}`);
   if (force) args.push("--force");
   if (backgroundMusic) {
     args.push(`--background-music=${backgroundMusic}`);
@@ -619,30 +722,41 @@ $("btn-generate").onclick = async () => {
   if (!selectedItem) return;
   const force = $("generate-force").checked;
   const mode = $("generation-mode").value;
-  const verbatim = mode === "verbatim";
+  const needsNarrator = mode === "verbatim" || mode === "reflexive";
   const voice = $("narration-voice").value;
   const backgroundVolume = Number($("background-volume").value) / 100;
   const estimate = selectedEstimate();
-  if (verbatim && !voice) {
+  if (needsNarrator && !voice) {
     alert("Escolha a voz do narrador.");
     return;
   }
+  const modeLabel = mode === "verbatim" ? "Gerar leitura fiel"
+    : mode === "reflexive" ? "Gerar leitura reflexiva"
+    : "Gerar episódio";
+  const narratorNote = mode === "verbatim"
+    ? `\n\nNarrador: ${voice}. O texto não será reescrito; somente a interpretação será planejada.`
+    : mode === "reflexive"
+    ? `\n\nNarrador: ${voice}. O texto será lido integralmente, com comentários reflexivos intercalados.`
+    : "";
+  const forceNote = force
+    ? mode === "verbatim"
+      ? "\n\nO plano de interpretação e os áudios serão regenerados."
+      : mode === "reflexive"
+      ? "\n\nO plano reflexivo e os áudios serão regenerados."
+      : "\n\nA cobertura, o roteiro e a auditoria serão regenerados."
+    : "";
   const confirmed = confirm(
-    `${verbatim ? "Gerar leitura fiel" : "Gerar episódio"} de "${selectedItem.title}"?\n\n` +
+    `${modeLabel} de "${selectedItem.title}"?\n\n` +
     `Custo estimado: ~US$ ${estimate.cost_usd.toFixed(2)} ` +
     `(faixa US$ ${estimate.cost_min_usd.toFixed(2)}–` +
     `${estimate.cost_max_usd.toFixed(2)}) ` +
     `(consome créditos do OpenRouter).` +
-    (verbatim
-      ? `\n\nNarrador: ${voice}. O texto não será reescrito; somente a interpretação será planejada.`
-      : "") +
+    narratorNote +
     (backgroundMusicName
       ? `\n\nMúsica de fundo: ${backgroundMusicName} a ${Math.round(backgroundVolume * 100)}%. ` +
         "Os chunks de voz serão reaproveitados quando compatíveis."
       : "") +
-    (force ? (verbatim
-      ? "\n\nO plano de interpretação e os áudios serão regenerados."
-      : "\n\nA cobertura, o roteiro e a auditoria serão regenerados.") : "")
+    forceNote
   );
   if (!confirmed) return;
   const args = generationArgs(selectedItem.source, selectedItem.item_id, {
@@ -737,7 +851,13 @@ async function refreshStatus() {
   }
 
   renderEpisodes(overview.episodes);
-  if (selectedItem) renderSelectedStatus(overview.episodes);
+  if (selectedItem) {
+    renderSelectedStatus(overview.episodes);
+  } else {
+    // Sem item selecionado não há geração para proteger; deixar travado prenderia
+    // os campos até o próximo clique em um item.
+    lockGenerationOptions(false);
+  }
 
   clearTimeout(pollTimer);
   if (overview.anything_running) pollTimer = setTimeout(refreshStatus, 2000);
@@ -758,6 +878,7 @@ function renderSelectedStatus(episodes) {
   $("btn-generate").dataset.running = String(Boolean(running));
   $("btn-generate").dataset.done = String(Boolean(done));
   updateGenerateButton();
+  lockGenerationOptions(Boolean(running));
   $("btn-play").classList.toggle("hidden", !done);
   $("btn-chunks").classList.toggle("hidden", !status);
   $("btn-folder").classList.toggle("hidden", !status);
@@ -888,7 +1009,9 @@ function episodeFact(label, value) {
 }
 
 function generationModeLabel(mode) {
-  return mode === "verbatim" ? "leitura fiel" : "podcast adaptado";
+  return mode === "verbatim" ? "leitura fiel"
+    : mode === "reflexive" ? "leitura reflexiva"
+    : "podcast adaptado";
 }
 
 function renderEpisodes(episodes) {
@@ -1035,8 +1158,9 @@ function renderActiveConfig(info) {
     const cli = info.subscription_clis.find((item) => item.key === info.text_provider);
     const availability = cli && !cli.available ? " · CLI não encontrada" : "";
     const model = info.subscription_model || (cli && cli.configured_model) || "modelo padrão da CLI";
+    const origin = info.profile_subscription_model ? " (perfil)" : "";
     strip.appendChild(configChip("Texto",
-      `${cli ? cli.name : info.text_provider} · ${model}${availability}`,
+      `${cli ? cli.name : info.text_provider} · ${model}${origin}${availability}`,
       cli && !cli.available ? "warn" : ""));
   }
 
@@ -1060,11 +1184,62 @@ function renderActiveConfig(info) {
     voiceSelect.appendChild(option);
   }
   const profileVoice = info.presenters.length === 1 ? info.presenters[0].voice : "";
-  const preferred = previousVoice || profileVoice || "Sulafat";
+  // Só uma escolha deliberada do usuário sobrepõe a voz do perfil. Sem isso, um
+  // valor mudado sem querer (roda do mouse sobre o combo) virava o "preferido" e
+  // se perpetuava a cada refresh, gerando o episódio com outra voz em silêncio.
+  const preferred = (voiceTouchedByUser && previousVoice) || profileVoice || "Sulafat";
   if ([...voiceSelect.options].some((option) => option.value === preferred)) {
     voiceSelect.value = preferred;
   }
+  markVoiceMatchesProfile(profileVoice);
 }
+
+// A roda do mouse sobre um <select> troca a opção no Chromium sem o usuário
+// perceber; num campo que decide o custo e a voz do episódio inteiro, isso é
+// mudança silenciosa demais. Só teclado e clique contam como escolha.
+let voiceTouchedByUser = false;
+
+function markVoiceMatchesProfile(profileVoice) {
+  const voiceSelect = $("narration-voice");
+  const hint = $("narration-voice-hint");
+  if (!hint) return;
+  const differs = Boolean(profileVoice) && voiceSelect.value !== profileVoice;
+  hint.classList.toggle("hidden", !differs);
+  if (differs) {
+    hint.textContent = `⚠ Diferente do perfil (${profileVoice}). Clique para voltar.`;
+    hint.onclick = () => {
+      voiceSelect.value = profileVoice;
+      voiceTouchedByUser = false;
+      markVoiceMatchesProfile(profileVoice);
+    };
+  }
+}
+
+// Formato e idioma também mudam o custo e o áudio final; o mesmo cuidado vale.
+const GENERATION_OPTION_IDS = ["narration-voice", "generation-mode", "generation-language"];
+
+for (const id of GENERATION_OPTION_IDS) {
+  $(id).addEventListener("wheel", (event) => event.preventDefault(), { passive: false });
+}
+
+// Trocar voz, formato ou idioma no meio da geração produziria um episódio com
+// duas configurações misturadas — os segmentos já sintetizados não mudam. Quem
+// quiser outra configuração precisa abortar e gerar de novo.
+function lockGenerationOptions(running) {
+  for (const id of [...GENERATION_OPTION_IDS, "generate-force"]) {
+    $(id).disabled = running;
+  }
+  $("btn-background-music").disabled = running;
+  $("btn-clear-background-music").disabled = running;
+  $("background-volume").disabled = running;
+  $("generation-options-lock").classList.toggle("hidden", !running);
+}
+$("narration-voice").addEventListener("change", () => {
+  voiceTouchedByUser = true;
+  const profileVoice = settingsInfo && settingsInfo.presenters.length === 1
+    ? settingsInfo.presenters[0].voice : "";
+  markVoiceMatchesProfile(profileVoice);
+});
 
 async function loadActiveConfig() {
   const info = await bridge(["settings-info"]);
@@ -1232,7 +1407,9 @@ async function loadSettings() {
         const row = document.createElement("li");
         const active = profile.name === profiles.active;
         const provider = profile.text_provider === "openrouter"
-          ? "API" : `assinatura ${profile.text_provider}`;
+          ? "API"
+          : `assinatura ${profile.text_provider}` +
+            (profile.subscription_model ? ` (${profile.subscription_model})` : "");
         const detail = makeElement("div", "row-main");
         detail.appendChild(makeElement("span", "row-title", profile.name));
         if (profile.description) {
@@ -1294,7 +1471,8 @@ async function loadSettings() {
         `${c.available ? " ✓" : " ✗"}`).join("  ");
     const textModel = info.text_provider === "openrouter"
       ? info.text_model
-      : info.subscription_model || "modelo padrão da CLI";
+      : (info.subscription_model || "modelo padrão da CLI") +
+        (info.profile_subscription_model ? " (escolhido no perfil)" : "");
     const auditModel = info.text_provider === "openrouter" ? info.audit_model : textModel;
     $("settings-info").textContent =
       `perfil ativo:   ${info.profile}\n` +
@@ -1498,8 +1676,25 @@ async function openProfileForm(profile = null) {
     option.disabled = !cli.available;
     providerSelect.appendChild(option);
   }
-  providerSelect.onchange = () =>
-    $("pf-api-models").classList.toggle("hidden", providerSelect.value !== "openrouter");
+  const applyProviderVisibility = () => {
+    const isOpenRouter = providerSelect.value === "openrouter";
+    $("pf-api-models").classList.toggle("hidden", !isOpenRouter);
+    const cli = (settingsInfo ? settingsInfo.subscription_clis : [])
+      .find((item) => item.key === providerSelect.value);
+    const canPickModel = Boolean(cli && cli.supports_model);
+    $("pf-subscription-model-label").classList.toggle("hidden", isOpenRouter || !canPickModel);
+    const options = $("pf-subscription-model-options");
+    options.replaceChildren();
+    for (const suggestion of (cli && cli.model_suggestions) || []) {
+      const option = document.createElement("option");
+      option.value = suggestion;
+      options.appendChild(option);
+    }
+    $("pf-subscription-model").placeholder = cli && cli.configured_model
+      ? `vazio = ${cli.configured_model} (configurado na CLI)`
+      : "vazio = modelo padrão da CLI";
+  };
+  providerSelect.onchange = applyProviderVisibility;
 
   if (!modelsCatalog) {
     $("pf-error").textContent = "carregando catálogo de modelos…";
@@ -1515,7 +1710,10 @@ async function openProfileForm(profile = null) {
   }
   const base = profile || settingsInfo || {};
   providerSelect.value = base.text_provider || "openrouter";
-  $("pf-api-models").classList.toggle("hidden", providerSelect.value !== "openrouter");
+  $("pf-subscription-model").value = profile
+    ? profile.subscription_model || ""
+    : (settingsInfo && settingsInfo.profile_subscription_model) || "";
+  applyProviderVisibility();
   configureModelPicker($("pf-text-vendor"), $("pf-text-model"),
     modelsCatalog.text_models, base.text_model);
   configureModelPicker($("pf-audit-vendor"), $("pf-audit-model"),
@@ -1560,6 +1758,8 @@ $("profile-form").onsubmit = async (event) => {
     text_provider: provider,
     text_model: provider === "openrouter" ? $("pf-text-model").value : "(assinatura)",
     audit_model: provider === "openrouter" ? $("pf-audit-model").value : "(assinatura)",
+    subscription_model: provider === "openrouter"
+      ? "" : $("pf-subscription-model").value.trim(),
     tts_model: $("pf-tts-model").value,
     presenters_spec: spec,
     activate: true,

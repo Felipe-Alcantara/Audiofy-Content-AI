@@ -135,3 +135,46 @@ test("catálogo de episódios mostra datas, duração, arquivo e auditoria", () 
   assert.match(styles, /\.player-dock audio\s*\{[^}]*flex:\s*0 0 auto/s);
   assert.match(styles, /\.player-title\s*\{[^}]*flex:\s*0 0 auto/s);
 });
+
+test("escolhas que custam crédito não mudam sozinhas com a roda do mouse", () => {
+  const html = readRendererFile("index.html");
+  const renderer = readRendererFile("renderer.js");
+
+  // A roda sobre um <select> troca a opção no Chromium sem o usuário perceber.
+  assert.match(
+    renderer,
+    /GENERATION_OPTION_IDS = \["narration-voice", "generation-mode", "generation-language"\]/,
+  );
+  assert.match(renderer, /addEventListener\("wheel", \(event\) => event\.preventDefault\(\)/);
+
+  // Só uma escolha deliberada sobrepõe a voz do perfil ao redesenhar o combo.
+  assert.match(renderer, /voiceTouchedByUser && previousVoice/);
+  assert.match(renderer, /voiceTouchedByUser = true/);
+
+  // E a divergência precisa ficar visível, com volta em um clique.
+  assert.match(html, /id="narration-voice-hint"/);
+  assert.match(renderer, /Diferente do perfil/);
+  assert.match(renderer, /markVoiceMatchesProfile/);
+});
+
+test("configuração da geração fica travada enquanto o episódio é sintetizado", () => {
+  const html = readRendererFile("index.html");
+  const renderer = readRendererFile("renderer.js");
+  const styles = readRendererFile("styles.css");
+
+  // Trocar voz/formato/idioma no meio misturaria configurações no mesmo episódio:
+  // os segmentos já sintetizados não mudam.
+  assert.match(renderer, /function lockGenerationOptions\(running\)/);
+  assert.match(renderer, /\$\(id\)\.disabled = running/);
+  assert.match(renderer, /lockGenerationOptions\(Boolean\(running\)\)/);
+  assert.match(renderer, /btn-background-music"\)\.disabled = running/);
+  assert.match(renderer, /background-volume"\)\.disabled = running/);
+
+  // Sem item selecionado não há geração para proteger — a trava precisa sair.
+  assert.match(renderer, /lockGenerationOptions\(false\)/);
+
+  // E o motivo da trava precisa estar visível, não só o campo cinza.
+  assert.match(html, /id="generation-options-lock"/);
+  assert.match(html, /aborte e gere novamente/);
+  assert.match(styles, /\.options-lock\s*\{/);
+});

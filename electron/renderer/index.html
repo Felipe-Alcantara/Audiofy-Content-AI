@@ -55,6 +55,7 @@
         <button class="chat-mode" data-mode="pesquisa" title="Pesquisa um tema e adiciona como conteúdo">🔍 Pesquisar</button>
         <button class="chat-mode" data-mode="podcast" title="Pesquisa e já gera um episódio adaptado">🎙️ Podcast</button>
         <button class="chat-mode" data-mode="narracao" title="Pesquisa e já gera uma leitura fiel">📖 Narração</button>
+        <button class="chat-mode" data-mode="reflexiva" title="Pesquisa e já gera uma leitura reflexiva com comentários">🧠 Reflexiva</button>
         <button class="chat-mode" data-mode="url" title="Adiciona uma URL como conteúdo">🔗 URL</button>
       </div>
       <div class="chat-input">
@@ -70,29 +71,55 @@
   <section id="tab-content" class="tab-page hidden" role="tabpanel"
     aria-labelledby="tab-button-content" aria-hidden="true" tabindex="0">
     <section class="panel" id="panel-items">
-      <div class="toolbar">
-        <select id="source-select" title="Fonte de conteúdo"
-          aria-label="Fonte de conteúdo"></select>
-        <input id="search" type="search" placeholder="Buscar…"
-          aria-label="Buscar na fonte ativa" />
-        <button id="btn-sync" title="Atualiza a fonte" aria-label="Sincronizar fonte">🔄</button>
+      <div class="source-header">
+        <div class="source-picker">
+          <select id="source-select" title="Fonte de conteúdo"
+            aria-label="Fonte de conteúdo"></select>
+          <span id="source-status-badge" class="badge" role="status"></span>
+        </div>
+        <div class="toolbar">
+          <input id="search" type="search" placeholder="🔎 Buscar nesta fonte…"
+            aria-label="Buscar na fonte ativa" />
+          <button id="btn-sync" class="ghost" title="Atualiza a fonte"
+            aria-label="Sincronizar fonte">🔄 Sincronizar</button>
+        </div>
+        <p id="source-status" class="muted small" role="status"></p>
       </div>
-      <p id="source-status" class="muted small" role="status"></p>
-      <div id="add-content" class="add-content hidden">
-        <input id="add-url" type="url" placeholder="https://… (extrai o texto da página)"
-          aria-label="URL pública para adicionar" />
-        <button id="btn-add-url">➕ Adicionar URL</button>
-        <details>
-          <summary class="muted">…ou colar texto</summary>
+
+      <details id="add-content" class="add-content hidden">
+        <summary>
+          <span>➕ Adicionar conteúdo</span>
+          <span class="muted small">URL ou texto colado</span>
+        </summary>
+        <div class="add-content-body">
+          <div class="add-content-row">
+            <input id="add-url" type="url" placeholder="https://… (extrai o texto da página)"
+              aria-label="URL pública para adicionar" />
+            <button id="btn-add-url" class="primary">Adicionar URL</button>
+          </div>
+          <div class="add-content-divider"><span>ou envie arquivos</span></div>
+          <div class="add-content-row">
+            <button id="btn-add-files" class="primary">📎 Escolher arquivos…</button>
+            <p class="muted small">PDF, DOCX, EPUB, TXT/MD e imagens. O texto é extraído
+              localmente por bibliotecas — sem custo de IA.</p>
+          </div>
+          <p id="add-files-status" class="muted small" role="status"></p>
+          <div class="add-content-divider"><span>ou cole o texto</span></div>
           <input id="add-title" type="text" placeholder="Título"
             aria-label="Título do conteúdo" />
-          <textarea id="add-text" rows="8"
+          <textarea id="add-text" rows="6"
             placeholder="Cole conto, fanfic ou livro; a leitura fiel processa em trechos"
             aria-label="Texto do conteúdo"></textarea>
-          <p class="muted small">Sem limite de caracteres do aplicativo: textos longos são
-            persistidos localmente e processados em chunks.</p>
-          <button id="btn-add-text">➕ Adicionar texto</button>
-        </details>
+          <div class="add-content-row">
+            <p class="muted small">Sem limite de caracteres: textos longos são persistidos
+              localmente e processados em chunks.</p>
+            <button id="btn-add-text" class="primary">Adicionar texto</button>
+          </div>
+        </div>
+      </details>
+
+      <div class="items-header">
+        <span id="items-count" class="muted small"></span>
       </div>
       <ul id="items"></ul>
     </section>
@@ -104,10 +131,14 @@
         <p class="muted" id="detail-meta"></p>
         <p id="detail-estimate" class="estimate"></p>
         <div class="generation-options">
+          <p id="generation-options-lock" class="options-lock hidden" role="status">
+            🔒 Geração em andamento — para mudar formato, idioma, narrador ou música,
+            aborte e gere novamente.</p>
           <label>Formato
             <select id="generation-mode">
               <option value="adaptation">Podcast adaptado</option>
               <option value="verbatim">Leitura fiel, sem reescrita</option>
+              <option value="reflexive">Leitura reflexiva, com comentários</option>
             </select>
           </label>
           <label>Idioma do episódio
@@ -118,6 +149,7 @@
           </label>
           <label id="narration-voice-label" class="hidden">Narrador
             <select id="narration-voice"></select>
+            <button type="button" id="narration-voice-hint" class="voice-hint hidden"></button>
           </label>
           <p id="generation-mode-note" class="muted small"></p>
           <div class="background-music-options">
@@ -255,6 +287,14 @@
           </label>
           <label>Provedor das etapas de texto
             <select id="pf-provider"></select>
+          </label>
+          <label id="pf-subscription-model-label" class="hidden">Modelo da assinatura
+            <input id="pf-subscription-model" type="text" list="pf-subscription-model-options"
+              placeholder="vazio = modelo padrão da CLI"
+              aria-describedby="pf-subscription-model-hint" />
+            <datalist id="pf-subscription-model-options"></datalist>
+            <span id="pf-subscription-model-hint" class="muted small">
+              Escolha uma sugestão ou digite o nome exato aceito pela CLI.</span>
           </label>
           <div id="pf-api-models">
             <div class="model-picker">
