@@ -1,14 +1,23 @@
 """Testes do chat de pesquisa: parsing de ações e persistência de sessão."""
 
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from audiofy.chat import ChatSession, _fix_json_newlines, parse_actions  # noqa: E402
+from audiofy.chat import (  # noqa: E402
+    ChatSession,
+    _default_provider,
+    _fix_json_newlines,
+    parse_actions,
+)
+from audiofy.config import Settings  # noqa: E402
+from audiofy.profiles import Profile  # noqa: E402
 
 
 class ParseActionsTest(unittest.TestCase):
@@ -166,6 +175,40 @@ class ChatSessionTest(unittest.TestCase):
         self.assertIn("[…]", transcript)
         # O texto original de 2000 chars não deve aparecer inteiro no contexto
         self.assertLess(len(transcript), 1500)
+
+
+class ModeloDaAssinaturaNoChatTest(unittest.TestCase):
+    """O chat também respeita o modelo escolhido no perfil."""
+
+    def _capture(self, provider, model):
+        # Settings.__post_init__ completa campos vazios a partir do perfil ativo em
+        # disco; o teste precisa de um perfil próprio para não depender da máquina.
+        profile = Profile(
+            name="teste",
+            text_model="(assinatura)",
+            audit_model="(assinatura)",
+            tts_model="vendor/tts",
+            presenters_spec="narrador:Kore",
+            text_provider=provider,
+            subscription_model=model,
+        )
+        done = subprocess.CompletedProcess(["cli"], 0, "resposta", "")
+        with patch("audiofy.config.profile_store") as store:
+            store.return_value.active.return_value = profile
+            settings = Settings(api_key="k")
+            with patch("audiofy.providers.subscription.run_cli", return_value=done) as run:
+                _default_provider("sistema", "usuário", settings)
+        return run.call_args.args[0]
+
+    def test_claude_code_recebe_o_modelo_do_perfil(self):
+        self.assertEqual(self._capture("claude-code", "opus")[-3:-1], ["--model", "opus"])
+
+    def test_gemini_recebe_o_modelo_mesmo_lendo_tudo_por_stdin(self):
+        command = self._capture("gemini-cli", "gemini-2.5-flash")
+        self.assertEqual(command[:3], ["gemini", "--model", "gemini-2.5-flash"])
+
+    def test_sem_modelo_no_perfil_a_cli_decide(self):
+        self.assertNotIn("--model", self._capture("claude-code", ""))
 
 
 if __name__ == "__main__":

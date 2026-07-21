@@ -184,6 +184,7 @@ def _default_settings() -> dict:
         "api_key": key_store().resolve() or "",
         "profile_name": profile.name,
         "text_provider": _resolved("AUDIOFY_TEXT_PROVIDER", profile.text_provider),
+        "subscription_model": _resolved("AUDIOFY_SUBSCRIPTION_MODEL", profile.subscription_model),
         "text_model": _resolved("AUDIOFY_TEXT_MODEL", profile.text_model),
         "audit_model": _resolved("AUDIOFY_AUDIT_MODEL", profile.audit_model),
         "tts_model": _resolved("AUDIOFY_TTS_MODEL", profile.tts_model),
@@ -199,6 +200,7 @@ class Settings:
     api_key: str = ""
     profile_name: str = ""
     text_provider: str = ""  # "openrouter" ou CLI de assinatura
+    subscription_model: str = ""  # modelo pedido à CLI; vazio usa o padrão dela
     text_model: str = ""
     audit_model: str = ""
     tts_model: str = ""

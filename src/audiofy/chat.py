@@ -209,10 +209,11 @@ def _default_provider(system: str, user: str, settings: Settings) -> str:
         from .providers.subscription import get_cli, run_cli
 
         cli = get_cli(settings.text_provider)
+        model = settings.subscription_model
         if cli.args:
-            command, stdin = cli.chat_command(system), user
+            command, stdin = cli.chat_command(system, model), user
         else:
-            command, stdin = [cli.binary, *cli.chat_args], f"{system}\n\n{user}"
+            command, stdin = cli.chat_command("", model), f"{system}\n\n{user}"
         try:
             result = run_cli(command, stdin)
         except subprocess.TimeoutExpired as error:

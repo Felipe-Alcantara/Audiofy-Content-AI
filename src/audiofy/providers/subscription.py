@@ -79,12 +79,21 @@ class SubscriptionCli:
     # ferramentas (pesquisa web, leitura de páginas). Só valem no chat — as
     # etapas do pipeline são texto puro e não precisam de ferramentas.
     chat_args: tuple[str, ...] = ()
+    # Flag que seleciona o modelo da sessão. Vazia quando a CLI não permite
+    # escolher por invocação (aí vale só o que estiver configurado nela).
+    model_flag: str = "--model"
+    # Sugestões exibidas na interface; o usuário pode digitar qualquer outro nome,
+    # porque cada CLI evolui seu catálogo sem avisar o Audiofy.
+    model_suggestions: tuple[str, ...] = ()
 
-    def command(self, system: str) -> list[str]:
-        return [self.binary, *[a.format(system=system) for a in self.args]]
+    def command(self, system: str, model: str = "") -> list[str]:
+        command = [self.binary, *[a.format(system=system) for a in self.args]]
+        if model and self.model_flag:
+            command.extend([self.model_flag, model])
+        return command
 
-    def chat_command(self, system: str) -> list[str]:
-        return [*self.command(system), *self.chat_args]
+    def chat_command(self, system: str, model: str = "") -> list[str]:
+        return [*self.command(system, model), *self.chat_args]
 
     def is_available(self) -> bool:
         return shutil.which(self.binary) is not None
@@ -97,6 +106,7 @@ SUBSCRIPTION_CLIS: list[SubscriptionCli] = [
         binary="claude",
         args=("-p", "--output-format", "text", "--append-system-prompt", "{system}"),
         chat_args=("--dangerously-skip-permissions",),
+        model_suggestions=("opus", "sonnet", "haiku"),
     ),
     SubscriptionCli(
         key="gemini-cli",
@@ -104,12 +114,14 @@ SUBSCRIPTION_CLIS: list[SubscriptionCli] = [
         binary="gemini",
         args=(),  # lê o prompt inteiro por stdin
         chat_args=("--yolo",),
+        model_suggestions=("gemini-2.5-pro", "gemini-2.5-flash"),
     ),
     SubscriptionCli(
         key="codex",
         name="Codex CLI (assinatura OpenAI)",
         binary="codex",
         args=("exec", "-"),  # já é não interativo; roda em sandbox sem aprovações
+        model_suggestions=("gpt-sol", "o3", "gpt-4o"),
     ),
 ]
 
@@ -167,7 +179,7 @@ def _extract_json(text: str):
     return json.loads(text[start:])
 
 
-def chat_json(provider_key: str, system: str, user: str):
+def chat_json(provider_key: str, system: str, user: str, model: str = ""):
     """Executa a CLI de assinatura e retorna um ChatResult com custo zero."""
     from .openrouter import ChatResult
 
@@ -177,9 +189,10 @@ def chat_json(provider_key: str, system: str, user: str):
             f"A CLI '{cli.binary}' ({cli.name}) não está instalada nesta máquina."
         )
     if cli.args:
-        command, stdin = cli.command(system), user
+        command, stdin = cli.command(system, model), user
     else:
-        command, stdin = [cli.binary], f"{system}\n\n{user}"
+        # Sem argumentos de modo headless, a CLI lê system e prompt juntos por stdin.
+        command, stdin = cli.command("", model), f"{system}\n\n{user}"
     try:
         result = run_cli(command, stdin)
     except subprocess.TimeoutExpired as error:

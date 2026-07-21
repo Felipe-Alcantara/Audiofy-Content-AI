@@ -9,7 +9,12 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from audiofy.config import Settings  # noqa: E402
-from audiofy.profiles import BUILTIN_PROFILES, Profile, ProfileStore  # noqa: E402
+from audiofy.profiles import (  # noqa: E402
+    BUILTIN_PROFILES,
+    Profile,
+    ProfileStore,
+    profile_from_payload,
+)
 
 
 class ProfileStoreTest(unittest.TestCase):
@@ -129,6 +134,62 @@ class ProfileStoreTest(unittest.TestCase):
             self.store.set_active("nao-existe")
 
 
+class ModeloDaAssinaturaTest(unittest.TestCase):
+    """Modelo escolhido para a CLI vira argumento de linha de comando."""
+
+    BASE = {
+        "name": "perfil",
+        "tts_model": "vendor/tts",
+        "presenters_spec": "narrador:Kore",
+        "text_provider": "claude-code",
+    }
+
+    def _build(self, model):
+        return profile_from_payload({**self.BASE, "subscription_model": model})
+
+    def test_aceita_nomes_usados_pelas_clis(self):
+        for model in ("opus", "gemini-2.5-pro", "gpt-4o", "claude-sonnet-4.6", "o3"):
+            self.assertEqual(self._build(model).subscription_model, model)
+
+    def test_vazio_significa_manter_o_padrao_da_cli(self):
+        self.assertEqual(self._build("").subscription_model, "")
+
+    def test_recusa_valores_que_virariam_outra_flag_ou_argumento(self):
+        # O valor entra na linha de comando da CLI: nada pode abrir uma flag nova,
+        # separar argumentos ou encadear comandos.
+        for hostil in (
+            "--dangerously-skip-permissions",
+            "-opus",
+            "opus --yolo",
+            "opus;rm -rf /",
+            "opus|cat",
+            "opus\nrm",
+            "x" * 101,
+        ):
+            with self.assertRaises(ValueError, msg=hostil):
+                self._build(hostil)
+
+    def test_openrouter_descarta_o_campo(self):
+        profile = profile_from_payload(
+            {
+                **self.BASE,
+                "text_provider": "openrouter",
+                "text_model": "vendor/text",
+                "audit_model": "vendor/audit",
+                "subscription_model": "opus",
+            }
+        )
+        self.assertEqual(profile.subscription_model, "")
+
+    def test_sobrevive_ao_ciclo_de_persistencia(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        store = ProfileStore(Path(directory.name) / "profiles.json")
+        store.save(self._build("haiku"))
+        recarregado = ProfileStore(Path(directory.name) / "profiles.json")
+        self.assertEqual(recarregado.get("perfil").subscription_model, "haiku")
+
+
 class SettingsProfileNameTest(unittest.TestCase):
     @patch("audiofy.config._default_settings")
     def test_nome_do_perfil_vem_da_configuracao_resolvida(self, defaults):
@@ -142,6 +203,19 @@ class SettingsProfileNameTest(unittest.TestCase):
             "presenters": [],
         }
         self.assertEqual(Settings().profile_name, "codex-duo")
+
+    @patch("audiofy.config.profile_store")
+    def test_modelo_do_perfil_chega_ao_settings(self, store):
+        store.return_value.active.return_value = Profile(
+            name="assinante",
+            text_model="(assinatura)",
+            audit_model="(assinatura)",
+            tts_model="vendor/tts",
+            presenters_spec="narrador:Kore",
+            text_provider="claude-code",
+            subscription_model="opus",
+        )
+        self.assertEqual(Settings().subscription_model, "opus")
 
 
 if __name__ == "__main__":

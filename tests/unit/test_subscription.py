@@ -150,5 +150,54 @@ class RunCliTest(unittest.TestCase):
         self.assertIn("claude", str(context.exception))
 
 
+class ModeloDaAssinaturaTest(unittest.TestCase):
+    """Escolha explícita do modelo em cada CLI de assinatura."""
+
+    def test_sem_modelo_o_comando_fica_como_antes(self):
+        self.assertNotIn("--model", get_cli("claude-code").command("SYS"))
+        self.assertEqual(get_cli("codex").command("SYS"), ["codex", "exec", "-"])
+
+    def test_modelo_vira_flag_no_fim_do_comando(self):
+        for key in ("claude-code", "gemini-cli", "codex"):
+            command = get_cli(key).command("SYS", "meu-modelo")
+            self.assertEqual(command[-2:], ["--model", "meu-modelo"], key)
+
+    def test_gemini_recebe_o_modelo_mesmo_lendo_tudo_por_stdin(self):
+        # A CLI do Gemini não tem args de modo headless; o modelo precisava chegar
+        # por outro caminho que não o `command()` do ramo com argumentos.
+        self.assertEqual(
+            get_cli("gemini-cli").command("", "gemini-2.5-pro"),
+            ["gemini", "--model", "gemini-2.5-pro"],
+        )
+
+    def test_chat_command_mantem_permissoes_depois_do_modelo(self):
+        command = get_cli("claude-code").chat_command("SYS", "opus")
+        self.assertIn("--model", command)
+        self.assertEqual(command[-1], "--dangerously-skip-permissions")
+
+    def test_chat_json_repassa_o_modelo_para_a_cli(self):
+        done = subprocess.CompletedProcess(["claude"], 0, '{"ok": true}', "")
+        with (
+            patch.object(subscription, "run_cli", return_value=done) as run,
+            patch.object(subscription.shutil, "which", return_value="claude"),
+        ):
+            chat_json("claude-code", "sistema", "usuário", "haiku")
+        self.assertEqual(run.call_args.args[0][-2:], ["--model", "haiku"])
+
+    def test_chat_json_sem_modelo_nao_passa_a_flag(self):
+        done = subprocess.CompletedProcess(["claude"], 0, '{"ok": true}', "")
+        with (
+            patch.object(subscription, "run_cli", return_value=done) as run,
+            patch.object(subscription.shutil, "which", return_value="claude"),
+        ):
+            chat_json("claude-code", "sistema", "usuário")
+        self.assertNotIn("--model", run.call_args.args[0])
+
+    def test_todas_as_clis_anunciam_sugestoes_de_modelo(self):
+        for cli in SUBSCRIPTION_CLIS:
+            self.assertTrue(cli.model_suggestions, cli.key)
+            self.assertTrue(cli.model_flag, cli.key)
+
+
 if __name__ == "__main__":
     unittest.main()
