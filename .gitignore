@@ -22,7 +22,3 @@ data/source/akitaonrails.github.io/
 .DS_Store
 .idea/
 .vscode/
-
-# Conteúdo local/pessoal inserido pela interface
-data/chat/
-data/inbox/
