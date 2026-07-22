@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import html
 import re
-import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -39,7 +38,9 @@ class ExtractionResult:
 
 def ocr_available() -> bool:
     """OCR local exige o binário Tesseract e a ponte pytesseract."""
-    if not shutil.which("tesseract"):
+    from .setup import configure_tesseract
+
+    if not configure_tesseract():
         return False
     try:
         import pytesseract  # noqa: F401

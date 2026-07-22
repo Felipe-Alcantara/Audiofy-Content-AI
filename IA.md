@@ -1549,3 +1549,22 @@ adicionar um idioma.
 (`<option>` fixos); um idioma novo no registro apareceria no backend mas não no seletor até o
 HTML ser atualizado — expor `supported_codes()` para a UI montar o seletor é o próximo passo
 natural, deixado como contribuição.
+
+---
+
+## 2026-07-21 — Tesseract local sem senha de administrador
+
+**O que mudou:** quando o APT encontra o Tesseract ausente e `sudo -n` exige senha, o Setup
+agora baixa os pacotes com `apt-get download`, extrai em `.audiofy/tools/tesseract` e configura
+automaticamente o `pytesseract`, o diretório de idiomas e as bibliotecas privadas. A instalação
+não modifica o sistema e não solicita credenciais.
+
+**Decisão:** o fallback sem privilégios vale para o Tesseract, que é o item que falhava e pode
+ser executado de uma árvore privada. Git e FFmpeg continuam usando o gerenciador do sistema;
+transformá-los em distribuições portáteis exigiria contratos e artefatos distintos por plataforma.
+
+**Validação:** testes unitários cobrem a queda automática do APT global para o APT local e a
+descoberta do executável privado; a régua do projeto foi executada após a mudança.
+
+**Risco que sobrou:** o fallback depende de `apt-get download` e `dpkg-deb`, presentes em
+sistemas Debian/Ubuntu. Outras distribuições seguem usando seu gerenciador normal.

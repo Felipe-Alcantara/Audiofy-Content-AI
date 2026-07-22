@@ -427,11 +427,11 @@ class OcrIdiomaTest(unittest.TestCase):
 
 class OcrDisponibilidadeTest(unittest.TestCase):
     def test_sem_binario_tesseract_o_ocr_fica_indisponivel(self):
-        with patch("audiofy.file_extraction.shutil.which", return_value=None):
+        with patch("audiofy.setup.configure_tesseract", return_value=None):
             self.assertFalse(ocr_available())
 
     def test_binario_presente_e_pytesseract_instalado_habilita_ocr(self):
-        with patch("audiofy.file_extraction.shutil.which", return_value="/usr/bin/tesseract"):
+        with patch("audiofy.setup.configure_tesseract", return_value="/usr/bin/tesseract"):
             self.assertTrue(ocr_available())
 
 

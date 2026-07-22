@@ -8,7 +8,13 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from audiofy.setup import SetupCheck, apply_setup, inspect_setup, setup_report  # noqa: E402
+from audiofy.setup import (  # noqa: E402
+    SetupCheck,
+    _install_system,
+    apply_setup,
+    inspect_setup,
+    setup_report,
+)
 
 
 class SetupReportTest(unittest.TestCase):
@@ -126,6 +132,19 @@ class SetupReportTest(unittest.TestCase):
         result = _install("pacotes", "rich")
         self.assertTrue(result["ok"])
         self.assertIn("--break-system-packages", run.call_args_list[1].args[0])
+
+    @patch("audiofy.setup._install_private_tesseract_apt")
+    @patch("audiofy.setup._run", return_value=(False, "sudo: uma senha é necessária"))
+    @patch("audiofy.setup.shutil.which")
+    def test_tesseract_cai_para_instalacao_apt_local_sem_senha(self, which, _run, install_private):
+        which.side_effect = lambda name: f"/usr/bin/{name}" if name == "apt-get" else None
+        install_private.return_value = (True, "instalado sem sudo")
+
+        result = _install_system("tesseract")
+
+        self.assertTrue(result["ok"])
+        self.assertIn("apt local", result["detail"])
+        install_private.assert_called_once_with()
 
 
 if __name__ == "__main__":

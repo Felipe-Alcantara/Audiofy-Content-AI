@@ -152,6 +152,8 @@ O botão **🛠️ Instalar/corrigir** (aba Configurações) instala o resto —
 `ffmpeg`, as dependências Python e, quando npm está disponível, o desktop pelo lockfile — usando
 o gerenciador do sistema (brew, apt, dnf, pacman ou winget). No macOS é preciso ter o
 [Homebrew](https://brew.sh) instalado.
+No Linux com APT, se `sudo` exigir senha, o Tesseract opcional é baixado e instalado somente
+em `.audiofy/tools`, sem pedir senha e sem alterar o sistema.
 
 ```bash
 # Abre a porta de entrada principal do projeto

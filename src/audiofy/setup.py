@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from .config import PROJECT_ROOT, Settings
+from .config import PROJECT_ROOT, STATE_DIR, Settings
 from .providers.subscription import SUBSCRIPTION_CLIS
 
 _PYTHON_MODULES = (
@@ -127,7 +129,7 @@ def inspect_setup() -> list[SetupCheck]:
         SetupCheck(
             "tesseract",
             "OCR local (Tesseract)",
-            bool(shutil.which("tesseract")),
+            bool(tesseract_command()),
             False,
             "opcional; lê texto de imagens e PDFs escaneados sem custo de IA",
         ),
@@ -238,6 +240,84 @@ _SYSTEM_PACKAGES = {
     ("dnf", "tesseract"): ["tesseract", "tesseract-langpack-por"],
 }
 
+_APT_TESSERACT_PACKAGES = (
+    "tesseract-ocr",
+    "tesseract-ocr-eng",
+    "tesseract-ocr-por",
+    "libtesseract5",
+    "liblept5",
+)
+
+
+def _private_tesseract_root() -> Path:
+    return STATE_DIR / "tools" / "tesseract"
+
+
+def tesseract_command() -> str | None:
+    """Encontra o Tesseract global ou a cópia privada instalada pelo Audiofy."""
+    system = shutil.which("tesseract")
+    if system:
+        return system
+    private = _private_tesseract_root() / "usr" / "bin" / "tesseract"
+    return str(private) if private.is_file() else None
+
+
+def configure_tesseract() -> str | None:
+    """Configura pytesseract e bibliotecas para a instalação privada, se necessário."""
+    command = tesseract_command()
+    if not command:
+        return None
+    private_root = _private_tesseract_root()
+    if Path(command).is_relative_to(private_root):
+        lib_dirs = [
+            path
+            for pattern in ("usr/lib/*-linux-gnu", "lib/*-linux-gnu")
+            for path in private_root.glob(pattern)
+            if path.is_dir()
+        ]
+        if lib_dirs:
+            current = os.environ.get("LD_LIBRARY_PATH", "")
+            os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(
+                [*(str(path) for path in lib_dirs), *([current] if current else [])]
+            )
+        tessdata = private_root / "usr" / "share" / "tesseract-ocr" / "5" / "tessdata"
+        if tessdata.is_dir():
+            os.environ["TESSDATA_PREFIX"] = str(tessdata)
+    try:
+        import pytesseract
+
+        pytesseract.pytesseract.tesseract_cmd = command
+    except ImportError:
+        pass
+    return command
+
+
+def _install_private_tesseract_apt() -> tuple[bool, str]:
+    """Baixa e extrai pacotes APT no estado local, sem sudo nem alteração do sistema."""
+    if not shutil.which("dpkg-deb"):
+        return False, "dpkg-deb não está disponível para extrair a instalação local"
+    destination = _private_tesseract_root()
+    destination.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=STATE_DIR) as temporary:
+        download_dir = Path(temporary)
+        ok, detail = _run(["apt-get", "download", *_APT_TESSERACT_PACKAGES], cwd=download_dir)
+        if not ok:
+            return False, detail
+        archives = sorted(download_dir.glob("*.deb"))
+        if not archives:
+            return False, "o APT não baixou os pacotes do Tesseract"
+        for archive in archives:
+            ok, detail = _run(["dpkg-deb", "-x", str(archive), str(destination)])
+            if not ok:
+                return False, detail
+    command = configure_tesseract()
+    if not command:
+        return False, "os pacotes foram extraídos, mas o executável não foi encontrado"
+    ok, detail = _run([command, "--version"])
+    if not ok:
+        return False, f"Tesseract local não iniciou: {detail}"
+    return True, "instalado localmente em .audiofy/tools (sem sudo)"
+
 
 def _install_system(tool: str) -> dict:
     """Instala uma ferramenta de sistema (git/ffmpeg/tesseract) pelo gerenciador disponível."""
@@ -249,6 +329,9 @@ def _install_system(tool: str) -> dict:
         else:
             packages = _SYSTEM_PACKAGES.get((manager, tool), [tool])
         ok, detail = _run([*base, *packages])
+        if not ok and manager == "apt-get" and tool == "tesseract":
+            ok, detail = _install_private_tesseract_apt()
+            return {"name": tool, "ok": ok, "detail": f"via apt local: {detail}"}
         if ok and not shutil.which(tool) and manager == "winget":
             detail = "instalado; reinicie o app para atualizar o PATH"
         return {"name": tool, "ok": ok, "detail": f"via {manager}: {detail}"}
