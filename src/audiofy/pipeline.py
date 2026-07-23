@@ -330,12 +330,15 @@ def _translate_if_needed(
             f"vs. {len(item.text)} do original). Verifique o modelo."
         )
 
-    _save_json(path, {
-        "source_sha256": source_digest,
-        "source_lang": text_lang,
-        "target_lang": target_lang,
-        "translated_text": translated_text,
-    })
+    _save_json(
+        path,
+        {
+            "source_sha256": source_digest,
+            "source_lang": text_lang,
+            "target_lang": target_lang,
+            "translated_text": translated_text,
+        },
+    )
     print(f"   Traduzido {text_lang} → {target_lang} ({len(paragraphs)} parágrafos).")
     return replace(item, text=translated_text)
 
@@ -703,8 +706,7 @@ def _prepare_reflexive_turns(
     # ── 2. Geração de comentários reflexivos por bloco ─────────────────────
     unique_blocks = list(
         dict.fromkeys(
-            (para_to_block[pid], block_texts[para_to_block[pid]])
-            for pid, _ in para_chunks
+            (para_to_block[pid], block_texts[para_to_block[pid]]) for pid, _ in para_chunks
         )
     )
     cached_commentary = {
@@ -713,7 +715,9 @@ def _prepare_reflexive_turns(
         if isinstance(commentary_cache.get(_block_key(bid, btext)), dict)
         and isinstance(commentary_cache[_block_key(bid, btext)].get("commentary"), str)
     }
-    missing_commentary = [(bid, text) for bid, text in unique_blocks if bid not in cached_commentary]
+    missing_commentary = [
+        (bid, text) for bid, text in unique_blocks if bid not in cached_commentary
+    ]
     tracker.stage(
         "geração de comentários reflexivos",
         total=len(unique_blocks),
@@ -764,8 +768,7 @@ def _prepare_reflexive_turns(
         # não de cada parágrafo — evita interrupções entre parágrafos curtos.
         bid = para_to_block[para_id]
         is_last_chunk_of_block = (
-            i == len(para_chunks) - 1
-            or para_to_block[para_chunks[i + 1][0]] != bid
+            i == len(para_chunks) - 1 or para_to_block[para_chunks[i + 1][0]] != bid
         )
         if is_last_chunk_of_block:
             btext = block_texts[bid]
