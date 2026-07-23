@@ -99,13 +99,15 @@ class PidAliveTest(unittest.TestCase):
 
 class TerminateProcessTest(unittest.TestCase):
     def test_posix_encerra_o_grupo_do_worker_e_confirma(self):
+        # getpgid/getpgrp/killpg não existem no Windows: create=True permite
+        # simular o comportamento POSIX ao rodar a suíte em qualquer sistema.
         with (
             patch.object(process.sys, "platform", "linux"),
             patch.object(process.os, "getpid", return_value=10),
-            patch.object(process.os, "getpgid", return_value=20),
-            patch.object(process.os, "getpgrp", return_value=10),
+            patch.object(process.os, "getpgid", return_value=20, create=True),
+            patch.object(process.os, "getpgrp", return_value=10, create=True),
             patch.object(process, "pid_alive", side_effect=[True, False]),
-            patch.object(process.os, "killpg") as kill_group,
+            patch.object(process.os, "killpg", create=True) as kill_group,
         ):
             self.assertTrue(terminate_process(20, grace_seconds=0))
         kill_group.assert_called_once_with(20, process.signal.SIGTERM)

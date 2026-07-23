@@ -122,7 +122,8 @@ class RunCliTest(unittest.TestCase):
     def test_windows_executa_node_diretamente_e_preserva_prompt_multilinha(self):
         calls = self._run("win32")
         self.assertEqual(calls["command"][0], "C:/nodejs/node.exe")
-        self.assertTrue(calls["command"][1].endswith("claude-code/cli.js"))
+        # O separador vem de os.sep, então a asserção não pode fixar "/" nem "\".
+        self.assertEqual(Path(calls["command"][1]).parts[-2:], ("claude-code", "cli.js"))
         self.assertEqual(calls["command"][-1], "voz\ncalma")
         self.assertNotIn("shell", calls["kwargs"])
 
