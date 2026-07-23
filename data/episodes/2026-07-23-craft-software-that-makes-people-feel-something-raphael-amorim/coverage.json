@@ -1,0 +1,193 @@
+{
+  "items": [
+    {
+      "id": "C001",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O texto é datado de 11 de dezembro de 2025 e começa com o autor relatando que acordou, tomou café, a família foi dormir e ele tem uma tarde livre.",
+      "evidence": "11 Dec • 2025 So, I woke up today. Got my coffee, family went to sleep, and I have a free afternoon."
+    },
+    {
+      "id": "C002",
+      "kind": "opiniao",
+      "criticality": "contextual",
+      "statement": "O autor diz que pensou em escrever algo e que pode deletar o artigo; se o leitor está lendo, é porque ele foi adiante.",
+      "evidence": "I may delete this article, but if you are reading this, it means I went through with it."
+    },
+    {
+      "id": "C003",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "Recentemente pessoas têm perguntado ao autor por que ele está pausando o Boo para trabalhar numa linguagem de programação.",
+      "evidence": "people have been asking me why I'm pausing Boo to work on a programming language"
+    },
+    {
+      "id": "C004",
+      "kind": "opiniao",
+      "criticality": "importante",
+      "statement": "O autor achou que seria legal escrever como se sente a respeito.",
+      "evidence": "I think it would actually be cool to write down how I feel."
+    },
+    {
+      "id": "C005",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "Boo é um editor de código que o autor criou exclusivamente para si mesmo, sem intenção de torná-lo um editor mainstream.",
+      "evidence": "Boo is a code editor I created solely for myself; I never had the intention of making it a mainstream editor."
+    },
+    {
+      "id": "C006",
+      "kind": "opiniao",
+      "criticality": "contextual",
+      "statement": "O autor afirma que seria divertido se pessoas usassem o Boo, mas isso nunca foi seu objetivo.",
+      "evidence": "it would be fun if people used it, but that was never my goal"
+    },
+    {
+      "id": "C007",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "Neste ano o autor colocou o Boo em estado funcional, a ponto de usá-lo no trabalho diário.",
+      "evidence": "This year I got it working in a functional state, where I can actually use it for my daily work."
+    },
+    {
+      "id": "C008",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O Boo tem navegação humano-teclado inovadora e substitui o sistema LSP por algo mais rápido e menos custoso para o sistema operacional.",
+      "evidence": "It has innovative human-keyboard navigation and replaces the LSP system with something faster and less costly for the OS."
+    },
+    {
+      "id": "C009",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "As pessoas perguntam repetidamente ao autor por que ele não está tornando o Boo open source.",
+      "evidence": "So why on earth am I not open-sourcing it? That's what people keep asking me."
+    },
+    {
+      "id": "C010",
+      "kind": "opiniao",
+      "criticality": "critica",
+      "statement": "O autor diz que sua mente não é movida pela ideia de o Boo ser um sucesso ou um fracasso, pois o usuário final do Boo é ele mesmo.",
+      "evidence": "My mind isn't really moved by the idea that it would be a success or a failure. The end user of Boo is me."
+    },
+    {
+      "id": "C011",
+      "kind": "opiniao",
+      "criticality": "critica",
+      "statement": "O autor sente que o Boo ainda não chegou lá e defende que software deveria nos inspirar.",
+      "evidence": "I don't feel it's there yet; in fact, I think software should inspire us."
+    },
+    {
+      "id": "C012",
+      "kind": "argumento",
+      "criticality": "critica",
+      "statement": "Trabalhar no Rio Terminal e no Boo no tempo livre afeta a alegria do autor, porque começa a se tornar algo automático.",
+      "evidence": "Working on Rio Terminal and Boo in my free time... affects my joy, because it starts to become something automatic."
+    },
+    {
+      "id": "C013",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "Rio Terminal e Boo são ambos escritos em Rust e compartilham muitas similaridades: arquitetura, linguagem, processo de release e etc.",
+      "evidence": "both written in Rust and sharing many similarities... Both have similar architecture, language, release process, and etcetera."
+    },
+    {
+      "id": "C014",
+      "kind": "exemplo",
+      "criticality": "importante",
+      "statement": "Desde criança o autor gostava de montar blocos de Lego, sendo provavelmente o que mais fez além de jogar futebol ou videogames.",
+      "evidence": "Since I was a kid, I liked to build Lego blocks. That's probably what I did the most besides playing football or video games."
+    },
+    {
+      "id": "C015",
+      "kind": "argumento",
+      "criticality": "critica",
+      "statement": "O divertido do Lego é que num dia se constrói um castelo e no outro um navio, não necessariamente com as mesmas peças e cores, podendo-se adicionar coisas externas, como um graveto de madeira.",
+      "evidence": "one day you can build a castle, and the next day you can build a ship... you can actually add a lot of stuff that's external to what you have, like a wood stick."
+    },
+    {
+      "id": "C016",
+      "kind": "argumento",
+      "criticality": "critica",
+      "statement": "Quando a programação se torna repetitiva, as chances de criar algo que faça as pessoas dizerem 'wow' são bastante reduzidas.",
+      "evidence": "When programming becomes repetitive, the odds of you creating something that makes people go \"wow\" are reduced quite a bit."
+    },
+    {
+      "id": "C017",
+      "kind": "ressalva",
+      "criticality": "importante",
+      "statement": "O autor ressalva que isso não é uma regra.",
+      "evidence": "It isn't a rule, of course."
+    },
+    {
+      "id": "C018",
+      "kind": "argumento",
+      "criticality": "critica",
+      "statement": "É preciso estar inspirado para fazer software inspirador.",
+      "evidence": "You need to be inspired to make inspiring software."
+    },
+    {
+      "id": "C019",
+      "kind": "exemplo",
+      "criticality": "critica",
+      "statement": "O autor sempre usa como exemplo The Legend of Zelda: Breath of the Wild, jogo tão bem feito que ele conhece pessoas que nem gostam de videogame mas compraram um console só para jogá-lo e, ao terminarem, venderam tudo.",
+      "evidence": "I know people who don't even like video games but bought a console just to play it, and once they finished, they sold everything."
+    },
+    {
+      "id": "C020",
+      "kind": "argumento",
+      "criticality": "critica",
+      "statement": "O ponto do autor é dedicar tempo a construir algo que, uma vez experimentado, as pessoas lembrem pelo resto da vida.",
+      "evidence": "taking time to build something so that once people try it, they remember it for as long as they live"
+    },
+    {
+      "id": "C021",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "Boo não é um negócio; o autor não precisa nem quer ganhar dinheiro com ele, não tem prazo e não quer criar outro VS Code.",
+      "evidence": "Boo isn't a business. I don't need or want to make money out of it. I don't have a deadline, nor do I want to create another VS Code."
+    },
+    {
+      "id": "C022",
+      "kind": "opiniao",
+      "criticality": "importante",
+      "statement": "O autor não sente vontade de forçar que aconteça.",
+      "evidence": "I don't feel like forcing it to happen."
+    },
+    {
+      "id": "C023",
+      "kind": "argumento",
+      "criticality": "importante",
+      "statement": "O autor conclui que não precisa parar de montar blocos de Lego: vai apenas estacionar o projeto e retomá-lo de onde parou quando a inspiração voltar.",
+      "evidence": "I'll just park it there, and when the inspiration comes back, I'll pick it up where it was."
+    },
+    {
+      "id": "C024",
+      "kind": "conclusao",
+      "criticality": "critica",
+      "statement": "O autor pausou o Boo e está trabalhando em sua própria linguagem de programação, com a ideia de eventualmente reescrever o Boo usando-a.",
+      "evidence": "I paused Boo, and I am working on my own programming language. Eventually, my idea is to rewrite Boo to use it."
+    },
+    {
+      "id": "C025",
+      "kind": "contraponto",
+      "criticality": "importante",
+      "statement": "O autor antecipa a objeção 'Wow! That's a lot of work' e concorda ('Indeed'), respondendo que é seu hobby.",
+      "evidence": "\"Wow! That's a lot of work.\" Indeed. But it's my hobby stuff."
+    },
+    {
+      "id": "C026",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O autor sempre amou linguagens de programação e está se divertindo muito aprendendo mais sobre binários e compiladores.",
+      "evidence": "I've always loved programming languages, and I am having a blast learning more about binaries and compilers."
+    },
+    {
+      "id": "C027",
+      "kind": "conclusao",
+      "criticality": "critica",
+      "statement": "O autor conclui que não sente necessidade de seguir a 'receita de bolo' de sucesso das pessoas; é assim que sua mente funciona e ele vai manter isso.",
+      "evidence": "I don't really feel I need to follow people's cake recipe for success. That's how my mind works, and I will stick with it."
+    }
+  ]
+}

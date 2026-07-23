@@ -70,3 +70,10 @@ test("abertura de arquivo fica confinada ao projeto", () => {
     path.join(root, "data", "episode.mp3"));
   assert.throws(() => resolveProjectPath("../../etc/passwd", root));
 });
+
+test("no Windows a caixa do caminho não bloqueia o próprio projeto", { skip: process.platform !== "win32" }, () => {
+  const root = "h:\\Programação\\GitHub\\Repositórios\\Audiofy-Content-AI";
+  const target = "H:\\Programação\\GitHub\\Repositórios\\Audiofy-Content-AI\\data\\episodes\\ep";
+  assert.equal(resolveProjectPath(target, root), path.resolve(target));
+  assert.throws(() => resolveProjectPath("H:\\Programação\\Outro", root));
+});

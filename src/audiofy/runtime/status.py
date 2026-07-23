@@ -74,6 +74,25 @@ class GenerationTracker:
 
     # ── Escrita ──────────────────────────────────────────────────────────
 
+    # No Windows o os.replace falha com PermissionError (WinError 5) quando outro
+    # processo mantém um handle aberto no destino por um instante — antivírus,
+    # indexador ou um leitor do próprio app. É transitório: o handle some em
+    # milissegundos. Sem a retentativa, uma geração inteira já paga na etapa de TTS
+    # era perdida ao publicar o status final.
+    _REPLACE_ATTEMPTS = 10
+    _REPLACE_BACKOFF_SECONDS = 0.05
+
+    @staticmethod
+    def _replace_with_retry(source: str, target: Path) -> None:
+        for attempt in range(GenerationTracker._REPLACE_ATTEMPTS):
+            try:
+                os.replace(source, target)
+                return
+            except PermissionError:
+                if attempt == GenerationTracker._REPLACE_ATTEMPTS - 1:
+                    raise
+                time.sleep(GenerationTracker._REPLACE_BACKOFF_SECONDS * (attempt + 1))
+
     @staticmethod
     def _write(directory: Path, data: dict) -> None:
         data["updated_at"] = time.time()
@@ -97,7 +116,7 @@ class GenerationTracker:
                 json.dump(data, temporary, ensure_ascii=False, indent=2)
                 temporary.flush()
                 os.fsync(temporary.fileno())
-            os.replace(temporary_name, target)
+            GenerationTracker._replace_with_retry(temporary_name, target)
         finally:
             if temporary_name:
                 Path(temporary_name).unlink(missing_ok=True)

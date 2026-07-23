@@ -1,6 +1,7 @@
 """Testes do rastreador de geração: status.json, custo acumulado e abort."""
 
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -81,6 +82,31 @@ class GenerationTrackerTest(unittest.TestCase):
 
         self.assertEqual(self._read()["progress"]["current"], 1)
         self.assertFalse((self.directory / "status.json.tmp").exists())
+        self.assertEqual(list(self.directory.glob(".status.json.*.tmp")), [])
+
+    def test_escrita_reitera_quando_windows_bloqueia_o_destino(self):
+        real_replace = os.replace
+        tentativas = {"n": 0}
+
+        def replace_travado(source, target):
+            tentativas["n"] += 1
+            if tentativas["n"] < 3:
+                raise PermissionError(5, "Acesso negado")
+            return real_replace(source, target)
+
+        with patch("audiofy.runtime.status.os.replace", side_effect=replace_travado):
+            with patch("audiofy.runtime.status.time.sleep"):
+                self.tracker.stage("tts", total=2)
+
+        self.assertEqual(tentativas["n"], 3)
+        self.assertEqual(self._read()["stage"], "tts")
+        self.assertEqual(list(self.directory.glob(".status.json.*.tmp")), [])
+
+    def test_escrita_propaga_bloqueio_persistente(self):
+        with patch("audiofy.runtime.status.os.replace", side_effect=PermissionError(5, "negado")):
+            with patch("audiofy.runtime.status.time.sleep"):
+                with self.assertRaises(PermissionError):
+                    self.tracker.stage("tts", total=2)
         self.assertEqual(list(self.directory.glob(".status.json.*.tmp")), [])
 
     def test_nova_execucao_preserva_custo_e_registra_retomada(self):

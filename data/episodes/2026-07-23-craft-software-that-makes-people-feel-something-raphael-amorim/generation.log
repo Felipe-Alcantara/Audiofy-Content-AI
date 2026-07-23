@@ -1,0 +1,54 @@
+
+📄 Craft software that makes people feel something — Raphael Amorim (2026-07-23)
+   Pasta do episódio: H:\Programação\GitHub\Repositórios\Audiofy-Content-AI\data\episodes\2026-07-23-craft-software-that-makes-people-feel-something-raphael-amorim
+🧠 1/5 Matriz de cobertura…
+{"ok": false, "error": "Não foi possível executar a CLI 'claude' (Claude Code (assinatura Anthropic)): O atalho 'C:\\Users\\Felipe Martins\\AppData\\Roaming\\npm\\claude.CMD' não pôde ser executado sem cmd.exe. Reinstale a CLI e confirme que o Node.js está no PATH."}
+
+📄 Craft software that makes people feel something — Raphael Amorim (2026-07-23)
+   Pasta do episódio: H:\Programação\GitHub\Repositórios\Audiofy-Content-AI\data\episodes\2026-07-23-craft-software-that-makes-people-feel-something-raphael-amorim
+🧠 1/5 Matriz de cobertura…
+    [claude-code: modelo padrão da CLI] via assinatura — custo US$ 0,00
+   27 itens de cobertura.
+✍️  2/5 Roteiro…
+    [claude-code: modelo padrão da CLI] via assinatura — custo US$ 0,00
+   16 turnos para 1 apresentador(es).
+✅ 3/5 Auditoria do roteiro…
+    [claude-code: modelo padrão da CLI] via assinatura — custo US$ 0,00
+   Cobertura crítica e importante completa. ✔
+   ⚠ Afirmação sem base no conteúdo: T005: a glosa explicativa de LSP como 'o protocolo de servidor de linguagem, aquele que dá autocompletar e diagnósticos 
+   ⚠ Afirmação sem base no conteúdo: T001/T016: título 'Craft software that makes people feel something', autoria de Raphael Amorim e a URL rapha.land não co
+🎙️  4/5 Síntese de áudio por turno…
+   [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 1/16 (6%) narrador (Sulafat) US$ 0.000
+   [███░░░░░░░░░░░░░░░░░░░░░░░░░░░] 2/16 (12%) narrador (Sulafat) US$ 0.016
+   [█████░░░░░░░░░░░░░░░░░░░░░░░░░] 3/16 (18%) narrador (Sulafat) US$ 0.023
+   [███████░░░░░░░░░░░░░░░░░░░░░░░] 4/16 (25%) narrador (Sulafat) US$ 0.031
+   [█████████░░░░░░░░░░░░░░░░░░░░░] 5/16 (31%) narrador (Sulafat) US$ 0.040
+   [███████████░░░░░░░░░░░░░░░░░░░] 6/16 (37%) narrador (Sulafat) US$ 0.054
+   [█████████████░░░░░░░░░░░░░░░░░] 7/16 (43%) narrador (Sulafat) US$ 0.059
+   [███████████████░░░░░░░░░░░░░░░] 8/16 (50%) narrador (Sulafat) US$ 0.069
+   [████████████████░░░░░░░░░░░░░░] 9/16 (56%) narrador (Sulafat) US$ 0.083
+   [██████████████████░░░░░░░░░░░░] 10/16 (62%) narrador (Sulafat) US$ 0.098
+   [████████████████████░░░░░░░░░░] 11/16 (68%) narrador (Sulafat) US$ 0.110
+   [██████████████████████░░░░░░░░] 12/16 (75%) narrador (Sulafat) US$ 0.122
+   [████████████████████████░░░░░░] 13/16 (81%) narrador (Sulafat) US$ 0.131
+   [██████████████████████████░░░░] 14/16 (87%) narrador (Sulafat) US$ 0.142
+   [████████████████████████████░░] 15/16 (93%) narrador (Sulafat) US$ 0.150
+   [██████████████████████████████] 16/16 (100%) narrador (Sulafat) US$ 0.157
+{"ok": false, "error": "[WinError 5] Acesso negado: 'H:\\\\Programação\\\\GitHub\\\\Repositórios\\\\Audiofy-Content-AI\\\\data\\\\episodes\\\\2026-07-23-craft-software-that-makes-people-feel-something-raphael-amorim\\\\.status.json.bsocyxvf.tmp' -> 'H:\\\\Programação\\\\GitHub\\\\Repositórios\\\\Audiofy-Content-AI\\\\data\\\\episodes\\\\2026-07-23-craft-software-that-makes-people-feel-something-raphael-amorim\\\\status.json'"}
+
+📄 Craft software that makes people feel something — Raphael Amorim (2026-07-23)
+   Pasta do episódio: H:\Programação\GitHub\Repositórios\Audiofy-Content-AI\data\episodes\2026-07-23-craft-software-that-makes-people-feel-something-raphael-amorim
+🧠 1/5 Matriz de cobertura…
+   27 itens de cobertura.
+✍️  2/5 Roteiro…
+   16 turnos para 1 apresentador(es).
+✅ 3/5 Auditoria do roteiro…
+   Cobertura crítica e importante completa. ✔
+   ⚠ Afirmação sem base no conteúdo: T005: a glosa explicativa de LSP como 'o protocolo de servidor de linguagem, aquele que dá autocompletar e diagnósticos 
+   ⚠ Afirmação sem base no conteúdo: T001/T016: título 'Craft software that makes people feel something', autoria de Raphael Amorim e a URL rapha.land não co
+🎙️  4/5 Síntese de áudio por turno…
+🎧 5/5 Montagem com ffmpeg…
+
+✔ Episódio gerado: H:\Programação\GitHub\Repositórios\Audiofy-Content-AI\data\episodes\2026-07-23-craft-software-that-makes-people-feel-something-raphael-amorim\fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__audio-completo.mp3
+💰 Custo total registrado: US$ 0.1650
+{"ok": true, "mp3": "H:\\Programação\\GitHub\\Repositórios\\Audiofy-Content-AI\\data\\episodes\\2026-07-23-craft-software-that-makes-people-feel-something-raphael-amorim\\fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__audio-completo.mp3"}

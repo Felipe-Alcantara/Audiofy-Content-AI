@@ -1,0 +1,25 @@
+{
+  "episode_id": "2026-07-23-craft-software-that-makes-people-feel-something-raphael-amorim",
+  "pid": 15516,
+  "state": "concluido",
+  "stage": "montagem",
+  "progress": {
+    "current": 0,
+    "total": 0
+  },
+  "cost_usd": 0.165039,
+  "cost_exact": false,
+  "started_at": 1784801783.9132404,
+  "run_started_at": 1784802739.4504175,
+  "updated_at": 1784802755.735216,
+  "resume_count": 3,
+  "retry": null,
+  "last_error": null,
+  "abort_requested_at": null,
+  "generation_mode": "adaptation",
+  "narration_voice": null,
+  "key_source": "Teste Felipe Home",
+  "background_music": null,
+  "background_music_cache": null,
+  "background_volume": null
+}

@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "audited_at": "2026-07-23T07:32:30-03:00",
+  "policy": {
+    "threshold_db": -45,
+    "minimum_silence_seconds": 1.5,
+    "warning_silence_seconds": 2.5,
+    "critical_silence_seconds": 5.0,
+    "critical_silence_ratio": 0.35
+  },
+  "summary": {
+    "segments": 16,
+    "ok": 16,
+    "warnings": 0,
+    "critical": 0
+  },
+  "segments": [
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-001-de-016__voz-narrador.wav",
+      "duration_seconds": 31.04,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-002-de-016__voz-narrador.wav",
+      "duration_seconds": 15.24,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-003-de-016__voz-narrador.wav",
+      "duration_seconds": 14.32,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-004-de-016__voz-narrador.wav",
+      "duration_seconds": 17.88,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-005-de-016__voz-narrador.wav",
+      "duration_seconds": 28.36,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-006-de-016__voz-narrador.wav",
+      "duration_seconds": 9.68,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-007-de-016__voz-narrador.wav",
+      "duration_seconds": 20.84,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-008-de-016__voz-narrador.wav",
+      "duration_seconds": 26.4,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-009-de-016__voz-narrador.wav",
+      "duration_seconds": 30.16,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-010-de-016__voz-narrador.wav",
+      "duration_seconds": 24.0,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-011-de-016__voz-narrador.wav",
+      "duration_seconds": 24.08,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-012-de-016__voz-narrador.wav",
+      "duration_seconds": 16.88,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-013-de-016__voz-narrador.wav",
+      "duration_seconds": 23.04,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-014-de-016__voz-narrador.wav",
+      "duration_seconds": 16.32,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-015-de-016__voz-narrador.wav",
+      "duration_seconds": 13.84,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-craft-software-that-makes-people-feel-something-raphael-amori__modo-podcast-adaptado__chunk-016-de-016__voz-narrador.wav",
+      "duration_seconds": 15.0,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    }
+  ]
+}

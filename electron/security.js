@@ -45,13 +45,22 @@ function validateBridgeRequest(args, stdinData) {
   return args;
 }
 
+// O Windows trata caminhos como case-insensitive: a letra do drive vem em caixa
+// diferente conforme o app é aberto ("h:" pelo start_app.py, "H:" pela bridge),
+// e uma comparação literal rejeitaria um caminho legítimo do próprio projeto.
+function comparablePath(value) {
+  return process.platform === "win32" ? value.toLowerCase() : value;
+}
+
 function resolveProjectPath(target, projectRoot) {
   if (typeof target !== "string" || !target.trim() || target.includes("\0")) {
     throw new TypeError("Caminho inválido.");
   }
   const root = path.resolve(projectRoot);
   const resolved = path.resolve(root, target);
-  if (resolved !== root && !resolved.startsWith(root + path.sep)) {
+  const rootKey = comparablePath(root);
+  const resolvedKey = comparablePath(resolved);
+  if (resolvedKey !== rootKey && !resolvedKey.startsWith(rootKey + path.sep)) {
     throw new Error("O app só pode abrir arquivos dentro do projeto.");
   }
   return resolved;

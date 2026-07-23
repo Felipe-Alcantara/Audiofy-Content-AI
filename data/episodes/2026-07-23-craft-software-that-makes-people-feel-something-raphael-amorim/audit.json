@@ -1,0 +1,143 @@
+{
+  "results": [
+    {
+      "coverage_id": "C001",
+      "status": "completo",
+      "notes": "T001 traz data, café, família dormindo e tarde livre."
+    },
+    {
+      "coverage_id": "C002",
+      "status": "completo",
+      "notes": "T002 cita a ressalva do possível apagamento e o 'fui em frente'."
+    },
+    {
+      "coverage_id": "C003",
+      "status": "completo",
+      "notes": "T003 apresenta a pergunta recorrente sobre pausar o Boo pela linguagem."
+    },
+    {
+      "coverage_id": "C004",
+      "status": "completo",
+      "notes": "T003 fecha com o desejo de registrar por escrito como se sente."
+    },
+    {
+      "coverage_id": "C005",
+      "status": "completo",
+      "notes": "T004 define Boo como editor feito só para si, sem intenção mainstream."
+    },
+    {
+      "coverage_id": "C006",
+      "status": "completo",
+      "notes": "T004 inclui o 'seria divertido, mas nunca foi o objetivo'."
+    },
+    {
+      "coverage_id": "C007",
+      "status": "completo",
+      "notes": "T005 registra o estado funcional neste ano e o uso no trabalho diário."
+    },
+    {
+      "coverage_id": "C008",
+      "status": "completo",
+      "notes": "T005 cobre navegação humano-teclado e substituição do LSP por algo mais rápido e menos custoso ao SO."
+    },
+    {
+      "coverage_id": "C009",
+      "status": "completo",
+      "notes": "T006 traz a pergunta insistente sobre não abrir o código."
+    },
+    {
+      "coverage_id": "C010",
+      "status": "completo",
+      "notes": "T007 reproduz o não ser movido por sucesso/fracasso e o usuário final ser ele mesmo."
+    },
+    {
+      "coverage_id": "C011",
+      "status": "completo",
+      "notes": "T007 traz o 'ainda não chegou lá' e o software deveria inspirar."
+    },
+    {
+      "coverage_id": "C012",
+      "status": "completo",
+      "notes": "T008 explicita o efeito sobre a alegria por virar algo automático."
+    },
+    {
+      "coverage_id": "C013",
+      "status": "completo",
+      "notes": "T008 lista Rust, arquitetura, linguagem e processo de release."
+    },
+    {
+      "coverage_id": "C014",
+      "status": "completo",
+      "notes": "T009 traz a infância, o Lego, futebol e videogame."
+    },
+    {
+      "coverage_id": "C015",
+      "status": "completo",
+      "notes": "T009 desenvolve castelo/navio, peças e cores diferentes e o graveto externo."
+    },
+    {
+      "coverage_id": "C016",
+      "status": "completo",
+      "notes": "T010 reproduz a queda das chances do 'uau' quando a programação vira repetição."
+    },
+    {
+      "coverage_id": "C017",
+      "status": "completo",
+      "notes": "T010 mantém a ressalva de que não é uma regra."
+    },
+    {
+      "coverage_id": "C018",
+      "status": "completo",
+      "notes": "T010 fecha com 'precisa estar inspirado para fazer software inspirador'."
+    },
+    {
+      "coverage_id": "C019",
+      "status": "completo",
+      "notes": "T011 desenvolve o exemplo de Breath of the Wild com console comprado e revendido."
+    },
+    {
+      "coverage_id": "C020",
+      "status": "completo",
+      "notes": "T011 traz a ideia de construir algo lembrado pelo resto da vida."
+    },
+    {
+      "coverage_id": "C021",
+      "status": "completo",
+      "notes": "T012 cobre não ser negócio, sem dinheiro, sem prazo e sem virar outro VS Code."
+    },
+    {
+      "coverage_id": "C022",
+      "status": "completo",
+      "notes": "T012 encerra com o não querer forçar a coisa a acontecer."
+    },
+    {
+      "coverage_id": "C023",
+      "status": "completo",
+      "notes": "T013 traz o estacionar o projeto e retomar quando a inspiração voltar."
+    },
+    {
+      "coverage_id": "C024",
+      "status": "completo",
+      "notes": "T013 afirma a pausa do Boo, a linguagem própria e a reescrita futura."
+    },
+    {
+      "coverage_id": "C025",
+      "status": "completo",
+      "notes": "T014 antecipa a objeção, concorda e responde que é hobby."
+    },
+    {
+      "coverage_id": "C026",
+      "status": "completo",
+      "notes": "T014 traz o amor por linguagens e o aprendizado sobre binários e compiladores."
+    },
+    {
+      "coverage_id": "C027",
+      "status": "completo",
+      "notes": "T015 fecha com a receita de bolo alheia e o 'é assim que vou continuar'."
+    }
+  ],
+  "unsupported_claims": [
+    "T005: a glosa explicativa de LSP como 'o protocolo de servidor de linguagem, aquele que dá autocompletar e diagnósticos no editor' não aparece no conteúdo original — é conhecimento externo inserido pelo roteiro (correto em si, mas não atribuível ao autor).",
+    "T001/T016: título 'Craft software that makes people feel something', autoria de Raphael Amorim e a URL rapha.land não constam no conteúdo fornecido; são metadados externos."
+  ]
+}

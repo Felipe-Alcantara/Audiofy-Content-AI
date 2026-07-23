@@ -1,0 +1,142 @@
+{
+  "turns": [
+    {
+      "turn_id": "T001",
+      "speaker": "narrador",
+      "text": "Bem-vindo. O texto de hoje se chama \"Craft software that makes people feel something\" — algo como \"faça software que faça as pessoas sentirem alguma coisa\" — e é assinado por Raphael Amorim. É um artigo pessoal, datado de onze de dezembro de 2025, e ele começa exatamente assim: o autor conta que acordou naquele dia, pegou seu café, a família tinha ido dormir, e ele tinha uma tarde livre pela frente.",
+      "coverage_ids": [
+        "C001"
+      ]
+    },
+    {
+      "turn_id": "T002",
+      "speaker": "narrador",
+      "text": "E aí ele pensou em escrever alguma coisa. Com uma ressalva bem honesta, que ele mesmo deixa no começo: \"talvez eu apague este artigo, mas, se você está lendo isso, é porque eu fui em frente\". Fomos em frente, então.",
+      "coverage_ids": [
+        "C002"
+      ]
+    },
+    {
+      "turn_id": "T003",
+      "speaker": "narrador",
+      "text": "O motivo do texto é uma pergunta que ele vem ouvindo com frequência: por que ele está pausando o Boo para trabalhar numa linguagem de programação? E ele achou que seria legal registrar por escrito como se sente a respeito disso.",
+      "coverage_ids": [
+        "C003",
+        "C004"
+      ]
+    },
+    {
+      "turn_id": "T004",
+      "speaker": "narrador",
+      "text": "Para situar: Boo é um editor de código que ele criou exclusivamente para si mesmo. Ele é explícito nisso — nunca teve a intenção de fazer dali um editor mainstream. Claro, seria divertido se outras pessoas usassem, ele diz, mas isso nunca foi o objetivo.",
+      "coverage_ids": [
+        "C005",
+        "C006"
+      ]
+    },
+    {
+      "turn_id": "T005",
+      "speaker": "narrador",
+      "text": "E não é um projeto parado no papel. Neste ano ele colocou o Boo num estado funcional, a ponto de conseguir usá-lo no seu trabalho do dia a dia. Segundo o autor, o editor tem uma navegação humano-teclado inovadora e substitui o sistema de LSP — o protocolo de servidor de linguagem, aquele que dá autocompletar e diagnósticos no editor — por algo mais rápido e menos custoso para o sistema operacional.",
+      "coverage_ids": [
+        "C007",
+        "C008"
+      ]
+    },
+    {
+      "turn_id": "T006",
+      "speaker": "narrador",
+      "text": "Daí vem a segunda pergunta que ele diz ouvir sem parar: então por que, afinal, ele não abre o código do Boo? Por que não torná-lo open source?",
+      "coverage_ids": [
+        "C009"
+      ]
+    },
+    {
+      "turn_id": "T007",
+      "speaker": "narrador",
+      "text": "A resposta dele começa por um deslocamento de critério. Ele diz que sua cabeça não é movida pela ideia de aquilo ser um sucesso ou um fracasso. O usuário final do Boo é ele mesmo. E, pelo critério dele, o projeto ainda não chegou lá. Mais do que isso: ele afirma que acredita que software deveria nos inspirar.",
+      "coverage_ids": [
+        "C010",
+        "C011"
+      ]
+    },
+    {
+      "turn_id": "T008",
+      "speaker": "narrador",
+      "text": "E aqui entra a parte mais pessoal do argumento. Ele trabalha, no tempo livre, no Rio Terminal e no Boo. Os dois são escritos em Rust e compartilham muitas semelhanças: arquitetura parecida, mesma linguagem, processo de release parecido, e por aí vai. O efeito disso, ele diz, é que aquilo afeta a alegria dele — porque começa a virar algo automático.",
+      "coverage_ids": [
+        "C012",
+        "C013"
+      ]
+    },
+    {
+      "turn_id": "T009",
+      "speaker": "narrador",
+      "text": "Para explicar o que quer dizer, ele volta à infância. Desde criança gostava de montar blocos de Lego; foi provavelmente o que mais fez, além de jogar futebol e videogame. E o que ele acha divertido no Lego é justamente isto: num dia você constrói um castelo, no dia seguinte você constrói um navio. Não necessariamente com as mesmas peças e as mesmas cores — e você pode até acrescentar coisas que vêm de fora do conjunto, um graveto de madeira, por exemplo.",
+      "coverage_ids": [
+        "C014",
+        "C015"
+      ]
+    },
+    {
+      "turn_id": "T010",
+      "speaker": "narrador",
+      "text": "A transposição para o trabalho é direta. Quando a programação se torna repetitiva, ele diz, as chances de você criar algo que faça as pessoas dizerem \"uau\" caem bastante. E ele faz questão de colocar a ressalva: isso não é uma regra, claro. Mas a formulação que ele sustenta é essa — você precisa estar inspirado para fazer software inspirador.",
+      "coverage_ids": [
+        "C016",
+        "C017",
+        "C018"
+      ]
+    },
+    {
+      "turn_id": "T011",
+      "speaker": "narrador",
+      "text": "O exemplo que ele sempre usa é The Legend of Zelda: Breath of the Wild. É um jogo tão bem trabalhado que ele conhece pessoas que nem gostam de videogame e mesmo assim compraram um console só para jogar aquilo — e, quando terminaram, venderam tudo. É disso que ele está falando: dedicar tempo a construir algo que, uma vez que a pessoa experimente, ela vai lembrar pelo resto da vida.",
+      "coverage_ids": [
+        "C019",
+        "C020"
+      ]
+    },
+    {
+      "turn_id": "T012",
+      "speaker": "narrador",
+      "text": "E é por isso que a lógica de projeto aqui é outra. Boo não é um negócio. Ele não precisa e nem quer ganhar dinheiro com aquilo. Não tem prazo. E não quer criar outro VS Code. Simplesmente não sente vontade de forçar a coisa a acontecer.",
+      "coverage_ids": [
+        "C021",
+        "C022"
+      ]
+    },
+    {
+      "turn_id": "T013",
+      "speaker": "narrador",
+      "text": "Sendo assim, ele conclui, não é preciso parar de montar blocos de Lego, certo? Ele vai só estacionar o projeto ali, e quando a inspiração voltar, retoma exatamente de onde parou. Dito isso: ele pausou o Boo e está trabalhando na sua própria linguagem de programação. A ideia, eventualmente, é reescrever o Boo usando essa linguagem.",
+      "coverage_ids": [
+        "C023",
+        "C024"
+      ]
+    },
+    {
+      "turn_id": "T014",
+      "speaker": "narrador",
+      "text": "Ele antecipa a objeção óbvia — \"uau, isso é muito trabalho\" — e concorda: de fato, é. Mas é o hobby dele. Ele sempre amou linguagens de programação e está se divertindo muito aprendendo mais sobre binários e compiladores.",
+      "coverage_ids": [
+        "C025",
+        "C026"
+      ]
+    },
+    {
+      "turn_id": "T015",
+      "speaker": "narrador",
+      "text": "E a conclusão fecha o texto no mesmo tom em que ele abriu: ele não sente que precisa seguir a receita de bolo de sucesso das outras pessoas. É assim que a cabeça dele funciona, e é assim que ele vai continuar.",
+      "coverage_ids": [
+        "C027"
+      ]
+    },
+    {
+      "turn_id": "T016",
+      "speaker": "narrador",
+      "text": "Baseado no conteúdo \"Craft software that makes people feel something — Raphael Amorim\". Original: https://rapha.land/craft-software-that-makes-people-feel-something/. Adaptação em áudio gerada com inteligência artificial. Verifique os direitos do conteúdo original antes de publicar.",
+      "coverage_ids": []
+    }
+  ]
+}

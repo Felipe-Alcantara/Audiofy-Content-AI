@@ -96,7 +96,18 @@ class ProfileCompatTest(unittest.TestCase):
 class RunCliTest(unittest.TestCase):
     """No Windows shims npm são resolvidos sem passar pelo cmd.exe."""
 
-    def _run(self, platform: str) -> dict:
+    NODE_SHIM = (
+        '@ECHO off\n"%dp0%\\node.exe" '
+        '"%dp0%\\node_modules\\@anthropic-ai\\claude-code\\cli.js" %*\n'
+    )
+    # Pacotes recentes do Claude Code distribuem um binário nativo no lugar do .js.
+    NATIVE_SHIM = (
+        "@ECHO off\nGOTO start\n:find_dp0\nSET dp0=%~dp0\nEXIT /b\n:start\nSETLOCAL\n"
+        'CALL :find_dp0\n"%dp0%\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe"'
+        "   %*\n"
+    )
+
+    def _run(self, platform: str, shim_text: str | None = None) -> dict:
         calls = {}
 
         def fake_run(command, **kwargs):
@@ -105,11 +116,7 @@ class RunCliTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             shim = Path(tmp) / "claude.cmd"
-            shim.write_text(
-                '@ECHO off\n"%dp0%\\node.exe" '
-                '"%dp0%\\node_modules\\@anthropic-ai\\claude-code\\cli.js" %*\n',
-                encoding="utf-8",
-            )
+            shim.write_text(shim_text or self.NODE_SHIM, encoding="utf-8")
             paths = {"claude": str(shim), "node": "C:/nodejs/node.exe"}
             with (
                 patch.object(subscription.subprocess, "run", side_effect=fake_run),
@@ -126,6 +133,11 @@ class RunCliTest(unittest.TestCase):
         self.assertEqual(Path(calls["command"][1]).parts[-2:], ("claude-code", "cli.js"))
         self.assertEqual(calls["command"][-1], "voz\ncalma")
         self.assertNotIn("shell", calls["kwargs"])
+
+    def test_windows_executa_binario_nativo_do_shim(self):
+        calls = self._run("win32", self.NATIVE_SHIM)
+        self.assertEqual(Path(calls["command"][0]).parts[-2:], ("bin", "claude.exe"))
+        self.assertEqual(calls["command"][-1], "voz\ncalma")
 
     def test_posix_executa_sem_shell(self):
         calls = self._run("linux")

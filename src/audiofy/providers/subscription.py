@@ -29,9 +29,10 @@ def run_cli(
     """Executa uma CLI de assinatura de forma portátil.
 
     No Windows as CLIs instaladas via npm (claude, gemini) são scripts ``.cmd``.
-    O shim é resolvido para ``node.exe`` + o JavaScript real, evitando o
-    ``cmd.exe``: ele trata quebras de linha dentro do system prompt como fim do
-    comando e pode descartar inclusive os argumentos de permissão seguintes.
+    O shim é resolvido para o alvo real — ``node.exe`` + JavaScript, ou o
+    binário nativo que pacotes recentes distribuem —, evitando o ``cmd.exe``:
+    ele trata quebras de linha dentro do system prompt como fim do comando e
+    pode descartar inclusive os argumentos de permissão seguintes.
     """
     if sys.platform == "win32":
         command = _windows_command(command)
@@ -48,18 +49,42 @@ def _windows_command(command: list[str]) -> list[str]:
         shim = Path(executable).read_text(encoding="utf-8", errors="replace")
     except OSError as error:
         raise OSError(f"Não foi possível ler o atalho da CLI: {executable}") from error
-    match = re.search(r'["\']%~?dp0%?[\\/]([^"\']+?\.js)["\']', shim, re.IGNORECASE)
-    if not match:
-        # npm/cmd-shim usa normalmente %dp0%; a variante %~dp0 também existe.
-        match = re.search(r'%~?dp0%?[\\/]([^\s"\']+?\.js)', shim, re.IGNORECASE)
-    node = shutil.which("node")
-    if not match or not node:
+
+    # npm/cmd-shim usa normalmente %dp0%; a variante %~dp0 também existe. O alvo
+    # pode ser o JavaScript da CLI ou, em pacotes recentes, um binário nativo.
+    script = _shim_target(shim, r"\.js")
+    if not script:
+        # Binário nativo: qualquer .exe que não seja o próprio interpretador Node.
+        native = _shim_target(shim, r"(?<!node)\.exe")
+        if not native:
+            raise OSError(
+                f"O atalho '{executable}' não aponta para um alvo executável conhecido. "
+                "Reinstale a CLI."
+            )
+        return [str(Path(executable).parent / Path(native.replace("\\", os.sep))), *command[1:]]
+
+    resolved = Path(executable).parent / Path(script.replace("\\", os.sep))
+    node = _shim_target(shim, r"node\.exe")
+    node_path = str(Path(executable).parent / Path(node.replace("\\", os.sep))) if node else None
+    node_path = node_path if node_path and Path(node_path).exists() else shutil.which("node")
+    if not node_path:
         raise OSError(
             f"O atalho '{executable}' não pôde ser executado sem cmd.exe. "
             "Reinstale a CLI e confirme que o Node.js está no PATH."
         )
-    script = Path(executable).parent / Path(match.group(1).replace("\\", os.sep))
-    return [node, str(script), *command[1:]]
+    return [node_path, str(resolved), *command[1:]]
+
+
+def _shim_target(shim: str, suffix_pattern: str) -> str | None:
+    """Extrai um caminho relativo a ``%dp0%`` dentro do shim, com ou sem aspas."""
+    for pattern in (
+        rf'["\']%~?dp0%?[\\/]([^"\']+?{suffix_pattern})["\']',
+        rf'%~?dp0%?[\\/]([^\s"\']+?{suffix_pattern})(?=[\s"\']|$)',
+    ):
+        match = re.search(pattern, shim, re.IGNORECASE)
+        if match:
+            return match.group(1)
+    return None
 
 
 class SubscriptionError(RuntimeError):
