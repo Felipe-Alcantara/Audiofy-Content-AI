@@ -1,0 +1,25 @@
+{
+  "episode_id": "2026-07-23-the-art-of-craftsmanship-monozukuri-in-the-age-of-ai-raphael-amorim",
+  "pid": 19468,
+  "state": "concluido",
+  "stage": "montagem",
+  "progress": {
+    "current": 0,
+    "total": 0
+  },
+  "cost_usd": 0.006694,
+  "cost_exact": false,
+  "started_at": 1784812912.1009603,
+  "run_started_at": 1784812912.3812165,
+  "updated_at": 1784813960.6682978,
+  "resume_count": 1,
+  "retry": null,
+  "last_error": null,
+  "abort_requested_at": null,
+  "generation_mode": "adaptation",
+  "narration_voice": null,
+  "key_source": "Chave Audio Teste",
+  "background_music": null,
+  "background_music_cache": null,
+  "background_volume": null
+}

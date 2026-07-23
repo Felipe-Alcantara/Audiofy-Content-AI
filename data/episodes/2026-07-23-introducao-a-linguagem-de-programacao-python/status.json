@@ -1,0 +1,25 @@
+{
+  "episode_id": "2026-07-23-introducao-a-linguagem-de-programacao-python",
+  "pid": 120264,
+  "state": "concluido",
+  "stage": "montagem",
+  "progress": {
+    "current": 0,
+    "total": 0
+  },
+  "cost_usd": 0.099375,
+  "cost_exact": false,
+  "started_at": 1784822003.8107412,
+  "run_started_at": 1784822004.094975,
+  "updated_at": 1784825145.87173,
+  "resume_count": 1,
+  "retry": null,
+  "last_error": null,
+  "abort_requested_at": null,
+  "generation_mode": "reflexive",
+  "narration_voice": "pf_dora",
+  "key_source": "Chave Audio Teste",
+  "background_music": null,
+  "background_music_cache": null,
+  "background_volume": null
+}

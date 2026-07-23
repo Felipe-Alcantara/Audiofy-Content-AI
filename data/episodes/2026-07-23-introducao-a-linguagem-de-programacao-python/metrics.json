@@ -1,0 +1,22 @@
+{
+  "source_words": 4706,
+  "script_words": 5562,
+  "duration_seconds": 2507.952,
+  "cost_usd": 0.099375,
+  "cost_exact": false,
+  "tts_model": "hexgrad/kokoro-82m",
+  "profile_name": "reset de leitura ultraeconomico",
+  "generation_mode": "reflexive",
+  "generated_at": "2026-07-23T13:45:45-03:00",
+  "cost_source": "model_pricing_fallback",
+  "background_music": null,
+  "background_volume": null,
+  "verified_at": "",
+  "verification_version": 0,
+  "title": "Introdução a linguagem de programação Python",
+  "source_created_at": "2026-07-23",
+  "source_key": "custom",
+  "source_file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__fonte-original-completa.md",
+  "final_audio_file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__audio-completo.mp3",
+  "artifact_schema_version": 2
+}

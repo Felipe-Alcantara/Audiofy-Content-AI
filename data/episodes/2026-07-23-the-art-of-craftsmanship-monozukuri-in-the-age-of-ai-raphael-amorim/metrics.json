@@ -1,0 +1,22 @@
+{
+  "source_words": 886,
+  "script_words": 1496,
+  "duration_seconds": 530.376,
+  "cost_usd": 0.006694,
+  "cost_exact": false,
+  "tts_model": "hexgrad/kokoro-82m",
+  "profile_name": "claude-code-trio-ultra",
+  "generation_mode": "adaptation",
+  "generated_at": "2026-07-23T10:39:20-03:00",
+  "cost_source": "model_pricing_fallback",
+  "background_music": null,
+  "background_volume": null,
+  "verified_at": "",
+  "verification_version": 0,
+  "title": "The Art of Craftsmanship (Monozukuri) in the Age of AI — Raphael Amorim",
+  "source_created_at": "2026-07-23",
+  "source_key": "custom",
+  "source_file": "fonte-custom__episodio-2026-07-23-the-art-of-craftsmanship-monozukuri-in-the-age-of-ai-raphael__fonte-original-completa.md",
+  "final_audio_file": "fonte-custom__episodio-2026-07-23-the-art-of-craftsmanship-monozukuri-in-the-age-of-ai-raphael__modo-podcast-adaptado__audio-completo.mp3",
+  "artifact_schema_version": 2
+}

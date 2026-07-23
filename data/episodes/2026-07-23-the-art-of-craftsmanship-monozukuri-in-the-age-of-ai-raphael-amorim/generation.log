@@ -1,0 +1,53 @@
+
+📄 The Art of Craftsmanship (Monozukuri) in the Age of AI — Raphael Amorim (2026-07-23)
+   Pasta do episódio: /home/felipe/Programação/Github/Repositórios/Audiofy-Content-AI/data/episodes/2026-07-23-the-art-of-craftsmanship-monozukuri-in-the-age-of-ai-raphael-amorim
+🧠 1/5 Matriz de cobertura…
+    [claude-code: modelo padrão da CLI] via assinatura — custo US$ 0,00
+   29 itens de cobertura.
+✍️  2/5 Roteiro…
+    [claude-code: modelo padrão da CLI] via assinatura — custo US$ 0,00
+   30 turnos para 3 apresentador(es).
+✅ 3/5 Auditoria do roteiro…
+    [claude-code: modelo padrão da CLI] via assinatura — custo US$ 0,00
+   Cobertura crítica e importante completa. ✔
+   ⚠ Afirmação sem base no conteúdo: T005: 'bastaram três prompts' — o original diz 'a few prompts' sem especificar quantidade; o número três é invenção do r
+   ⚠ Afirmação sem base no conteúdo: T005: 'fiz essa imagem em dois minutos' — acréscimo sem correspondência no original, que não menciona tempo específico n
+   ⚠ Afirmação sem base no conteúdo: T008: definição de AI slop como 'conteúdo genérico, sem capricho, gerado por IA' — o original apenas cita o termo sem de
+   ⚠ Afirmação sem base no conteúdo: T012: 'não consegue debugar, não consegue evoluir aquilo sozinho' — o original menciona apenas incapacidade de 'maintain
+   ⚠ Afirmação sem base no conteúdo: T016: 'Imagina a ironia: o que deveria ter economizado tempo acabou gerando semanas de retrabalho' — comentário editoria
+🎙️  4/5 Síntese de áudio por turno…
+   [█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 1/30 (3%) apresentador_a (pf_dora) US$ 0.000
+   [██░░░░░░░░░░░░░░░░░░░░░░░░░░░░] 2/30 (6%) apresentador_c (pm_santa) US$ 0.000
+   [███░░░░░░░░░░░░░░░░░░░░░░░░░░░] 3/30 (10%) apresentador_b (pm_alex) US$ 0.000
+   [████░░░░░░░░░░░░░░░░░░░░░░░░░░] 4/30 (13%) apresentador_a (pf_dora) US$ 0.001
+   [█████░░░░░░░░░░░░░░░░░░░░░░░░░] 5/30 (16%) apresentador_c (pm_santa) US$ 0.001
+   [██████░░░░░░░░░░░░░░░░░░░░░░░░] 6/30 (20%) apresentador_b (pm_alex) US$ 0.001
+   [███████░░░░░░░░░░░░░░░░░░░░░░░] 7/30 (23%) apresentador_a (pf_dora) US$ 0.002
+   [████████░░░░░░░░░░░░░░░░░░░░░░] 8/30 (26%) apresentador_c (pm_santa) US$ 0.002
+   [█████████░░░░░░░░░░░░░░░░░░░░░] 9/30 (30%) apresentador_b (pm_alex) US$ 0.002
+   [██████████░░░░░░░░░░░░░░░░░░░░] 10/30 (33%) apresentador_a (pf_dora) US$ 0.002
+   [███████████░░░░░░░░░░░░░░░░░░░] 11/30 (36%) apresentador_c (pm_santa) US$ 0.002
+   [████████████░░░░░░░░░░░░░░░░░░] 12/30 (40%) apresentador_b (pm_alex) US$ 0.003
+   [█████████████░░░░░░░░░░░░░░░░░] 13/30 (43%) apresentador_a (pf_dora) US$ 0.003
+   [██████████████░░░░░░░░░░░░░░░░] 14/30 (46%) apresentador_c (pm_santa) US$ 0.003
+   [███████████████░░░░░░░░░░░░░░░] 15/30 (50%) apresentador_b (pm_alex) US$ 0.003
+   [████████████████░░░░░░░░░░░░░░] 16/30 (53%) apresentador_a (pf_dora) US$ 0.004
+   [█████████████████░░░░░░░░░░░░░] 17/30 (56%) apresentador_c (pm_santa) US$ 0.004
+   [██████████████████░░░░░░░░░░░░] 18/30 (60%) apresentador_b (pm_alex) US$ 0.004
+   [███████████████████░░░░░░░░░░░] 19/30 (63%) apresentador_a (pf_dora) US$ 0.004
+   [████████████████████░░░░░░░░░░] 20/30 (66%) apresentador_b (pm_alex) US$ 0.005
+   [█████████████████████░░░░░░░░░] 21/30 (70%) apresentador_c (pm_santa) US$ 0.005
+   [██████████████████████░░░░░░░░] 22/30 (73%) apresentador_a (pf_dora) US$ 0.005
+   [███████████████████████░░░░░░░] 23/30 (76%) apresentador_b (pm_alex) US$ 0.005
+   [████████████████████████░░░░░░] 24/30 (80%) apresentador_c (pm_santa) US$ 0.005
+   [█████████████████████████░░░░░] 25/30 (83%) apresentador_a (pf_dora) US$ 0.006
+   [██████████████████████████░░░░] 26/30 (86%) apresentador_b (pm_alex) US$ 0.006
+   [███████████████████████████░░░] 27/30 (90%) apresentador_c (pm_santa) US$ 0.006
+   [████████████████████████████░░] 28/30 (93%) apresentador_a (pf_dora) US$ 0.006
+   [█████████████████████████████░] 29/30 (96%) apresentador_b (pm_alex) US$ 0.007
+   [██████████████████████████████] 30/30 (100%) apresentador_c (pm_santa) US$ 0.007
+🎧 5/5 Montagem com ffmpeg…
+
+✔ Episódio gerado: /home/felipe/Programação/Github/Repositórios/Audiofy-Content-AI/data/episodes/2026-07-23-the-art-of-craftsmanship-monozukuri-in-the-age-of-ai-raphael-amorim/fonte-custom__episodio-2026-07-23-the-art-of-craftsmanship-monozukuri-in-the-age-of-ai-raphael__modo-podcast-adaptado__audio-completo.mp3
+💰 Custo total registrado: US$ 0.0067
+{"ok": true, "mp3": "/home/felipe/Programação/Github/Repositórios/Audiofy-Content-AI/data/episodes/2026-07-23-the-art-of-craftsmanship-monozukuri-in-the-age-of-ai-raphael-amorim/fonte-custom__episodio-2026-07-23-the-art-of-craftsmanship-monozukuri-in-the-age-of-ai-raphael__modo-podcast-adaptado__audio-completo.mp3"}

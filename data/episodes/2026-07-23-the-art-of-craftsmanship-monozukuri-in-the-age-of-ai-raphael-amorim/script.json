@@ -1,0 +1,239 @@
+{
+  "turns": [
+    {
+      "turn_id": "T001",
+      "speaker": "apresentador_a",
+      "text": "Fala, pessoal! Sejam muito bem-vindos a mais um episódio. Hoje a gente vai mergulhar num artigo que me deixou super curiosa. O título é \"The Art of Craftsmanship — Monozukuri — in the Age of AI\", escrito pelo Raphael Amorim. E já adianto: é um texto que faz a gente repensar a nossa relação com inteligência artificial.",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T002",
+      "speaker": "apresentador_c",
+      "text": "Cara, que tema! Eu li esse artigo e fiquei animadíssimo pra discutir. Porque logo de cara o Raphael faz uma ressalva que eu acho fundamental: o artigo não é contra a IA em si. Ele é contra a forma como a IA está sendo utilizada. Isso é importante pra gente deixar claro desde o início.",
+      "coverage_ids": [
+        "C001"
+      ]
+    },
+    {
+      "turn_id": "T003",
+      "speaker": "apresentador_b",
+      "text": "E ele faz questão de dizer também que aquilo é a opinião pessoal dele, não uma verdade universal escrita em pedra. Então o Raphael está compartilhando a visão dele como desenvolvedor, como profissional da área, mas sem querer impor isso como regra absoluta pra ninguém.",
+      "coverage_ids": [
+        "C002"
+      ]
+    },
+    {
+      "turn_id": "T004",
+      "speaker": "apresentador_a",
+      "text": "Perfeito. E ele começa falando sobre o que, na opinião dele, é o maior argumento de venda da IA: o tempo. O uso de inteligência artificial tem crescido bastante nos últimos anos justamente porque ela promete reduzir o tempo que a gente leva pra realizar uma tarefa. E aí ele explica que a maioria dos modelos de linguagem grandes, treinados com quantidades enormes de texto, consegue produzir texto ou código que parece feito por humanos, sob demanda.",
+      "coverage_ids": [
+        "C003",
+        "C004"
+      ]
+    },
+    {
+      "turn_id": "T005",
+      "speaker": "apresentador_c",
+      "text": "E o ponto central que ele levanta é que esse fator tempo acabou se tornando mais importante do que qualquer outra coisa. O processo de criar algo ficou em segundo plano, e todo o foco foi pro resultado final. Sabe aquele pessoal nas redes sociais que posta: \"ah, bastaram três prompts pra eu criar esse jogo\" ou \"fiz essa imagem em dois minutos\"? É exatamente isso. O como foi feito não importa mais, só importa o que foi feito.",
+      "coverage_ids": [
+        "C005",
+        "C006"
+      ]
+    },
+    {
+      "turn_id": "T006",
+      "speaker": "apresentador_b",
+      "text": "E o Raphael contextualiza isso no mundo corporativo. Ele observa que o ambiente empresarial é totalmente orientado pelo tempo. A gente mede trabalho usando representações abstratas de tempo — sprints, ciclos, e por aí vai. E é aí que a IA encontra seu espaço e se torna parte das ferramentas do dia a dia dos desenvolvedores e de outros profissionais.",
+      "coverage_ids": [
+        "C007"
+      ]
+    },
+    {
+      "turn_id": "T007",
+      "speaker": "apresentador_a",
+      "text": "Mas aí vem o problema, né? E é um argumento forte que ele faz: o foco em tempo nem sempre caminha junto com qualidade. Parece óbvio quando a gente ouve assim, mas no dia a dia a gente esquece disso.",
+      "coverage_ids": [
+        "C008"
+      ]
+    },
+    {
+      "turn_id": "T008",
+      "speaker": "apresentador_c",
+      "text": "Exatamente! E ele diz que não está falando nada surreal. Existe até um termo que virou comum em vários lugares: AI slop. Que é basicamente aquele conteúdo genérico, sem capricho, gerado por IA. E olha que interessante: ele cita que até o CEO da Microsoft tem advogado pra que as pessoas parem de pensar na IA como slop. Ou seja, essa discussão existe, mesmo que alguns entusiastas prefiram ignorá-la.",
+      "coverage_ids": [
+        "C009"
+      ]
+    },
+    {
+      "turn_id": "T009",
+      "speaker": "apresentador_b",
+      "text": "E aí o Raphael faz um levantamento honesto dos problemas do ecossistema de IA. Ele lista: a IA pode alucinar, pode dar respostas incorretas, e frequentemente traz questões de segurança e privacidade, dependendo do caso de uso. Mas — e isso é importante — ele reconhece que a IA não é perfeita, porém considera inegável o valor dela como ferramenta.",
+      "coverage_ids": [
+        "C010",
+        "C011"
+      ]
+    },
+    {
+      "turn_id": "T010",
+      "speaker": "apresentador_a",
+      "text": "Isso me chamou muita atenção. Ele não é radical. Ele reconhece, por exemplo, que a IA pode capacitar pessoas que não têm formação em programação a criar software. E também permite que programadores menos experientes construam sistemas mais complexos do que conseguiriam sozinhos.",
+      "coverage_ids": [
+        "C012"
+      ]
+    },
+    {
+      "turn_id": "T011",
+      "speaker": "apresentador_c",
+      "text": "Ele dá um exemplo bem ilustrativo: imagina um desenvolvedor frontend que não tem expertise em codificação de vídeo. Com IA, essa pessoa poderia criar algo como um codificador de vídeo, mesmo sem dominar aquele conhecimento específico.",
+      "coverage_ids": [
+        "C013"
+      ]
+    },
+    {
+      "turn_id": "T012",
+      "speaker": "apresentador_b",
+      "text": "Mas é justamente aí que mora o perigo, segundo o Raphael. E esse é talvez o argumento mais crítico do artigo: a IA pode gerar código que não pertence verdadeiramente ao programador, que não é plenamente compreendido por ele. E o resultado disso é que o programador não tem o conhecimento necessário pra manter aquele código de forma independente. Ele não consegue dar manutenção, não consegue debugar, não consegue evoluir aquilo sozinho.",
+      "coverage_ids": [
+        "C014"
+      ]
+    },
+    {
+      "turn_id": "T013",
+      "speaker": "apresentador_a",
+      "text": "E complementando: ao usar a IA pra reduzir o tempo de desenvolvimento, a gente acaba pulando as fundações. Ou seja, aquele aprendizado fundamental que vem de escrever código, de errar, de entender por que algo funciona de um jeito e não de outro — tudo isso fica pra trás.",
+      "coverage_ids": [
+        "C015"
+      ]
+    },
+    {
+      "turn_id": "T014",
+      "speaker": "apresentador_c",
+      "text": "Aí ele faz uma afirmação que eu acho poderosa: quando uma pessoa tem verdadeira propriedade e compreensão de uma tarefa, a IA se torna o que ela deveria ser — uma ferramenta, não um tomador de decisões. Ferramenta, não decisor. Isso muda completamente a perspectiva.",
+      "coverage_ids": [
+        "C016"
+      ]
+    },
+    {
+      "turn_id": "T015",
+      "speaker": "apresentador_b",
+      "text": "E pra ilustrar, ele conta uma experiência pessoal. Alguns anos atrás, numa empresa onde trabalhava, havia engenheiros usando IA pra gerar código numa linguagem de programação que eles tinham aprendido há apenas um mês. E, sem surpresa, não deu certo. Vários desenvolvedores, incluindo o próprio Raphael, tiveram que intervir pra consertar os problemas.",
+      "coverage_ids": [
+        "C017"
+      ]
+    },
+    {
+      "turn_id": "T016",
+      "speaker": "apresentador_a",
+      "text": "E o estrago não foi pequeno, né? Ele diz que o código estava completamente quebrado e que ele acabou reescrevendo cerca de setenta por cento de tudo. Setenta por cento! E isso levou semanas de trabalho. Imagina a ironia: o que deveria ter economizado tempo acabou gerando semanas de retrabalho.",
+      "coverage_ids": [
+        "C018"
+      ]
+    },
+    {
+      "turn_id": "T017",
+      "speaker": "apresentador_c",
+      "text": "Mas olha que ele é justo na análise. Ele pergunta: nesse exemplo, a IA foi o problema? E responde: não, definitivamente não. A IA existe pra ajudar, não pra fazer o trabalho pelo programador. O problema foi como as pessoas usaram a ferramenta.",
+      "coverage_ids": [
+        "C019"
+      ]
+    },
+    {
+      "turn_id": "T018",
+      "speaker": "apresentador_b",
+      "text": "E ele observa que esse padrão de comportamento tem aumentado significativamente. Ele conta que recebe muitos pull requests — que são aquelas submissões de código pra revisão — claramente gerados por modelos de linguagem, de programadores com variados níveis de experiência, que muitas vezes não compreendem plenamente o código que estão submetendo, ou mal compreendem.",
+      "coverage_ids": [
+        "C020"
+      ]
+    },
+    {
+      "turn_id": "T019",
+      "speaker": "apresentador_a",
+      "text": "Aí ele chega no ponto que eu acho mais bonito do artigo: a conexão com o artesanato. Ele argumenta que pra alcançar qualidade, o programador precisa ter vivenciado o que está sendo construído. O desenvolvimento de software segue o caminho do artesanato, onde o artesão, através de anos de experiência, tentativas repetidas, às vezes sorte ou talento natural, consegue produzir resultados extraordinários.",
+      "coverage_ids": [
+        "C021"
+      ]
+    },
+    {
+      "turn_id": "T020",
+      "speaker": "apresentador_b",
+      "text": "E é aí que entra o conceito japonês de monozukuri. Literalmente, monozukuri significa \"fazer coisas\". Mas vai muito além da manufatura simples. Ele incorpora o espírito, a habilidade e o orgulho do artesanato, com forte foco em perfeição, melhoria contínua, respeito pelos materiais e entrega de produtos de alta qualidade por meio de conhecimento técnico profundo e uma abordagem holística centrada no cliente.",
+      "coverage_ids": [
+        "C022"
+      ]
+    },
+    {
+      "turn_id": "T021",
+      "speaker": "apresentador_c",
+      "text": "Que conceito lindo, cara! E ele dá o contexto histórico: o termo ganhou destaque no final da década de mil novecentos e noventa, quando o governo japonês usou o monozukuri pra reafirmar a força manufatureira do Japão numa economia global que estava mudando.",
+      "coverage_ids": [
+        "C023"
+      ]
+    },
+    {
+      "turn_id": "T022",
+      "speaker": "apresentador_a",
+      "text": "E as empresas japonesas transformaram a manufatura numa ciência precisa. O monozukuri passou a representar dedicação, inovação e a busca incansável pela excelência na produção. É interessante pensar como isso se aplica ao software.",
+      "coverage_ids": [
+        "C024"
+      ]
+    },
+    {
+      "turn_id": "T023",
+      "speaker": "apresentador_b",
+      "text": "E aí vem aquela pergunta que todo mundo faz, especialmente quem está começando na área: a IA vai substituir os programadores? O Raphael responde de um jeito que eu acho muito honesto: sim e não. Depende inteiramente do tipo de trabalho que o programador faz. E ele até reformula a frase: depende do ofício artesanal do programador.",
+      "coverage_ids": [
+        "C025"
+      ]
+    },
+    {
+      "turn_id": "T024",
+      "speaker": "apresentador_c",
+      "text": "E aqui ele faz a grande ponte entre os dois conceitos. Ele diz que monozukuri é o processo do artesão, e que ultimamente a gente está perdendo esse processo por focar demais nos resultados e prestar pouca atenção ao processo em si. É como se a gente tivesse jogado fora o caminho e ficado só olhando pro destino.",
+      "coverage_ids": [
+        "C026"
+      ]
+    },
+    {
+      "turn_id": "T025",
+      "speaker": "apresentador_a",
+      "text": "E a conclusão dele é clara: quanto mais profundo e especializado o conhecimento e a experiência do artesão, menor a probabilidade de ele ser substituído. Isso vale pra programação, pra manufatura, pra qualquer ofício.",
+      "coverage_ids": [
+        "C027"
+      ]
+    },
+    {
+      "turn_id": "T026",
+      "speaker": "apresentador_b",
+      "text": "E ele fecha com uma recomendação muito prática e direta: use IA, sim, mas aprenda os fundamentos por conta própria. Pratique sem ela. Não dependa da IA pra tomar decisões que você deveria ser capaz de tomar sozinho. Caso contrário, você corre o risco de se tornar substituível.",
+      "coverage_ids": [
+        "C028"
+      ]
+    },
+    {
+      "turn_id": "T027",
+      "speaker": "apresentador_c",
+      "text": "E a frase final dele é muito marcante: a inteligência artificial não compreende nem incorpora monozukuri. Ela deve ser uma ferramenta que pertence ao artesão — e não algo que substitui o artesão. Resumindo tudo com muita elegância.",
+      "coverage_ids": [
+        "C029"
+      ]
+    },
+    {
+      "turn_id": "T028",
+      "speaker": "apresentador_a",
+      "text": "É um artigo que vale muito a pena ler na íntegra, pessoal. Antes de encerrar, a atribuição: este episódio foi baseado no conteúdo \"The Art of Craftsmanship (Monozukuri) in the Age of AI\", do Raphael Amorim. O original está disponível em rapha.land/the-art-of-craftsmanship-monozukuri-in-the-age-of-ai/. Esta adaptação em áudio foi gerada com inteligência artificial. Verifiquem os direitos do conteúdo original antes de publicar.",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T029",
+      "speaker": "apresentador_b",
+      "text": "É isso, pessoal. Até o próximo episódio!",
+      "coverage_ids": []
+    },
+    {
+      "turn_id": "T030",
+      "speaker": "apresentador_c",
+      "text": "Valeu, gente! Até mais!",
+      "coverage_ids": []
+    }
+  ]
+}

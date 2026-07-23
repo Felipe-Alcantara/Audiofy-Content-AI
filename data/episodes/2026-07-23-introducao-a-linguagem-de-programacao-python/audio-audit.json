@@ -1,0 +1,2044 @@
+{
+  "version": 1,
+  "audited_at": "2026-07-23T13:43:47-03:00",
+  "policy": {
+    "threshold_db": -45,
+    "minimum_silence_seconds": 1.5,
+    "warning_silence_seconds": 2.5,
+    "critical_silence_seconds": 5.0,
+    "critical_silence_ratio": 0.35
+  },
+  "summary": {
+    "segments": 225,
+    "ok": 225,
+    "warnings": 0,
+    "critical": 0
+  },
+  "segments": [
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-001-de-225__voz-narrador.wav",
+      "duration_seconds": 13.8,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-002-de-225__voz-narrador.wav",
+      "duration_seconds": 5.4,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-003-de-225__voz-narrador.wav",
+      "duration_seconds": 4.075,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-004-de-225__voz-narrador.wav",
+      "duration_seconds": 0.7,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-005-de-225__voz-narrador.wav",
+      "duration_seconds": 12.15,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-006-de-225__voz-narrador.wav",
+      "duration_seconds": 14.8,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-007-de-225__voz-narrador.wav",
+      "duration_seconds": 138.675,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-008-de-225__voz-narrador.wav",
+      "duration_seconds": 79.325,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-009-de-225__voz-narrador.wav",
+      "duration_seconds": 16.1,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-010-de-225__voz-narrador.wav",
+      "duration_seconds": 23.8,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-011-de-225__voz-narrador.wav",
+      "duration_seconds": 5.475,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-012-de-225__voz-narrador.wav",
+      "duration_seconds": 8.025,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-013-de-225__voz-narrador.wav",
+      "duration_seconds": 30.825,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-014-de-225__voz-narrador.wav",
+      "duration_seconds": 12.95,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-015-de-225__voz-narrador.wav",
+      "duration_seconds": 38.6,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-016-de-225__voz-narrador.wav",
+      "duration_seconds": 15.55,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-017-de-225__voz-narrador.wav",
+      "duration_seconds": 13.8,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-018-de-225__voz-narrador.wav",
+      "duration_seconds": 12.15,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-019-de-225__voz-narrador.wav",
+      "duration_seconds": 18.95,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-020-de-225__voz-narrador.wav",
+      "duration_seconds": 39.65,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-021-de-225__voz-narrador.wav",
+      "duration_seconds": 4.25,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-022-de-225__voz-narrador.wav",
+      "duration_seconds": 5.2,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-023-de-225__voz-narrador.wav",
+      "duration_seconds": 24.05,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-024-de-225__voz-narrador.wav",
+      "duration_seconds": 19.275,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-025-de-225__voz-narrador.wav",
+      "duration_seconds": 23.05,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-026-de-225__voz-narrador.wav",
+      "duration_seconds": 3.2,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-027-de-225__voz-narrador.wav",
+      "duration_seconds": 8.325,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-028-de-225__voz-narrador.wav",
+      "duration_seconds": 10.375,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-029-de-225__voz-narrador.wav",
+      "duration_seconds": 15.1,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-030-de-225__voz-narrador.wav",
+      "duration_seconds": 10.8,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-031-de-225__voz-narrador.wav",
+      "duration_seconds": 11.55,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-032-de-225__voz-narrador.wav",
+      "duration_seconds": 8.75,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-033-de-225__voz-narrador.wav",
+      "duration_seconds": 0.6,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-034-de-225__voz-narrador.wav",
+      "duration_seconds": 1.2,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-035-de-225__voz-narrador.wav",
+      "duration_seconds": 47.35,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-036-de-225__voz-narrador.wav",
+      "duration_seconds": 15.625,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-037-de-225__voz-narrador.wav",
+      "duration_seconds": 1.35,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-038-de-225__voz-narrador.wav",
+      "duration_seconds": 77.0,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-039-de-225__voz-narrador.wav",
+      "duration_seconds": 1.45,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-040-de-225__voz-narrador.wav",
+      "duration_seconds": 8.375,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-041-de-225__voz-narrador.wav",
+      "duration_seconds": 3.225,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-042-de-225__voz-narrador.wav",
+      "duration_seconds": 14.775,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-043-de-225__voz-narrador.wav",
+      "duration_seconds": 15.75,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-044-de-225__voz-narrador.wav",
+      "duration_seconds": 21.6,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-045-de-225__voz-narrador.wav",
+      "duration_seconds": 11.75,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-046-de-225__voz-narrador.wav",
+      "duration_seconds": 1.925,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-047-de-225__voz-narrador.wav",
+      "duration_seconds": 17.8,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-048-de-225__voz-narrador.wav",
+      "duration_seconds": 1.65,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-049-de-225__voz-narrador.wav",
+      "duration_seconds": 10.075,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-050-de-225__voz-narrador.wav",
+      "duration_seconds": 7.375,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-051-de-225__voz-narrador.wav",
+      "duration_seconds": 2.875,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-052-de-225__voz-narrador.wav",
+      "duration_seconds": 1.033,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-053-de-225__voz-narrador.wav",
+      "duration_seconds": 9.0,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-054-de-225__voz-narrador.wav",
+      "duration_seconds": 16.775,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-055-de-225__voz-narrador.wav",
+      "duration_seconds": 29.15,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-056-de-225__voz-narrador.wav",
+      "duration_seconds": 14.05,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-057-de-225__voz-narrador.wav",
+      "duration_seconds": 1.725,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-058-de-225__voz-narrador.wav",
+      "duration_seconds": 3.1,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-059-de-225__voz-narrador.wav",
+      "duration_seconds": 12.95,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-060-de-225__voz-narrador.wav",
+      "duration_seconds": 5.675,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-061-de-225__voz-narrador.wav",
+      "duration_seconds": 2.7,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-062-de-225__voz-narrador.wav",
+      "duration_seconds": 7.55,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-063-de-225__voz-narrador.wav",
+      "duration_seconds": 5.75,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-064-de-225__voz-narrador.wav",
+      "duration_seconds": 2.375,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-065-de-225__voz-narrador.wav",
+      "duration_seconds": 1.875,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-066-de-225__voz-narrador.wav",
+      "duration_seconds": 6.35,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-067-de-225__voz-narrador.wav",
+      "duration_seconds": 18.1,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-068-de-225__voz-narrador.wav",
+      "duration_seconds": 1.85,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-069-de-225__voz-narrador.wav",
+      "duration_seconds": 3.425,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-070-de-225__voz-narrador.wav",
+      "duration_seconds": 3.3,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-071-de-225__voz-narrador.wav",
+      "duration_seconds": 28.225,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-072-de-225__voz-narrador.wav",
+      "duration_seconds": 15.0,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-073-de-225__voz-narrador.wav",
+      "duration_seconds": 4.2,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-074-de-225__voz-narrador.wav",
+      "duration_seconds": 25.4,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-075-de-225__voz-narrador.wav",
+      "duration_seconds": 7.625,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-076-de-225__voz-narrador.wav",
+      "duration_seconds": 7.125,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-077-de-225__voz-narrador.wav",
+      "duration_seconds": 12.825,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-078-de-225__voz-narrador.wav",
+      "duration_seconds": 17.4,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-079-de-225__voz-narrador.wav",
+      "duration_seconds": 17.2,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-080-de-225__voz-narrador.wav",
+      "duration_seconds": 23.45,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-081-de-225__voz-narrador.wav",
+      "duration_seconds": 1.8,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-082-de-225__voz-narrador.wav",
+      "duration_seconds": 6.75,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-083-de-225__voz-narrador.wav",
+      "duration_seconds": 2.5,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-084-de-225__voz-narrador.wav",
+      "duration_seconds": 27.95,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-085-de-225__voz-narrador.wav",
+      "duration_seconds": 18.425,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-086-de-225__voz-narrador.wav",
+      "duration_seconds": 6.2,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-087-de-225__voz-narrador.wav",
+      "duration_seconds": 8.547,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-088-de-225__voz-narrador.wav",
+      "duration_seconds": 12.9,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-089-de-225__voz-narrador.wav",
+      "duration_seconds": 16.95,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-090-de-225__voz-narrador.wav",
+      "duration_seconds": 13.7,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-091-de-225__voz-narrador.wav",
+      "duration_seconds": 1.025,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-092-de-225__voz-narrador.wav",
+      "duration_seconds": 12.05,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-093-de-225__voz-narrador.wav",
+      "duration_seconds": 5.475,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-094-de-225__voz-narrador.wav",
+      "duration_seconds": 8.5,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-095-de-225__voz-narrador.wav",
+      "duration_seconds": 1.0,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-096-de-225__voz-narrador.wav",
+      "duration_seconds": 8.25,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-097-de-225__voz-narrador.wav",
+      "duration_seconds": 4.8,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-098-de-225__voz-narrador.wav",
+      "duration_seconds": 2.875,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-099-de-225__voz-narrador.wav",
+      "duration_seconds": 4.2,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-100-de-225__voz-narrador.wav",
+      "duration_seconds": 4.25,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-101-de-225__voz-narrador.wav",
+      "duration_seconds": 4.55,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-102-de-225__voz-narrador.wav",
+      "duration_seconds": 11.825,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-103-de-225__voz-narrador.wav",
+      "duration_seconds": 11.1,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-104-de-225__voz-narrador.wav",
+      "duration_seconds": 7.625,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-105-de-225__voz-narrador.wav",
+      "duration_seconds": 12.7,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-106-de-225__voz-narrador.wav",
+      "duration_seconds": 15.95,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-107-de-225__voz-narrador.wav",
+      "duration_seconds": 14.825,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-108-de-225__voz-narrador.wav",
+      "duration_seconds": 11.5,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-109-de-225__voz-narrador.wav",
+      "duration_seconds": 9.425,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-110-de-225__voz-narrador.wav",
+      "duration_seconds": 6.6,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-111-de-225__voz-narrador.wav",
+      "duration_seconds": 13.275,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-112-de-225__voz-narrador.wav",
+      "duration_seconds": 25.1,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-113-de-225__voz-narrador.wav",
+      "duration_seconds": 5.5,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-114-de-225__voz-narrador.wav",
+      "duration_seconds": 6.85,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-115-de-225__voz-narrador.wav",
+      "duration_seconds": 3.0,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-116-de-225__voz-narrador.wav",
+      "duration_seconds": 2.8,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-117-de-225__voz-narrador.wav",
+      "duration_seconds": 6.175,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-118-de-225__voz-narrador.wav",
+      "duration_seconds": 4.8,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-119-de-225__voz-narrador.wav",
+      "duration_seconds": 3.65,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-120-de-225__voz-narrador.wav",
+      "duration_seconds": 15.35,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-121-de-225__voz-narrador.wav",
+      "duration_seconds": 3.3,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-122-de-225__voz-narrador.wav",
+      "duration_seconds": 9.3,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-123-de-225__voz-narrador.wav",
+      "duration_seconds": 6.675,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-124-de-225__voz-narrador.wav",
+      "duration_seconds": 3.55,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-125-de-225__voz-narrador.wav",
+      "duration_seconds": 21.775,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-126-de-225__voz-narrador.wav",
+      "duration_seconds": 6.4,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-127-de-225__voz-narrador.wav",
+      "duration_seconds": 13.8,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-128-de-225__voz-narrador.wav",
+      "duration_seconds": 2.875,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-129-de-225__voz-narrador.wav",
+      "duration_seconds": 6.525,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-130-de-225__voz-narrador.wav",
+      "duration_seconds": 2.575,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-131-de-225__voz-narrador.wav",
+      "duration_seconds": 5.15,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-132-de-225__voz-narrador.wav",
+      "duration_seconds": 7.025,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-133-de-225__voz-narrador.wav",
+      "duration_seconds": 6.625,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-134-de-225__voz-narrador.wav",
+      "duration_seconds": 6.475,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-135-de-225__voz-narrador.wav",
+      "duration_seconds": 7.525,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-136-de-225__voz-narrador.wav",
+      "duration_seconds": 16.3,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-137-de-225__voz-narrador.wav",
+      "duration_seconds": 4.075,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-138-de-225__voz-narrador.wav",
+      "duration_seconds": 16.975,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-139-de-225__voz-narrador.wav",
+      "duration_seconds": 13.625,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-140-de-225__voz-narrador.wav",
+      "duration_seconds": 7.7,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-141-de-225__voz-narrador.wav",
+      "duration_seconds": 6.375,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-142-de-225__voz-narrador.wav",
+      "duration_seconds": 8.25,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-143-de-225__voz-narrador.wav",
+      "duration_seconds": 6.625,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-144-de-225__voz-narrador.wav",
+      "duration_seconds": 1.825,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-145-de-225__voz-narrador.wav",
+      "duration_seconds": 8.8,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-146-de-225__voz-narrador.wav",
+      "duration_seconds": 12.975,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-147-de-225__voz-narrador.wav",
+      "duration_seconds": 6.725,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-148-de-225__voz-narrador.wav",
+      "duration_seconds": 7.475,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-149-de-225__voz-narrador.wav",
+      "duration_seconds": 15.75,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-150-de-225__voz-narrador.wav",
+      "duration_seconds": 11.7,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-151-de-225__voz-narrador.wav",
+      "duration_seconds": 3.275,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-152-de-225__voz-narrador.wav",
+      "duration_seconds": 11.675,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-153-de-225__voz-narrador.wav",
+      "duration_seconds": 5.125,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-154-de-225__voz-narrador.wav",
+      "duration_seconds": 10.975,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-155-de-225__voz-narrador.wav",
+      "duration_seconds": 0.775,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-156-de-225__voz-narrador.wav",
+      "duration_seconds": 0.675,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-157-de-225__voz-narrador.wav",
+      "duration_seconds": 10.25,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-158-de-225__voz-narrador.wav",
+      "duration_seconds": 7.675,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-159-de-225__voz-narrador.wav",
+      "duration_seconds": 9.875,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-160-de-225__voz-narrador.wav",
+      "duration_seconds": 4.3,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-161-de-225__voz-narrador.wav",
+      "duration_seconds": 15.875,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-162-de-225__voz-narrador.wav",
+      "duration_seconds": 5.175,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-163-de-225__voz-narrador.wav",
+      "duration_seconds": 16.525,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-164-de-225__voz-narrador.wav",
+      "duration_seconds": 7.75,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-165-de-225__voz-narrador.wav",
+      "duration_seconds": 1.45,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-166-de-225__voz-narrador.wav",
+      "duration_seconds": 10.1,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-167-de-225__voz-narrador.wav",
+      "duration_seconds": 7.425,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-168-de-225__voz-narrador.wav",
+      "duration_seconds": 10.25,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-169-de-225__voz-narrador.wav",
+      "duration_seconds": 4.259,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-170-de-225__voz-narrador.wav",
+      "duration_seconds": 17.6,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-171-de-225__voz-narrador.wav",
+      "duration_seconds": 6.35,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-172-de-225__voz-narrador.wav",
+      "duration_seconds": 5.95,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-173-de-225__voz-narrador.wav",
+      "duration_seconds": 4.5,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-174-de-225__voz-narrador.wav",
+      "duration_seconds": 5.3,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-175-de-225__voz-narrador.wav",
+      "duration_seconds": 4.025,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-176-de-225__voz-narrador.wav",
+      "duration_seconds": 16.425,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-177-de-225__voz-narrador.wav",
+      "duration_seconds": 16.1,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-178-de-225__voz-narrador.wav",
+      "duration_seconds": 6.225,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-179-de-225__voz-narrador.wav",
+      "duration_seconds": 4.625,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-180-de-225__voz-narrador.wav",
+      "duration_seconds": 8.225,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-181-de-225__voz-narrador.wav",
+      "duration_seconds": 3.325,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-182-de-225__voz-narrador.wav",
+      "duration_seconds": 3.5,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-183-de-225__voz-narrador.wav",
+      "duration_seconds": 4.15,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-184-de-225__voz-narrador.wav",
+      "duration_seconds": 2.875,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-185-de-225__voz-narrador.wav",
+      "duration_seconds": 11.4,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-186-de-225__voz-narrador.wav",
+      "duration_seconds": 2.25,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-187-de-225__voz-narrador.wav",
+      "duration_seconds": 11.375,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-188-de-225__voz-narrador.wav",
+      "duration_seconds": 22.975,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-189-de-225__voz-narrador.wav",
+      "duration_seconds": 6.506,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-190-de-225__voz-narrador.wav",
+      "duration_seconds": 5.7,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-191-de-225__voz-narrador.wav",
+      "duration_seconds": 4.925,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-192-de-225__voz-narrador.wav",
+      "duration_seconds": 2.925,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-193-de-225__voz-narrador.wav",
+      "duration_seconds": 11.7,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-194-de-225__voz-narrador.wav",
+      "duration_seconds": 17.75,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-195-de-225__voz-narrador.wav",
+      "duration_seconds": 13.2,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-196-de-225__voz-narrador.wav",
+      "duration_seconds": 16.0,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-197-de-225__voz-narrador.wav",
+      "duration_seconds": 9.775,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-198-de-225__voz-narrador.wav",
+      "duration_seconds": 3.75,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-199-de-225__voz-narrador.wav",
+      "duration_seconds": 2.5,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-200-de-225__voz-narrador.wav",
+      "duration_seconds": 7.975,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-201-de-225__voz-narrador.wav",
+      "duration_seconds": 3.975,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-202-de-225__voz-narrador.wav",
+      "duration_seconds": 6.275,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-203-de-225__voz-narrador.wav",
+      "duration_seconds": 9.675,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-204-de-225__voz-narrador.wav",
+      "duration_seconds": 20.875,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-205-de-225__voz-narrador.wav",
+      "duration_seconds": 5.25,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-206-de-225__voz-narrador.wav",
+      "duration_seconds": 3.15,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-207-de-225__voz-narrador.wav",
+      "duration_seconds": 30.625,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-208-de-225__voz-narrador.wav",
+      "duration_seconds": 18.35,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-209-de-225__voz-narrador.wav",
+      "duration_seconds": 33.975,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-210-de-225__voz-narrador.wav",
+      "duration_seconds": 4.925,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-211-de-225__voz-narrador.wav",
+      "duration_seconds": 4.15,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-212-de-225__voz-narrador.wav",
+      "duration_seconds": 4.7,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-213-de-225__voz-narrador.wav",
+      "duration_seconds": 29.55,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-214-de-225__voz-narrador.wav",
+      "duration_seconds": 4.85,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-215-de-225__voz-narrador.wav",
+      "duration_seconds": 3.15,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-216-de-225__voz-narrador.wav",
+      "duration_seconds": 18.875,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-217-de-225__voz-narrador.wav",
+      "duration_seconds": 18.4,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-218-de-225__voz-narrador.wav",
+      "duration_seconds": 4.775,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-219-de-225__voz-narrador.wav",
+      "duration_seconds": 3.15,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-220-de-225__voz-narrador.wav",
+      "duration_seconds": 9.175,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-221-de-225__voz-narrador.wav",
+      "duration_seconds": 6.35,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-222-de-225__voz-narrador.wav",
+      "duration_seconds": 1.7,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-223-de-225__voz-narrador.wav",
+      "duration_seconds": 5.925,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-224-de-225__voz-narrador.wav",
+      "duration_seconds": 5.25,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    },
+    {
+      "file": "fonte-custom__episodio-2026-07-23-introducao-a-linguagem-de-programacao-python__modo-reflexive__chunk-225-de-225__voz-narrador.wav",
+      "duration_seconds": 16.4,
+      "silence_seconds": 0,
+      "silence_ratio": 0.0,
+      "longest_silence_seconds": 0.0,
+      "severity": "ok",
+      "silences": []
+    }
+  ]
+}

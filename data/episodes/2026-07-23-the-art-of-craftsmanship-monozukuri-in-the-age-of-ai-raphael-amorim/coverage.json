@@ -1,0 +1,207 @@
+{
+  "items": [
+    {
+      "id": "C001",
+      "kind": "ressalva",
+      "criticality": "critica",
+      "statement": "O artigo não é contra a IA em si, mas contra a forma como ela está sendo utilizada.",
+      "evidence": "this article is not against AI (artificial intelligence), but against how it is being used"
+    },
+    {
+      "id": "C002",
+      "kind": "ressalva",
+      "criticality": "importante",
+      "statement": "O autor declara que o texto expressa sua opinião pessoal, não uma verdade universal.",
+      "evidence": "this is just my opinion, not a universal truth written in stone"
+    },
+    {
+      "id": "C003",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O uso de IA tem crescido nos últimos anos, tendo como principal argumento de venda a economia de tempo.",
+      "evidence": "AI usage has been increasing over the past few years due to its biggest selling point: time"
+    },
+    {
+      "id": "C004",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "A maioria dos modelos de linguagem grandes, treinados em vastas quantidades de texto, é capaz de produzir texto ou código semelhante ao humano sob demanda.",
+      "evidence": "most language models (LMs)—especially large ones trained on vast amounts of text—are capable of producing human-like text or code on demand"
+    },
+    {
+      "id": "C005",
+      "kind": "argumento",
+      "criticality": "critica",
+      "statement": "O fator tempo importa mais do que qualquer outra coisa no contexto atual, fazendo com que o processo de criação seja ofuscado pelo resultado final.",
+      "evidence": "the time factor matters more than anything else… the process of making something is overshadowed, and the focus shifts almost entirely to the final result"
+    },
+    {
+      "id": "C006",
+      "kind": "exemplo",
+      "criticality": "contextual",
+      "statement": "Nas redes sociais, pessoas frequentemente dizem que bastaram poucos prompts para criar um jogo ou imagem, ilustrando o foco no resultado em vez do processo.",
+      "evidence": "It's common to see people on social media saying things like, 'Oh, it took me just a few prompts to create this game or image.'"
+    },
+    {
+      "id": "C007",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O mundo corporativo é orientado pelo tempo, medindo trabalho por representações abstratas como sprints e ciclos.",
+      "evidence": "The corporate world, however, is driven by time. A clear example of this is how we measure work using abstract representations of time, such as sprints, cycles"
+    },
+    {
+      "id": "C008",
+      "kind": "argumento",
+      "criticality": "critica",
+      "statement": "O foco em tempo nem sempre caminha junto com qualidade.",
+      "evidence": "the focus on time does not always go hand in hand with quality"
+    },
+    {
+      "id": "C009",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O termo 'AI slop' é usado com frequência em diversos espaços, e até o CEO da Microsoft tem advogado contra a percepção da IA como slop.",
+      "evidence": "It's quite common to hear the term AI slop… Even the Microsoft CEO has been advocating that people should stop thinking of AI as slop"
+    },
+    {
+      "id": "C010",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O ecossistema de IA apresenta problemas: pode alucinar, dar respostas incorretas e frequentemente traz questões de segurança e privacidade.",
+      "evidence": "It can hallucinate, give incorrect answers, and often comes with security and privacy issues depending on the use case"
+    },
+    {
+      "id": "C011",
+      "kind": "opiniao",
+      "criticality": "importante",
+      "statement": "O autor reconhece que a IA não é perfeita, mas considera inegável seu valor como ferramenta.",
+      "evidence": "It is not perfect, but it is undeniable that it has value as a tool"
+    },
+    {
+      "id": "C012",
+      "kind": "argumento",
+      "criticality": "importante",
+      "statement": "A IA pode capacitar pessoas sem formação em programação a criar software, e permitir que programadores inexperientes construam sistemas mais complexos.",
+      "evidence": "AI can empower people with no coding background to create software. It can allow inexperienced programmers to build more complex systems"
+    },
+    {
+      "id": "C013",
+      "kind": "exemplo",
+      "criticality": "contextual",
+      "statement": "Um desenvolvedor frontend sem a expertise necessária poderia, com IA, criar algo como um codificador de vídeo.",
+      "evidence": "enable programmers… who may have little or no understanding of a specific domain—to create things like a video encoder, even if they are primarily frontend developers"
+    },
+    {
+      "id": "C014",
+      "kind": "argumento",
+      "criticality": "critica",
+      "statement": "A IA pode gerar código que não pertence verdadeiramente ao programador nem é plenamente compreendido por ele, resultando em falta de conhecimento para mantê-lo de forma independente.",
+      "evidence": "AI may generate code that doesn't truly belong to the programmer, nor is fully understood by them. As a result, the programmer lacks the knowledge required to maintain it independently"
+    },
+    {
+      "id": "C015",
+      "kind": "argumento",
+      "criticality": "critica",
+      "statement": "Ao reduzir o tempo de desenvolvimento via IA, acabamos pulando as fundações do conhecimento.",
+      "evidence": "While reducing development time is generally a good thing, we end up skipping the foundations"
+    },
+    {
+      "id": "C016",
+      "kind": "opiniao",
+      "criticality": "critica",
+      "statement": "Quando uma pessoa tem verdadeira propriedade e compreensão de uma tarefa, a IA se torna o que deveria ser: uma ferramenta, não um tomador de decisões.",
+      "evidence": "When a person has true ownership and understanding of a task, AI becomes what it should be: a tool, not a decision-maker"
+    },
+    {
+      "id": "C017",
+      "kind": "exemplo",
+      "criticality": "critica",
+      "statement": "O autor relata que em uma empresa anterior, engenheiros usavam IA para gerar código em uma linguagem que haviam aprendido há apenas um mês; o resultado foi problemático e outros desenvolvedores, incluindo o autor, precisaram intervir.",
+      "evidence": "some engineers were using AI to generate code in a programming language they had learned only a month earlier. Unsurprisingly, it didn't go well, and several developers—including myself—had to step in to fix the problems"
+    },
+    {
+      "id": "C018",
+      "kind": "numero",
+      "criticality": "importante",
+      "statement": "O autor reescreveu cerca de 70% do código gerado por IA naquela situação, o que levou semanas de trabalho.",
+      "evidence": "I ended up rewriting around 70% of it, which took weeks of work"
+    },
+    {
+      "id": "C019",
+      "kind": "opiniao",
+      "criticality": "importante",
+      "statement": "No exemplo citado, a IA não foi o problema; ela existe para ajudar, não para fazer o trabalho pelo programador.",
+      "evidence": "was AI the problem? No, definitely not. AI is meant to help you, not do your work for you"
+    },
+    {
+      "id": "C020",
+      "kind": "fato",
+      "criticality": "importante",
+      "statement": "O autor afirma que esse padrão de comportamento aumentou significativamente e que recebe muitos pull requests claramente gerados por LLMs, de programadores que não compreendem plenamente o código.",
+      "evidence": "this behavior pattern has increased significantly. I receive many pull requests from programmers… that were clearly generated using LLMs, often for code they don't fully understand"
+    },
+    {
+      "id": "C021",
+      "kind": "argumento",
+      "criticality": "critica",
+      "statement": "Para alcançar qualidade, o programador precisa ter vivenciado o que está sendo construído; o desenvolvimento de software segue o caminho do artesanato.",
+      "evidence": "To achieve quality, a programmer needs to have experienced what is being built. Software development follows the path of craftsmanship"
+    },
+    {
+      "id": "C022",
+      "kind": "fato",
+      "criticality": "critica",
+      "statement": "Monozukuri significa literalmente 'fazer coisas', mas vai além da manufatura simples: incorpora espírito, habilidade e orgulho do artesanato, com foco em perfeição, melhoria contínua, respeito pelos materiais e entrega de produtos de alta qualidade.",
+      "evidence": "Monozukuri literally means 'making things,' but it goes far beyond simple manufacturing. It embodies the spirit, skill, and pride of craftsmanship"
+    },
+    {
+      "id": "C023",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "O termo monozukuri ganhou destaque no final da década de 1990, quando o governo japonês o usou para reafirmar a força manufatureira do Japão em uma economia global em mudança.",
+      "evidence": "The term gained prominence in the late 1990s, when it was used by the Japanese government to reaffirm Japan's manufacturing strength in a changing global economy"
+    },
+    {
+      "id": "C024",
+      "kind": "fato",
+      "criticality": "contextual",
+      "statement": "Empresas japonesas transformaram a manufatura em uma ciência precisa, e monozukuri passou a representar dedicação, inovação e busca incansável pela excelência na produção.",
+      "evidence": "Japanese companies turned manufacturing into a precise science, and monozukuri came to represent dedication, innovation, and the relentless pursuit of excellence"
+    },
+    {
+      "id": "C025",
+      "kind": "opiniao",
+      "criticality": "critica",
+      "statement": "Sobre se a IA substituirá programadores, o autor responde 'sim e não': depende inteiramente do tipo de trabalho — do ofício artesanal — do programador.",
+      "evidence": "yes and no. It depends entirely on the kind of work the programmer does… it depends on the artisan craft"
+    },
+    {
+      "id": "C026",
+      "kind": "argumento",
+      "criticality": "critica",
+      "statement": "Monozukuri é o processo do artesão, e recentemente esse processo está sendo perdido por excesso de foco nos resultados e pouca atenção ao processo em si.",
+      "evidence": "Monozukuri is the process of the artisan, and lately we've been losing it by focusing too much on outcomes and too little on the process itself"
+    },
+    {
+      "id": "C027",
+      "kind": "conclusao",
+      "criticality": "critica",
+      "statement": "Quanto mais profundo e especializado o conhecimento e a experiência do artesão, menor a probabilidade de ser substituído.",
+      "evidence": "The deeper and more specialized the artisan's knowledge and experience, the less likely they are to be replaced"
+    },
+    {
+      "id": "C028",
+      "kind": "conclusao",
+      "criticality": "critica",
+      "statement": "O autor recomenda usar IA, mas aprender os fundamentos por conta própria, praticar sem ela e não depender da IA para tomar decisões que o programador deveria ser capaz de tomar — sob risco de se tornar substituível.",
+      "evidence": "use AI—but learn the foundations yourself. Practice without it. Don't rely on AI to make decisions you should be capable of making. Otherwise, you risk becoming replaceable"
+    },
+    {
+      "id": "C029",
+      "kind": "conclusao",
+      "criticality": "critica",
+      "statement": "A inteligência artificial não compreende nem incorpora monozukuri; ela deve ser uma ferramenta que pertence ao artesão, não algo que o substitui.",
+      "evidence": "Artificial intelligence does not understand or embody monozukuri. It is meant to be a tool that belongs to the craftsman—not something that replaces the craftsman"
+    }
+  ]
+}

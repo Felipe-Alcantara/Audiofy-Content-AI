@@ -1,0 +1,157 @@
+{
+  "results": [
+    {
+      "coverage_id": "C001",
+      "status": "completo",
+      "notes": "T002 reproduz a ressalva com fidelidade literal."
+    },
+    {
+      "coverage_id": "C002",
+      "status": "completo",
+      "notes": "T003 mantém a formulação 'opinião pessoal, não verdade universal escrita em pedra'."
+    },
+    {
+      "coverage_id": "C003",
+      "status": "completo",
+      "notes": "T004 apresenta crescimento do uso e economia de tempo como argumento de venda."
+    },
+    {
+      "coverage_id": "C004",
+      "status": "completo",
+      "notes": "T004 descreve modelos grandes treinados em vastas quantidades de texto produzindo texto/código semelhante ao humano."
+    },
+    {
+      "coverage_id": "C005",
+      "status": "completo",
+      "notes": "T005 reproduz que o fator tempo se sobrepõe e o processo fica em segundo plano."
+    },
+    {
+      "coverage_id": "C006",
+      "status": "completo",
+      "notes": "T005 transmite a ideia de poucos prompts e foco no resultado; porém concretiza 'a few' como 'três' e acrescenta 'em dois minutos', detalhes ausentes no original."
+    },
+    {
+      "coverage_id": "C007",
+      "status": "completo",
+      "notes": "T006 cita mundo corporativo orientado pelo tempo, sprints e ciclos."
+    },
+    {
+      "coverage_id": "C008",
+      "status": "completo",
+      "notes": "T007 reproduz quase literalmente que foco em tempo nem sempre caminha com qualidade."
+    },
+    {
+      "coverage_id": "C009",
+      "status": "completo",
+      "notes": "T008 menciona o termo AI slop e a posição do CEO da Microsoft."
+    },
+    {
+      "coverage_id": "C010",
+      "status": "completo",
+      "notes": "T009 lista alucinação, respostas incorretas e problemas de segurança/privacidade."
+    },
+    {
+      "coverage_id": "C011",
+      "status": "completo",
+      "notes": "T009 reconhece imperfeição da IA mas afirma valor inegável como ferramenta."
+    },
+    {
+      "coverage_id": "C012",
+      "status": "completo",
+      "notes": "T010 cobre capacitação de leigos e de programadores menos experientes."
+    },
+    {
+      "coverage_id": "C013",
+      "status": "completo",
+      "notes": "T011 reproduz o exemplo do desenvolvedor frontend criando um codificador de vídeo."
+    },
+    {
+      "coverage_id": "C014",
+      "status": "completo",
+      "notes": "T012 transmite falta de propriedade e compreensão do código gerado, e incapacidade de manutenção independente."
+    },
+    {
+      "coverage_id": "C015",
+      "status": "completo",
+      "notes": "T013 reproduz que se pulam as fundações ao reduzir tempo via IA."
+    },
+    {
+      "coverage_id": "C016",
+      "status": "completo",
+      "notes": "T014 distingue IA como ferramenta vs. tomador de decisões quando há propriedade da tarefa."
+    },
+    {
+      "coverage_id": "C017",
+      "status": "completo",
+      "notes": "T015 relata o caso de engenheiros com apenas um mês na linguagem e a necessidade de intervenção."
+    },
+    {
+      "coverage_id": "C018",
+      "status": "completo",
+      "notes": "T016 cita os 70% reescritos e as semanas de trabalho."
+    },
+    {
+      "coverage_id": "C019",
+      "status": "completo",
+      "notes": "T017 absolve a IA e reafirma que ela existe para ajudar, não para fazer o trabalho."
+    },
+    {
+      "coverage_id": "C020",
+      "status": "completo",
+      "notes": "T018 descreve aumento do padrão e pull requests gerados por LLMs sem compreensão plena."
+    },
+    {
+      "coverage_id": "C021",
+      "status": "completo",
+      "notes": "T019 conecta qualidade à vivência e compara desenvolvimento de software ao artesanato."
+    },
+    {
+      "coverage_id": "C022",
+      "status": "completo",
+      "notes": "T020 define monozukuri com espírito, habilidade, orgulho, perfeição, melhoria contínua e respeito pelos materiais."
+    },
+    {
+      "coverage_id": "C023",
+      "status": "completo",
+      "notes": "T021 situa a proeminência do termo no final dos anos 1990 e o papel do governo japonês."
+    },
+    {
+      "coverage_id": "C024",
+      "status": "completo",
+      "notes": "T022 menciona manufatura como ciência precisa, dedicação, inovação e busca pela excelência."
+    },
+    {
+      "coverage_id": "C025",
+      "status": "completo",
+      "notes": "T023 reproduz a resposta 'sim e não' e a reformulação para ofício artesanal."
+    },
+    {
+      "coverage_id": "C026",
+      "status": "completo",
+      "notes": "T024 associa monozukuri ao processo do artesão e à perda por foco excessivo em resultados."
+    },
+    {
+      "coverage_id": "C027",
+      "status": "completo",
+      "notes": "T025 reproduz a relação inversa entre profundidade de conhecimento e probabilidade de substituição."
+    },
+    {
+      "coverage_id": "C028",
+      "status": "completo",
+      "notes": "T026 transmite a recomendação prática: usar IA, aprender fundamentos, praticar sem ela, não delegar decisões."
+    },
+    {
+      "coverage_id": "C029",
+      "status": "completo",
+      "notes": "T027 fecha com a afirmação de que IA não compreende monozukuri e deve ser ferramenta do artesão, não substituta."
+    }
+  ],
+  "unsupported_claims": [
+    "T005: 'bastaram três prompts' — o original diz 'a few prompts' sem especificar quantidade; o número três é invenção do roteiro.",
+    "T005: 'fiz essa imagem em dois minutos' — acréscimo sem correspondência no original, que não menciona tempo específico nesse exemplo.",
+    "T008: definição de AI slop como 'conteúdo genérico, sem capricho, gerado por IA' — o original apenas cita o termo sem defini-lo.",
+    "T012: 'não consegue debugar, não consegue evoluir aquilo sozinho' — o original menciona apenas incapacidade de 'maintain it independently'; debugar e evoluir são extrapolações.",
+    "T016: 'Imagina a ironia: o que deveria ter economizado tempo acabou gerando semanas de retrabalho' — comentário editorial ausente do original.",
+    "T024: 'É como se a gente tivesse jogado fora o caminho e ficado só olhando pro destino' — metáfora acrescentada pelo roteiro, sem base no texto original."
+  ]
+}
