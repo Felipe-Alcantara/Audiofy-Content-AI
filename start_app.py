@@ -15,6 +15,7 @@ Uso:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import subprocess
 import sys
@@ -42,16 +43,41 @@ BOLD, DIM, GREEN, YELLOW, RED, CYAN, RESET = (
 )
 
 
+def _supports_unicode() -> bool:
+    """Garante os símbolos de status, migrando o console para UTF-8 se possível."""
+    marks = "✔⚠✖"
+
+    def encodes(stream: object) -> bool:
+        encoding = getattr(stream, "encoding", None) or ""
+        try:
+            marks.encode(encoding)
+        except (LookupError, UnicodeEncodeError):
+            return False
+        return True
+
+    if encodes(sys.stdout):
+        return True
+    # Consoles legados do Windows usam cp1252, que não codifica os símbolos.
+    # Migrar para UTF-8 preserva o visual; se não der, o texto vira ASCII.
+    with contextlib.suppress(AttributeError, OSError, ValueError):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        return encodes(sys.stdout)
+    return False
+
+
+_OK_MARK, _WARN_MARK, _FAIL_MARK = ("✔", "⚠", "✖") if _supports_unicode() else ("v", "!", "x")
+
+
 def _ok(message: str) -> None:
-    print(f"  {GREEN}✔{RESET} {message}")
+    print(f"  {GREEN}{_OK_MARK}{RESET} {message}")
 
 
 def _warn(message: str) -> None:
-    print(f"  {YELLOW}⚠{RESET} {message}")
+    print(f"  {YELLOW}{_WARN_MARK}{RESET} {message}")
 
 
 def _fail(message: str) -> None:
-    print(f"  {RED}✖{RESET} {message}")
+    print(f"  {RED}{_FAIL_MARK}{RESET} {message}")
 
 
 def _safe_call(action, *args, **kwargs) -> None:
@@ -1027,6 +1053,7 @@ def menu() -> None:
 
 def main() -> None:
     # Saída em tempo real mesmo quando redirecionada para arquivo/pipe (tail -f).
+    # O encoding já foi ajustado na carga do módulo, junto dos símbolos de status.
     sys.stdout.reconfigure(line_buffering=True)
     args = sys.argv[1:]
     simple = {

@@ -193,5 +193,53 @@ class MainMenuQualityTest(unittest.TestCase):
         self.assertIn("Chave configurada (teste)", rendered)
 
 
+class SimbolosDeStatusTest(unittest.TestCase):
+    """Regressão: console legado do Windows (cp1252) derrubava a saída."""
+
+    def test_console_sem_unicode_usa_marcas_ascii(self):
+        class ConsoleLegado(StringIO):
+            encoding = "cp1252"
+
+            def reconfigure(self, **kwargs):
+                raise OSError("console legado não aceita UTF-8")
+
+        with patch.object(start_app.sys, "stdout", ConsoleLegado()):
+            self.assertFalse(start_app._supports_unicode())
+
+    def test_console_utf8_preserva_os_simbolos(self):
+        class ConsoleUtf8(StringIO):
+            encoding = "utf-8"
+
+        with patch.object(start_app.sys, "stdout", ConsoleUtf8()):
+            self.assertTrue(start_app._supports_unicode())
+
+    def test_console_legado_migra_para_utf8_quando_possivel(self):
+        class ConsoleMigravel(StringIO):
+            encoding = "cp1252"
+
+            def reconfigure(self, **kwargs):
+                self.encoding = kwargs.get("encoding", self.encoding)
+
+        with patch.object(start_app.sys, "stdout", ConsoleMigravel()):
+            self.assertTrue(start_app._supports_unicode())
+
+    def test_mensagens_de_status_nao_quebram_em_console_legado(self):
+        saida = StringIO()
+        with (
+            patch.object(start_app, "_OK_MARK", "v"),
+            patch.object(start_app, "_WARN_MARK", "!"),
+            patch.object(start_app, "_FAIL_MARK", "x"),
+            redirect_stdout(saida),
+        ):
+            start_app._ok("pronto")
+            start_app._warn("atenção")
+            start_app._fail("falhou")
+
+        rendered = saida.getvalue()
+        self.assertIn("v", rendered)
+        self.assertIn("pronto", rendered)
+        self.assertIn("falhou", rendered)
+
+
 if __name__ == "__main__":
     unittest.main()

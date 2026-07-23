@@ -1610,3 +1610,28 @@ produção: a comparação de caminho passou a usar `Path.parts` em vez de `ends
 normal, e os `patch` de `os.getpgid`/`getpgrp`/`killpg` ganharam `create=True`. Com isso a suíte
 fica verde em qualquer sistema (356 testes). O README foi corrigido no mesmo passo: descrevia o
 fallback como exclusivo do Linux com APT, comportamento que esta mudança generalizou.
+
+---
+
+## 2026-07-23 — Símbolos de status quebravam a saída em console legado do Windows
+
+**O que mudou:** `start_app.py` passou a verificar se o console consegue codificar os símbolos
+`✔ ⚠ ✖` antes de usá-los. Quando não consegue, tenta migrar a saída para UTF-8; se nem isso for
+possível, cai para marcas ASCII (`v ! x`). Antes, qualquer mensagem de status lançava
+`UnicodeEncodeError` em consoles `cp1252`.
+
+**Decisão:** a verificação vive junto da definição dos símbolos, na carga do módulo, e não dentro
+de `main()`. O erro aparecia justamente quando funções como `do_desktop()` eram chamadas fora do
+menu — em testes ou por automação —, caminho que um ajuste em `main()` não cobriria.
+
+**Como foi encontrado:** a régua do projeto reprovava com 20 erros e 2 falhas que pareciam
+problema de importação, pois só apareciam sob `unittest discover`. O pytest captura a saída e
+mascarava a exceção; o `unittest` escreve direto no console e a expunha. Era um bug real de
+produção no Windows, não um defeito dos testes.
+
+**Validação:** `scripts/check_quality.py` aprovado, com 361 testes verdes e cobertura em 72%.
+Quatro testes de regressão cobrem console legado sem migração, console UTF-8, migração
+bem-sucedida e a emissão das três mensagens de status.
+
+**Risco que sobrou:** em consoles muito antigos as marcas ASCII perdem o apelo visual, mas
+preservam a informação. A cor ANSI é mantida nos dois casos.
