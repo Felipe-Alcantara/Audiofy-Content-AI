@@ -1568,3 +1568,45 @@ descoberta do executável privado; a régua do projeto foi executada após a mud
 
 **Risco que sobrou:** o fallback depende de `apt-get download` e `dpkg-deb`, presentes em
 sistemas Debian/Ubuntu. Outras distribuições seguem usando seu gerenciador normal.
+
+---
+
+## 2026-07-23 — Tesseract multiplataforma, sem senha e com idiomas garantidos
+
+**O que mudou:** o Setup deixou de depender do PATH e do privilégio de administrador para o OCR.
+`tesseract_command()` procura o executável no PATH, na cópia privada e nos locais padrão de cada
+sistema (Program Files no Windows, `/opt/homebrew` e `/usr/local` no macOS, `/usr/bin` no Linux).
+Quando não há instalação, `_install_private_tesseract()` escolhe o método local do sistema: pacote
+portátil `.zip` no Windows (novo) ou extração de `.deb` no Linux (já existente). Por fim,
+`ensure_tesseract_languages()` garante `por` e `eng` em `.audiofy/tools/tessdata`, reaproveitando
+os idiomas já instalados e baixando apenas o que falta.
+
+**Decisão:** os idiomas passaram a viver num tessdata do usuário porque o diretório do sistema
+(`C:\Program Files\Tesseract-OCR\tessdata`) exige administrador para escrita — era o que impedia
+instalar o português numa máquina onde o Tesseract já existia. Como o Tesseract lê um único
+`TESSDATA_PREFIX`, os idiomas presentes na instalação são copiados para lá antes do download.
+O `sudo -n` deixou de ser aplicado quando o processo já é root, situação comum em contêineres
+onde o `sudo` sequer existe. `_download()` aceita somente HTTPS e grava em arquivo `.part`
+renomeado ao final, para que uma queda de rede não deixe um idioma truncado no lugar do bom.
+
+**Validação:** `ruff check` e `ruff format --check` limpos; 20 testes em `test_setup.py` (10 novos)
+cobrindo descoberta fora do PATH, recusa de origem não-HTTPS, ausência de arquivo parcial após
+falha, reaproveitamento de idiomas sem baixar e propagação do erro de rede. Cobertura de
+`setup.py` subiu de 39% para 55%. Verificação manual na máquina Windows: o Tesseract 5.4.0 que já
+existia passou a ser detectado e `--list-langs` passou a incluir `por`.
+
+**Risco que sobrou:** a régua completa continua reprovada por duas falhas anteriores a esta
+mudança (`test_subscription.py::test_windows_executa_node_diretamente...` e
+`test_process.py::test_posix_encerra_o_grupo...`), ambas presentes no commit `346acaa`. As duas
+assumem convenções POSIX ao rodar no Windows — a primeira compara o caminho com
+`endswith("claude-code/cli.js")`, barra normal, que nunca casa com o separador do Windows.
+Corrigi-las é uma mudança à parte, em módulos não tocados aqui. O pacote portátil do Windows
+aponta para uma versão fixa, isolada na constante `_WINDOWS_TESSERACT_VERSION` para que a
+atualização seja de uma linha só.
+
+**Revisão contra o guia mínimo de qualidade:** as duas falhas descritas acima como risco foram
+corrigidas na sequência, pois eram testes que assumiam POSIX ao rodar no Windows, não defeitos de
+produção: a comparação de caminho passou a usar `Path.parts` em vez de `endswith` com barra
+normal, e os `patch` de `os.getpgid`/`getpgrp`/`killpg` ganharam `create=True`. Com isso a suíte
+fica verde em qualquer sistema (356 testes). O README foi corrigido no mesmo passo: descrevia o
+fallback como exclusivo do Linux com APT, comportamento que esta mudança generalizou.

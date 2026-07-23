@@ -10,10 +10,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from audiofy.setup import (  # noqa: E402
     SetupCheck,
+    _download,
     _install_system,
     apply_setup,
+    ensure_tesseract_languages,
     inspect_setup,
     setup_report,
+    tesseract_command,
+    user_tessdata_dir,
 )
 
 
@@ -133,18 +137,140 @@ class SetupReportTest(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertIn("--break-system-packages", run.call_args_list[1].args[0])
 
-    @patch("audiofy.setup._install_private_tesseract_apt")
+    @patch("audiofy.setup._install_private_tesseract")
+    @patch("audiofy.setup.tesseract_command", return_value=None)
     @patch("audiofy.setup._run", return_value=(False, "sudo: uma senha é necessária"))
     @patch("audiofy.setup.shutil.which")
-    def test_tesseract_cai_para_instalacao_apt_local_sem_senha(self, which, _run, install_private):
+    def test_tesseract_cai_para_instalacao_local_sem_senha(
+        self, which, _run, _command, install_private
+    ):
         which.side_effect = lambda name: f"/usr/bin/{name}" if name == "apt-get" else None
         install_private.return_value = (True, "instalado sem sudo")
 
         result = _install_system("tesseract")
 
         self.assertTrue(result["ok"])
-        self.assertIn("apt local", result["detail"])
+        self.assertIn("local", result["detail"])
         install_private.assert_called_once_with()
+
+    @patch("audiofy.setup.configure_tesseract")
+    @patch("audiofy.setup.tesseract_command", return_value=r"C:\Program Files\tesseract.exe")
+    @patch("audiofy.setup._run")
+    def test_tesseract_fora_do_path_dispensa_instalacao(self, run, _command, configure):
+        result = _install_system("tesseract")
+
+        self.assertTrue(result["ok"])
+        self.assertIn("já instalado", result["detail"])
+        run.assert_not_called()
+        configure.assert_called_once_with()
+
+
+class TesseractLocationTest(unittest.TestCase):
+    """O Tesseract costuma existir fora do PATH; achá-lo evita reinstalar."""
+
+    @patch("audiofy.setup.shutil.which", return_value="/usr/bin/tesseract")
+    def test_prefere_o_executavel_do_path(self, _which):
+        self.assertEqual(tesseract_command(), "/usr/bin/tesseract")
+
+    @patch("audiofy.setup.shutil.which", return_value=None)
+    def test_encontra_instalacao_conhecida_fora_do_path(self, _which):
+        with tempfile.TemporaryDirectory() as tmp:
+            instalado = Path(tmp) / "tesseract.exe"
+            instalado.touch()
+            with patch("audiofy.setup._TESSERACT_KNOWN_PATHS", {sys.platform: (str(instalado),)}):
+                self.assertEqual(tesseract_command(), str(instalado))
+
+    @patch("audiofy.setup._TESSERACT_KNOWN_PATHS", {})
+    @patch("audiofy.setup._TESSERACT_UNIX_PATHS", ())
+    @patch("audiofy.setup._private_tesseract_binaries", return_value=())
+    @patch("audiofy.setup.shutil.which", return_value=None)
+    def test_ausencia_total_e_reportada(self, _which, _private):
+        self.assertIsNone(tesseract_command())
+
+
+class DownloadTest(unittest.TestCase):
+    def test_recusa_origem_que_nao_seja_https(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            destino = Path(tmp) / "por.traineddata"
+
+            ok, detail = _download("file:///etc/passwd", destino)
+
+            self.assertFalse(ok)
+            self.assertIn("apenas HTTPS", detail)
+            self.assertFalse(destino.exists())
+
+    def test_download_interrompido_nao_deixa_arquivo_parcial(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            destino = Path(tmp) / "por.traineddata"
+            with patch("urllib.request.urlopen", side_effect=TimeoutError("sem rede")):
+                ok, _ = _download("https://exemplo.invalido/por.traineddata", destino)
+
+            self.assertFalse(ok)
+            self.assertFalse(destino.exists())
+            self.assertEqual(list(Path(tmp).glob("*.part")), [])
+
+
+class TesseractLanguagesTest(unittest.TestCase):
+    """Os idiomas vão para um tessdata do usuário: o do sistema exige admin."""
+
+    @patch("audiofy.setup.tesseract_command", return_value=None)
+    def test_sem_tesseract_nao_baixa_idiomas(self, _command):
+        ok, detail = ensure_tesseract_languages()
+
+        self.assertFalse(ok)
+        self.assertIn("não encontrado", detail)
+
+    @patch("audiofy.setup.configure_tesseract")
+    @patch("audiofy.setup._download")
+    @patch("audiofy.setup._system_tessdata_candidates", return_value=[])
+    @patch("audiofy.setup.tesseract_command", return_value="/usr/bin/tesseract")
+    def test_baixa_portugues_e_ingles_ausentes(self, _command, _sources, download, _configure):
+        with tempfile.TemporaryDirectory() as tmp:
+            alvo = Path(tmp) / "tessdata"
+            download.side_effect = lambda url, path: (path.write_bytes(b"x"), (True, str(path)))[1]
+            with patch("audiofy.setup.user_tessdata_dir", return_value=alvo):
+                ok, detail = ensure_tesseract_languages()
+
+            self.assertTrue(ok)
+            self.assertIn("por", detail)
+            self.assertTrue((alvo / "por.traineddata").is_file())
+            self.assertTrue((alvo / "eng.traineddata").is_file())
+
+    @patch("audiofy.setup.configure_tesseract")
+    @patch("audiofy.setup._download")
+    @patch("audiofy.setup.tesseract_command", return_value="/usr/bin/tesseract")
+    def test_reaproveita_idiomas_ja_instalados_sem_baixar(self, _command, download, _configure):
+        with tempfile.TemporaryDirectory() as tmp:
+            sistema = Path(tmp) / "sistema"
+            sistema.mkdir()
+            for lang in ("por", "eng"):
+                (sistema / f"{lang}.traineddata").write_bytes(b"dados")
+            alvo = Path(tmp) / "tessdata"
+            with (
+                patch("audiofy.setup._system_tessdata_candidates", return_value=[sistema]),
+                patch("audiofy.setup.user_tessdata_dir", return_value=alvo),
+            ):
+                ok, detail = ensure_tesseract_languages()
+
+            self.assertTrue(ok)
+            self.assertIn("já disponíveis", detail)
+            download.assert_not_called()
+            self.assertTrue((alvo / "por.traineddata").is_file())
+
+    @patch("audiofy.setup.configure_tesseract")
+    @patch("audiofy.setup._download", return_value=(False, "falha ao baixar"))
+    @patch("audiofy.setup._system_tessdata_candidates", return_value=[])
+    @patch("audiofy.setup.tesseract_command", return_value="/usr/bin/tesseract")
+    def test_falha_de_rede_e_reportada(self, _command, _sources, _download, _configure):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch("audiofy.setup.user_tessdata_dir", return_value=Path(tmp) / "tessdata"):
+                ok, detail = ensure_tesseract_languages()
+
+            self.assertFalse(ok)
+            self.assertIn("falha ao baixar", detail)
+
+    def test_tessdata_do_usuario_fica_no_estado_local_gravavel(self):
+        self.assertIn("tools", user_tessdata_dir().parts)
 
 
 if __name__ == "__main__":

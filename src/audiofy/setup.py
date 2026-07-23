@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import os
 import shutil
@@ -210,6 +211,14 @@ def _install(label: str, *packages: str) -> dict:
     return {"name": label, "ok": ok, "detail": detail}
 
 
+# `sudo -n` nunca pede senha, mas falha quando ela seria necessária. Já sendo
+# root, o sudo é dispensável (e costuma faltar em contêineres).
+_ROOT_PREFIX: list[str] = (
+    []
+    if sys.platform != "win32" and hasattr(os, "geteuid") and os.geteuid() == 0
+    else ["sudo", "-n"]
+)
+
 _SYSTEM_MANAGERS = [
     ("brew", ["brew", "install"]),
     (
@@ -223,9 +232,9 @@ _SYSTEM_MANAGERS = [
             "--id",
         ],
     ),
-    ("apt-get", ["sudo", "-n", "apt-get", "install", "-y"]),
-    ("dnf", ["sudo", "-n", "dnf", "install", "-y"]),
-    ("pacman", ["sudo", "-n", "pacman", "-S", "--noconfirm"]),
+    ("apt-get", [*_ROOT_PREFIX, "apt-get", "install", "-y"]),
+    ("dnf", [*_ROOT_PREFIX, "dnf", "install", "-y"]),
+    ("pacman", [*_ROOT_PREFIX, "pacman", "-S", "--noconfirm"]),
 ]
 
 _WINGET_IDS = {
@@ -253,17 +262,70 @@ def _private_tesseract_root() -> Path:
     return STATE_DIR / "tools" / "tesseract"
 
 
+# Instaladores oficiais não colocam o Tesseract no PATH em todos os sistemas: o
+# instalador do Windows não mexe no PATH do usuário e o Homebrew varia a raiz
+# entre Intel e Apple Silicon. Procurar nesses caminhos evita reinstalar algo
+# que já está na máquina.
+_TESSERACT_KNOWN_PATHS = {
+    "win32": (
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+        "~/AppData/Local/Programs/Tesseract-OCR/tesseract.exe",
+        "~/AppData/Local/Tesseract-OCR/tesseract.exe",
+    ),
+    "darwin": (
+        "/opt/homebrew/bin/tesseract",
+        "/usr/local/bin/tesseract",
+    ),
+}
+_TESSERACT_UNIX_PATHS = ("/usr/bin/tesseract", "/usr/local/bin/tesseract")
+
+
+def _private_tesseract_binaries() -> tuple[Path, ...]:
+    """Caminhos possíveis do executável dentro da instalação privada."""
+    root = _private_tesseract_root()
+    return (
+        root / "usr" / "bin" / "tesseract",  # extração de .deb
+        root / "tesseract.exe",  # pacote portátil do Windows
+        root / "bin" / "tesseract.exe",
+        root / "bin" / "tesseract",
+    )
+
+
 def tesseract_command() -> str | None:
-    """Encontra o Tesseract global ou a cópia privada instalada pelo Audiofy."""
+    """Encontra o Tesseract no PATH, nos locais padrão do SO ou na cópia privada."""
     system = shutil.which("tesseract")
     if system:
         return system
-    private = _private_tesseract_root() / "usr" / "bin" / "tesseract"
-    return str(private) if private.is_file() else None
+    for candidate in _private_tesseract_binaries():
+        if candidate.is_file():
+            return str(candidate)
+    known = _TESSERACT_KNOWN_PATHS.get(sys.platform, _TESSERACT_UNIX_PATHS)
+    for raw in known:
+        path = Path(raw).expanduser()
+        if path.is_file():
+            return str(path)
+    return None
+
+
+def user_tessdata_dir() -> Path:
+    """Diretório de idiomas sempre gravável pelo usuário, sem privilégio de admin."""
+    return STATE_DIR / "tools" / "tessdata"
+
+
+def _system_tessdata_candidates(command: str) -> list[Path]:
+    """Diretórios tessdata associados a um executável do Tesseract."""
+    root = Path(command).resolve().parent
+    return [
+        root / "tessdata",
+        root.parent / "share" / "tessdata",
+        root.parent / "share" / "tesseract-ocr" / "5" / "tessdata",
+        root.parent / "share" / "tesseract-ocr" / "4.00" / "tessdata",
+    ]
 
 
 def configure_tesseract() -> str | None:
-    """Configura pytesseract e bibliotecas para a instalação privada, se necessário."""
+    """Configura pytesseract, bibliotecas e idiomas para a instalação encontrada."""
     command = tesseract_command()
     if not command:
         return None
@@ -280,15 +342,24 @@ def configure_tesseract() -> str | None:
             os.environ["LD_LIBRARY_PATH"] = os.pathsep.join(
                 [*(str(path) for path in lib_dirs), *([current] if current else [])]
             )
-        tessdata = private_root / "usr" / "share" / "tesseract-ocr" / "5" / "tessdata"
-        if tessdata.is_dir():
-            os.environ["TESSDATA_PREFIX"] = str(tessdata)
-    try:
+    # O tessdata do usuário tem prioridade: é onde o Audiofy grava o idioma
+    # português quando o diretório do sistema exige admin. Os idiomas que já
+    # vieram com a instalação são copiados para lá, pois o Tesseract lê de um
+    # único TESSDATA_PREFIX por vez.
+    user_tessdata = user_tessdata_dir()
+    if user_tessdata.is_dir() and any(user_tessdata.glob("*.traineddata")):
+        os.environ["TESSDATA_PREFIX"] = str(user_tessdata)
+    else:
+        for tessdata in _system_tessdata_candidates(command):
+            if tessdata.is_dir():
+                os.environ["TESSDATA_PREFIX"] = str(tessdata)
+                break
+    # A ponte Python é opcional: sem ela o OCR fica indisponível, mas o
+    # diagnóstico do Setup continua funcionando.
+    with contextlib.suppress(ImportError):
         import pytesseract
 
         pytesseract.pytesseract.tesseract_cmd = command
-    except ImportError:
-        pass
     return command
 
 
@@ -316,11 +387,130 @@ def _install_private_tesseract_apt() -> tuple[bool, str]:
     ok, detail = _run([command, "--version"])
     if not ok:
         return False, f"Tesseract local não iniciou: {detail}"
-    return True, "instalado localmente em .audiofy/tools (sem sudo)"
+    return True, "instalado localmente em .audiofy/tools (sem privilégio de administrador)"
+
+
+# tessdata_fast equilibra tamanho e precisão; tessdata (completo) é mais exato
+# e mais pesado, e serve a quem preferir qualidade a tempo de download.
+_TESSDATA_URL = "https://github.com/tesseract-ocr/tessdata_fast/raw/main/{lang}.traineddata"
+_REQUIRED_LANGS = ("por", "eng")
+# Build portátil (zip, sem instalador e sem admin) publicada pelo projeto
+# UB-Mannheim. A versão fica isolada para que atualizá-la seja uma linha só.
+_WINDOWS_TESSERACT_VERSION = "5.4.0"
+_WINDOWS_TESSERACT_ZIP = (
+    "https://github.com/UB-Mannheim/tesseract/releases/download/"
+    f"v{_WINDOWS_TESSERACT_VERSION}/tesseract-{_WINDOWS_TESSERACT_VERSION}-portable.zip"
+)
+
+_DOWNLOAD_TIMEOUT = 120
+
+
+def _download(url: str, destination: Path) -> tuple[bool, str]:
+    """Baixa um arquivo usando apenas a biblioteca padrão, sem depender de curl/wget."""
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    # Só HTTPS: evita que uma URL adulterada vire leitura de arquivo local
+    # (file://) ou tráfego em texto claro.
+    if urllib.parse.urlparse(url).scheme != "https":
+        return False, f"origem recusada, apenas HTTPS é aceito: {url}"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    partial = destination.with_suffix(destination.suffix + ".part")
+    try:
+        with urllib.request.urlopen(url, timeout=_DOWNLOAD_TIMEOUT) as response:
+            with partial.open("wb") as handle:
+                shutil.copyfileobj(response, handle)
+    except (urllib.error.URLError, OSError, TimeoutError) as error:
+        partial.unlink(missing_ok=True)
+        return False, f"falha ao baixar {url}: {error}"
+    # A troca só acontece com o download íntegro, então uma queda de rede não
+    # deixa um idioma truncado no lugar do arquivo bom.
+    partial.replace(destination)
+    return True, str(destination)
+
+
+def ensure_tesseract_languages() -> tuple[bool, str]:
+    """Garante português e inglês num tessdata do usuário, sem exigir admin."""
+    command = tesseract_command()
+    if not command:
+        return False, "Tesseract não encontrado"
+    target = user_tessdata_dir()
+    target.mkdir(parents=True, exist_ok=True)
+    # Aproveita os idiomas já presentes na instalação para evitar downloads.
+    for source in _system_tessdata_candidates(command):
+        if not source.is_dir():
+            continue
+        for existing in source.glob("*.traineddata"):
+            copy = target / existing.name
+            if not copy.exists():
+                # Um idioma que não pôde ser copiado é rebaixado ao download.
+                with contextlib.suppress(OSError):
+                    shutil.copy2(existing, copy)
+        break
+    downloaded: list[str] = []
+    for lang in _REQUIRED_LANGS:
+        path = target / f"{lang}.traineddata"
+        if path.is_file() and path.stat().st_size > 0:
+            continue
+        ok, detail = _download(_TESSDATA_URL.format(lang=lang), path)
+        if not ok:
+            return False, detail
+        downloaded.append(lang)
+    configure_tesseract()
+    if downloaded:
+        return True, f"idiomas instalados: {', '.join(downloaded)}"
+    return True, "idiomas já disponíveis"
+
+
+def _install_private_tesseract_windows() -> tuple[bool, str]:
+    """Instala uma cópia portátil no estado local, sem instalador e sem admin."""
+    import zipfile
+
+    destination = _private_tesseract_root()
+    destination.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=STATE_DIR) as temporary:
+        archive = Path(temporary) / "tesseract.zip"
+        ok, detail = _download(_WINDOWS_TESSERACT_ZIP, archive)
+        if not ok:
+            return False, detail
+        try:
+            with zipfile.ZipFile(archive) as bundle:
+                bundle.extractall(destination)
+        except (zipfile.BadZipFile, OSError) as error:
+            return False, f"falha ao extrair o pacote portátil: {error}"
+    # O zip costuma trazer tudo sob uma pasta raiz; nivela para achar o binário.
+    if not any(path.is_file() for path in _private_tesseract_binaries()):
+        for nested in destination.iterdir():
+            if nested.is_dir() and (nested / "tesseract.exe").is_file():
+                for item in nested.iterdir():
+                    item.rename(destination / item.name)
+                nested.rmdir()
+                break
+    command = configure_tesseract()
+    if not command:
+        return False, "o pacote foi extraído, mas o executável não foi encontrado"
+    ok, detail = _run([command, "--version"])
+    if not ok:
+        return False, f"Tesseract local não iniciou: {detail}"
+    return True, "instalado localmente em .audiofy/tools (sem admin)"
+
+
+def _install_private_tesseract() -> tuple[bool, str]:
+    """Instalação privada adequada ao SO, sempre sem senha."""
+    if sys.platform == "win32":
+        return _install_private_tesseract_windows()
+    if shutil.which("apt-get"):
+        return _install_private_tesseract_apt()
+    return False, "sem método de instalação local para este sistema"
 
 
 def _install_system(tool: str) -> dict:
     """Instala uma ferramenta de sistema (git/ffmpeg/tesseract) pelo gerenciador disponível."""
+    # Uma cópia já presente fora do PATH dispensa qualquer instalação.
+    if tool == "tesseract" and tesseract_command():
+        configure_tesseract()
+        return {"name": tool, "ok": True, "detail": "já instalado; usando a cópia existente"}
     for manager, base in _SYSTEM_MANAGERS:
         if not shutil.which(manager):
             continue
@@ -329,9 +519,11 @@ def _install_system(tool: str) -> dict:
         else:
             packages = _SYSTEM_PACKAGES.get((manager, tool), [tool])
         ok, detail = _run([*base, *packages])
-        if not ok and manager == "apt-get" and tool == "tesseract":
-            ok, detail = _install_private_tesseract_apt()
-            return {"name": tool, "ok": ok, "detail": f"via apt local: {detail}"}
+        if not ok and tool == "tesseract":
+            # Falha do gerenciador (falta de privilégio, fonte indisponível):
+            # a instalação privada nunca precisa de senha.
+            ok, detail = _install_private_tesseract()
+            return {"name": tool, "ok": ok, "detail": f"local: {detail}"}
         if ok and not shutil.which(tool) and manager == "winget":
             detail = "instalado; reinicie o app para atualizar o PATH"
         return {"name": tool, "ok": ok, "detail": f"via {manager}: {detail}"}
@@ -352,6 +544,12 @@ def apply_setup() -> dict:
     for tool in ("git", "ffmpeg", "tesseract"):
         if tool in before and not before[tool].ok:
             actions.append(_install_system(tool))
+
+    # Só depois de tratar um Tesseract ausente: os idiomas vão para o tessdata
+    # do usuário, pois o diretório do sistema costuma exigir admin.
+    if "tesseract" in before and not before["tesseract"].ok and tesseract_command():
+        ok, detail = ensure_tesseract_languages()
+        actions.append({"name": "idiomas de OCR", "ok": ok, "detail": detail})
 
     missing_python = [key for key in _PYTHON_MODULES if key in before and not before[key].ok]
     if missing_python:
