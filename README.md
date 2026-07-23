@@ -508,6 +508,9 @@ Relatório inclui:
 - **Percentis**: duração em 50%, 75%, 90%; mediana de custo/minuto
 - **Estimativas**: custo projetado para 10min/30min/1h e 1k/5k palavras
 
+O app desktop tem a mesma análise na aba **📊 Custos**, com os mesmos números renderizados como
+cartões e listas — atualiza ao abrir a aba e pelo botão "🔄 Atualizar".
+
 Dados carregados de `metrics.json` de cada episódio (ausentes ou corrompidos são ignorados).
 
 ## ✅ Qualidade e testes

@@ -1776,3 +1776,32 @@ Teste manual com 10 episódios reais confirma valores acurados (custo total, dur
 **Risco que sobrou:** se `metrics.json` for omitido durante a geração de um episódio, aquele
 episódio não aparecerá na análise. O código trata o JSON faltante como ignora silenciosamente,
 consistente com a robustez do pipeline; alertas deveriam vir da telemetria de geração.
+
+## 2026-07-23 — Aba "📊 Custos" no app desktop
+
+**O que mudou:** a análise de custos criada em `cost_analytics.py` ganhou uma aba própria no
+Electron, ao lado de Chat/Conteúdo/Episódios/Configurações. Mostra episódios, duração e custo
+totais, custo médio (episódio/minuto/segundo/palavra e mediana), percentis de duração
+(50/75/90%), custo por modelo TTS, por perfil, por semana e estimativas para 10min/30min/1h e
+1k/5k palavras, com botão de atualizar.
+
+**Decisões:**
+  - Novo comando `costs` na bridge (`_cmd_costs`), que devolve `analytics_summary()` — dict
+    JSON-serializável derivado do mesmo `CostAnalytics` usado pela CLI, sem duplicar lógica.
+  - `security.js` ganhou a aridade `"costs": [1, 1]`, seguindo o mesmo contrato explícito de
+    todo comando exposto ao renderer.
+  - HTML/CSS reaproveitam o design system existente (`.panel`, `.row-list`, `stat-tile` novo
+    seguindo o padrão visual dos badges e cards já usados em Episódios/Configurações).
+  - `loadCosts()` é chamado ao abrir a aba (mesmo padrão de `refreshStatus`/`loadItems`) e pelo
+    botão manual de atualizar.
+
+**Validação:** 41 testes do Electron (1 novo, cobrindo presença da aba, chamada à bridge e
+tratamento de "sem episódios"), lint (`eslint --max-warnings=0`) e `npm audit` limpos. Testado
+visualmente via driver Playwright + Electron real sob Xvfb (instalado nesta sessão com
+autorização do usuário): a aba renderiza os 10 episódios reais do projeto com os mesmos valores
+já validados pela CLI (`US$ 5.9371` total, `US$ 0.0298`/min etc.), incluindo scroll até a seção
+de estimativas.
+
+**Risco que sobrou:** nenhuma paginação ou filtro por período na aba — com poucas dezenas de
+episódios é aceitável; crescendo muito, "custo por semana" e as listas por modelo/perfil podem
+precisar de um teto de itens exibidos.

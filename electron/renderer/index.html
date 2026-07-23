@@ -19,6 +19,8 @@
           aria-controls="tab-content" aria-selected="false" tabindex="-1">📚 Conteúdo</button>
         <button id="tab-button-episodes" data-tab="episodes" class="tab" role="tab"
           aria-controls="tab-episodes" aria-selected="false" tabindex="-1">🎧 Episódios</button>
+        <button id="tab-button-costs" data-tab="costs" class="tab" role="tab"
+          aria-controls="tab-costs" aria-selected="false" tabindex="-1">📊 Custos</button>
         <button id="tab-button-settings" data-tab="settings" class="tab" role="tab"
           aria-controls="tab-settings" aria-selected="false" tabindex="-1">⚙️ Configurações</button>
       </nav>
@@ -228,6 +230,125 @@
       <h2>Todos os episódios</h2>
       <p id="episodes-summary" class="muted small" role="status"></p>
       <ul id="episodes"></ul>
+    </section>
+  </section>
+
+  <!-- ══ Custos ══ -->
+  <section id="tab-costs" class="tab-page hidden" role="tabpanel"
+    aria-labelledby="tab-button-costs" aria-hidden="true" tabindex="0">
+    <section class="panel">
+      <h2>📊 Análise de custos de geração</h2>
+      <p id="costs-empty" class="muted hidden">Nenhum episódio gerado ainda.</p>
+      <div id="costs-content" class="costs-grid hidden">
+
+        <div class="costs-summary-row">
+          <div class="stat-tile">
+            <span class="stat-label">Episódios</span>
+            <span id="costs-total-episodes" class="stat-value"></span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-label">Duração total</span>
+            <span id="costs-total-duration" class="stat-value"></span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-label">Palavras (roteiro)</span>
+            <span id="costs-total-words" class="stat-value"></span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-label">Custo total</span>
+            <span id="costs-total-cost" class="stat-value"></span>
+          </div>
+        </div>
+
+        <div class="costs-section">
+          <h3>💰 Custo médio</h3>
+          <div class="costs-summary-row">
+            <div class="stat-tile small">
+              <span class="stat-label">Por episódio</span>
+              <span id="costs-avg-episode" class="stat-value"></span>
+            </div>
+            <div class="stat-tile small">
+              <span class="stat-label">Por minuto</span>
+              <span id="costs-avg-minute" class="stat-value"></span>
+            </div>
+            <div class="stat-tile small">
+              <span class="stat-label">Por segundo</span>
+              <span id="costs-avg-second" class="stat-value"></span>
+            </div>
+            <div class="stat-tile small">
+              <span class="stat-label">Por palavra</span>
+              <span id="costs-avg-word" class="stat-value"></span>
+            </div>
+            <div class="stat-tile small">
+              <span class="stat-label">Mediana/minuto</span>
+              <span id="costs-median-minute" class="stat-value"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="costs-section">
+          <h3>⏱️ Duração (percentis)</h3>
+          <div class="costs-summary-row">
+            <div class="stat-tile small">
+              <span class="stat-label">50%</span>
+              <span id="costs-p50" class="stat-value"></span>
+            </div>
+            <div class="stat-tile small">
+              <span class="stat-label">75%</span>
+              <span id="costs-p75" class="stat-value"></span>
+            </div>
+            <div class="stat-tile small">
+              <span class="stat-label">90%</span>
+              <span id="costs-p90" class="stat-value"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="costs-two-columns">
+          <div class="costs-section">
+            <h3>🎤 Custo por modelo TTS</h3>
+            <ul id="costs-by-model" class="row-list"></ul>
+          </div>
+          <div class="costs-section">
+            <h3>⚙️ Custo por perfil</h3>
+            <ul id="costs-by-profile" class="row-list"></ul>
+          </div>
+        </div>
+
+        <div class="costs-section">
+          <h3>📅 Custo por semana</h3>
+          <ul id="costs-by-week" class="row-list"></ul>
+        </div>
+
+        <div class="costs-section">
+          <h3>📈 Estimativas para próximas gerações</h3>
+          <p class="muted small">Baseadas na média histórica de custo por segundo e por palavra.</p>
+          <div class="costs-summary-row">
+            <div class="stat-tile small">
+              <span class="stat-label">10 minutos</span>
+              <span id="costs-est-10min" class="stat-value"></span>
+            </div>
+            <div class="stat-tile small">
+              <span class="stat-label">30 minutos</span>
+              <span id="costs-est-30min" class="stat-value"></span>
+            </div>
+            <div class="stat-tile small">
+              <span class="stat-label">1 hora</span>
+              <span id="costs-est-1h" class="stat-value"></span>
+            </div>
+            <div class="stat-tile small">
+              <span class="stat-label">1.000 palavras</span>
+              <span id="costs-est-1000w" class="stat-value"></span>
+            </div>
+            <div class="stat-tile small">
+              <span class="stat-label">5.000 palavras</span>
+              <span id="costs-est-5000w" class="stat-value"></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <button id="btn-costs-refresh" class="ghost">🔄 Atualizar</button>
     </section>
   </section>
 

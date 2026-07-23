@@ -160,3 +160,14 @@ test("renderer recarrega Conteúdo ao abrir a aba e depois do Chat", () => {
   assert.match(renderer, /button\.dataset\.tab === "content"\) loadItems/);
   assert.match(renderer, /if \(currentSource === "custom"\) await loadItems/);
 });
+
+test("aba de Custos chama a bridge e trata ausência de episódios", () => {
+  const html = fs.readFileSync(path.resolve(__dirname, "../renderer/index.html"), "utf8");
+  const renderer = fs.readFileSync(path.resolve(__dirname, "../renderer/renderer.js"), "utf8");
+
+  assert.match(html, /id="tab-button-costs"[^>]*data-tab="costs"/);
+  assert.match(html, /id="tab-costs"[^>]*role="tabpanel"/);
+  assert.match(renderer, /button\.dataset\.tab === "costs"\) loadCosts/);
+  assert.match(renderer, /async function loadCosts\(\) \{[\s\S]*?bridge\(\["costs"\]\)/);
+  assert.match(renderer, /if \(!data \|\| !data\.total_episodes\)/);
+});

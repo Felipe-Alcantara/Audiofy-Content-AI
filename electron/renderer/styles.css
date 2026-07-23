@@ -232,7 +232,7 @@ header h1 { flex: 0 0 auto; font-size: 20px; line-height: 1.25; letter-spacing: 
 }
 
 #tab-content { grid-template-columns: minmax(330px, 0.92fr) minmax(380px, 1.08fr); }
-#tab-chat, #tab-episodes, #tab-settings { grid-template-columns: minmax(0, 1fr); }
+#tab-chat, #tab-episodes, #tab-costs, #tab-settings { grid-template-columns: minmax(0, 1fr); }
 
 .panel {
   min-width: 0;
@@ -632,6 +632,31 @@ dialog::backdrop { background: rgb(0 0 0 / 72%); }
   border-radius: 10px;
 }
 summary { cursor: pointer; }
+
+/* Custos */
+.costs-grid { display: flex; flex-direction: column; gap: 8px; }
+.costs-section { margin-top: 4px; }
+.costs-two-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.costs-summary-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 150px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+.stat-tile.small { flex-basis: 120px; padding: 9px 12px; }
+.stat-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-value { color: var(--text); font-size: 20px; font-weight: 650; letter-spacing: -0.01em; }
+.stat-tile.small .stat-value { font-size: 16px; }
+.costs-row-value { color: var(--text); font-weight: 650; }
+
+@media (max-width: 900px) {
+  .costs-two-columns { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* Configurações */
 .settings-grid { min-height: 0; display: grid; grid-template-columns: minmax(320px, 0.85fr) minmax(420px, 1.15fr); gap: 16px; }

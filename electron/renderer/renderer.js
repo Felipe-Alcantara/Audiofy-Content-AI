@@ -143,6 +143,7 @@ function activateTab(button, moveFocus = false) {
   if (button.dataset.tab === "settings") loadSettings();
   if (button.dataset.tab === "episodes") refreshStatus();
   if (button.dataset.tab === "content") loadItems($("search").value.trim());
+  if (button.dataset.tab === "costs") loadCosts();
 }
 
 tabButtons.forEach((button, index) => {
@@ -1126,6 +1127,87 @@ function renderEpisodes(episodes) {
     list.appendChild(row);
   }
 }
+
+// ── Custos ────────────────────────────────────────────────────────────────
+
+function usd(value, decimals = 4) {
+  return Number.isFinite(value) ? `US$ ${value.toFixed(decimals)}` : "—";
+}
+
+function costRow(label, value) {
+  const row = document.createElement("li");
+  row.appendChild(makeElement("span", "row-main", label));
+  row.appendChild(makeElement("span", "costs-row-value", value));
+  return row;
+}
+
+function renderCosts(data) {
+  const empty = $("costs-empty");
+  const content = $("costs-content");
+  if (!data || !data.total_episodes) {
+    empty.classList.remove("hidden");
+    content.classList.add("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+  content.classList.remove("hidden");
+
+  $("costs-total-episodes").textContent = data.total_episodes.toLocaleString("pt-BR");
+  $("costs-total-duration").textContent = formatEpisodeDuration(data.total_duration_seconds);
+  $("costs-total-words").textContent = data.total_script_words.toLocaleString("pt-BR");
+  $("costs-total-cost").textContent = usd(data.total_cost_usd);
+
+  $("costs-avg-episode").textContent = usd(data.average_cost_per_episode);
+  $("costs-avg-minute").textContent = usd(data.average_cost_per_minute);
+  $("costs-avg-second").textContent = usd(data.average_cost_per_second, 6);
+  $("costs-avg-word").textContent = usd(data.average_cost_per_word, 6);
+  $("costs-median-minute").textContent = usd(data.median_cost_per_minute);
+
+  const percentiles = data.percentile_duration_seconds || {};
+  $("costs-p50").textContent = formatEpisodeDuration(percentiles.p50);
+  $("costs-p75").textContent = formatEpisodeDuration(percentiles.p75);
+  $("costs-p90").textContent = formatEpisodeDuration(percentiles.p90);
+
+  const modelList = $("costs-by-model");
+  modelList.replaceChildren();
+  const models = Object.entries(data.cost_by_model || {}).sort((a, b) => b[1] - a[1]);
+  if (!models.length) modelList.appendChild(makeElement("li", "muted", "Sem dados."));
+  for (const [model, cost] of models) modelList.appendChild(costRow(model, usd(cost)));
+
+  const profileList = $("costs-by-profile");
+  profileList.replaceChildren();
+  const profiles = Object.entries(data.cost_by_profile || {}).sort((a, b) => b[1] - a[1]);
+  if (!profiles.length) profileList.appendChild(makeElement("li", "muted", "Sem dados."));
+  for (const [profile, cost] of profiles) profileList.appendChild(costRow(profile, usd(cost)));
+
+  const weekList = $("costs-by-week");
+  weekList.replaceChildren();
+  const weeks = data.weeks || [];
+  if (!weeks.length) weekList.appendChild(makeElement("li", "muted", "Sem dados."));
+  for (const week of weeks) {
+    weekList.appendChild(costRow(week.week, `${usd(week.cost_usd)} (${week.episodes} ep.)`));
+  }
+
+  const estimates = data.estimates || {};
+  $("costs-est-10min").textContent = usd(estimates.cost_10min);
+  $("costs-est-30min").textContent = usd(estimates.cost_30min);
+  $("costs-est-1h").textContent = usd(estimates.cost_1h);
+  $("costs-est-1000w").textContent = usd(estimates.cost_1000_words);
+  $("costs-est-5000w").textContent = usd(estimates.cost_5000_words);
+}
+
+async function loadCosts() {
+  const response = await bridge(["costs"]);
+  if (!response.ok) {
+    $("costs-empty").textContent = `Erro ao carregar custos: ${response.error}`;
+    $("costs-empty").classList.remove("hidden");
+    $("costs-content").classList.add("hidden");
+    return;
+  }
+  renderCosts(response);
+}
+
+$("btn-costs-refresh").onclick = loadCosts;
 
 $("btn-close-chunks").onclick = closeChunkReview;
 $("chunk-modal").addEventListener("cancel", (event) => {

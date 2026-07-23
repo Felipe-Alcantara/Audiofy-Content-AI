@@ -15,7 +15,7 @@ test("página usa um único landmark principal e painéis semânticos", () => {
   const html = readRendererFile("index.html");
 
   assert.equal((html.match(/<main\b/g) || []).length, 1);
-  assert.equal((html.match(/<section\b[^>]*role="tabpanel"/g) || []).length, 4);
+  assert.equal((html.match(/<section\b[^>]*role="tabpanel"/g) || []).length, 5);
   assert.match(html, /id="pf-presenters"[^>]*role="group"[^>]*aria-labelledby=/);
   assert.doesNotMatch(html, /<label>Apresentadores<\/label>/);
 });

@@ -300,3 +300,43 @@ def format_analytics_report(analytics: CostAnalytics) -> str:
     lines.append("└──────────────────────────────────────────────────────────┘")
 
     return "\n".join(lines)
+
+
+def analytics_summary(analytics: CostAnalytics) -> dict:
+    """Resumo serializável em JSON, para consumo pela interface (bridge/Electron)."""
+    weeks = sorted(analytics.cost_by_week().keys(), reverse=True)[:8]
+    episode_weeks = analytics.episodes_by_week()
+    cost_weeks = analytics.cost_by_week()
+
+    return {
+        "total_episodes": analytics.total_episodes,
+        "total_cost_usd": analytics.total_cost_usd,
+        "total_duration_seconds": analytics.total_duration_seconds,
+        "total_duration_hours": analytics.total_duration_hours,
+        "total_script_words": analytics.total_script_words,
+        "total_source_words": analytics.total_source_words,
+        "average_cost_per_second": analytics.average_cost_per_second,
+        "average_cost_per_minute": analytics.average_cost_per_minute,
+        "average_cost_per_word": analytics.average_cost_per_word,
+        "average_cost_per_episode": analytics.average_cost_per_episode,
+        "average_duration_seconds": analytics.average_duration_seconds,
+        "median_cost_per_minute": analytics.median_cost_per_minute(),
+        "percentile_duration_seconds": {
+            "p50": analytics.percentile_duration_seconds(50),
+            "p75": analytics.percentile_duration_seconds(75),
+            "p90": analytics.percentile_duration_seconds(90),
+        },
+        "cost_by_model": analytics.cost_by_model(),
+        "cost_by_profile": analytics.cost_by_profile(),
+        "weeks": [
+            {"week": week, "cost_usd": cost_weeks.get(week, 0.0), "episodes": episode_weeks.get(week, 0)}
+            for week in weeks
+        ],
+        "estimates": {
+            "cost_10min": analytics.estimate_total_cost(600),
+            "cost_30min": analytics.estimate_total_cost(1800),
+            "cost_1h": analytics.estimate_total_cost(3600),
+            "cost_1000_words": analytics.estimate_total_cost_by_words(1000),
+            "cost_5000_words": analytics.estimate_total_cost_by_words(5000),
+        },
+    }

@@ -21,6 +21,7 @@ const COMMAND_ARITY = Object.freeze({
   "balance": [1, 1], "profiles-list": [1, 1], "profiles-activate": [2, 2],
   "profiles-save": [1, 1], "profiles-remove": [2, 2], "models-list": [1, 2],
   "setup-check": [1, 1], "setup-install": [1, 1],
+  "costs": [1, 1],
 });
 
 function validateBridgeRequest(args, stdinData) {

@@ -18,6 +18,7 @@
     python3 -m audiofy.bridge audio-chunks <item-id>
     python3 -m audiofy.bridge abort <item-id>
     python3 -m audiofy.bridge tts-catalog
+    python3 -m audiofy.bridge costs
     python3 -m audiofy.bridge add-file <caminho-do-arquivo>
     python3 -m audiofy.bridge setup-check|setup-install
 """
@@ -904,6 +905,14 @@ def _cmd_setup_check() -> dict:
     return setup_report()
 
 
+def _cmd_costs() -> dict:
+    from .cost_analytics import CostAnalytics, analytics_summary, load_episode_metrics
+
+    metrics = load_episode_metrics(EPISODES_DIR)
+    analytics = CostAnalytics(episodes=metrics)
+    return analytics_summary(analytics)
+
+
 def _cmd_tts_catalog() -> dict:
     from .providers.openrouter import GEMINI_VOICES, list_tts_models
     from .voices import TTS_TIERS, TTS_VOICE_CATALOGS
@@ -973,6 +982,8 @@ def main() -> None:
             result = _cmd_abort(rest[0], abort_lang)
         elif command == "tts-catalog":
             result = _cmd_tts_catalog()
+        elif command == "costs":
+            result = _cmd_costs()
         elif command == "notebooklm" and len(rest) >= 2:
             from .export import export_notebooklm_pack
 
