@@ -1441,7 +1441,7 @@ function setupTeleprompterDragScroll() {
   // Quanto a velocidade encolhe a cada frame (~60fps) e o piso abaixo do
   // qual a inércia para — valores calibrados para "sentir" como o momentum
   // scroll de um celular, sem exigir física real.
-  const INERTIA_FRICTION = 0.97;
+  const INERTIA_FRICTION = 0.985;
   const INERTIA_MIN_VELOCITY = 0.5;
   let dragging = false;
   let didDrag = false;
