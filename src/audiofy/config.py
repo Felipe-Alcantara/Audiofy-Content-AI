@@ -16,6 +16,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from .keystore import KeyStore
+from .playback_positions import PlaybackPositions
 from .presenters import Presenter, parse_presenters
 from .profiles import ProfileStore
 
@@ -172,6 +173,10 @@ def key_store() -> KeyStore:
 
 def profile_store() -> ProfileStore:
     return ProfileStore(STATE_DIR / "profiles.json")
+
+
+def playback_positions_store() -> PlaybackPositions:
+    return PlaybackPositions(STATE_DIR / "playback-positions.json")
 
 
 def _resolved(env_name: str, profile_value: str) -> str:

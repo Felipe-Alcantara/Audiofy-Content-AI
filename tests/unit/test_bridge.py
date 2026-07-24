@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from audiofy import bridge  # noqa: E402
 from audiofy.catalog import Model  # noqa: E402
 from audiofy.estimates import EpisodeEstimate, EpisodeMetrics  # noqa: E402
+from audiofy.playback_positions import PlaybackPositions  # noqa: E402
 from audiofy.profiles import Profile, profile_from_payload  # noqa: E402
 from audiofy.sources.base import ContentItem  # noqa: E402
 
@@ -270,6 +271,42 @@ class AudioChunksTest(unittest.TestCase):
 
         self.assertIsNone(result["chunks"][0]["start_seconds"])
         self.assertIsNone(result["chunks"][0]["end_seconds"])
+
+
+class PlaybackPositionTest(unittest.TestCase):
+    def test_get_sem_posicao_salva_retorna_none(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = PlaybackPositions(Path(tmp) / "playback-positions.json")
+            with patch("audiofy.bridge.playback_positions_store", return_value=store):
+                result = bridge._cmd_playback_position_get("file:///a/ep.mp3")
+
+        self.assertEqual(result["source"], "file:///a/ep.mp3")
+        self.assertIsNone(result["seconds"])
+
+    def test_save_e_get_recuperam_o_mesmo_valor(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            store = PlaybackPositions(Path(tmp) / "playback-positions.json")
+            with patch("audiofy.bridge.playback_positions_store", return_value=store):
+                bridge._cmd_playback_position_save("file:///a/ep.mp3", 123.45)
+                result = bridge._cmd_playback_position_get("file:///a/ep.mp3")
+
+        self.assertEqual(result["seconds"], 123.45)
+
+    def test_posicao_sobrevive_a_uma_nova_instancia_do_store(self):
+        # Simula fechar e reabrir o app: uma nova PlaybackPositions apontando
+        # para o mesmo arquivo precisa enxergar o valor salvo antes.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "playback-positions.json"
+            with patch(
+                "audiofy.bridge.playback_positions_store", return_value=PlaybackPositions(path)
+            ):
+                bridge._cmd_playback_position_save("file:///a/ep.mp3", 42.0)
+            with patch(
+                "audiofy.bridge.playback_positions_store", return_value=PlaybackPositions(path)
+            ):
+                result = bridge._cmd_playback_position_get("file:///a/ep.mp3")
+
+        self.assertEqual(result["seconds"], 42.0)
 
 
 class CatalogContractTest(unittest.TestCase):

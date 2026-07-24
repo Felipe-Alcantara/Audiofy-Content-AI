@@ -16,6 +16,8 @@
     python3 -m audiofy.bridge status [<item-id>]
     python3 -m audiofy.bridge generation-log <item-id>
     python3 -m audiofy.bridge audio-chunks <item-id>
+    python3 -m audiofy.bridge playback-position-get <source>
+    python3 -m audiofy.bridge playback-position-save <source> <segundos>
     python3 -m audiofy.bridge abort <item-id>
     python3 -m audiofy.bridge tts-catalog
     python3 -m audiofy.bridge costs
@@ -37,7 +39,14 @@ from datetime import datetime
 from pathlib import Path
 
 from .artifacts import resolve_final_audio
-from .config import EPISODES_DIR, PROJECT_ROOT, STATE_DIR, Settings, api_key_source
+from .config import (
+    EPISODES_DIR,
+    PROJECT_ROOT,
+    STATE_DIR,
+    Settings,
+    api_key_source,
+    playback_positions_store,
+)
 from .runtime.status import GenerationTracker
 from .sources import available_sources, get_source
 
@@ -969,6 +978,15 @@ def _cmd_costs() -> dict:
     return analytics_summary(analytics)
 
 
+def _cmd_playback_position_get(source: str) -> dict:
+    return {"source": source, "seconds": playback_positions_store().read(source)}
+
+
+def _cmd_playback_position_save(source: str, seconds: float) -> dict:
+    playback_positions_store().save(source, seconds)
+    return {"source": source, "seconds": seconds}
+
+
 def _cmd_tts_catalog() -> dict:
     from .providers.openrouter import GEMINI_VOICES, list_tts_models
     from .voices import TTS_TIERS, TTS_VOICE_CATALOGS
@@ -1030,6 +1048,10 @@ def main() -> None:
                 if arg.startswith("--language="):
                     lang = arg.split("=", 1)[1]
             result = _cmd_audio_chunks(rest[0], lang)
+        elif command == "playback-position-get" and rest:
+            result = _cmd_playback_position_get(rest[0])
+        elif command == "playback-position-save" and len(rest) >= 2:
+            result = _cmd_playback_position_save(rest[0], float(rest[1]))
         elif command == "abort" and rest:
             abort_lang = ""
             for arg in rest[1:]:
