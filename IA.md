@@ -2052,3 +2052,20 @@ limpos; mudança de uma única constante.
 suficiente, o próximo ajuste deveria considerar também amplificar a velocidade capturada no
 solto do mouse (ex.: multiplicar por um fator > 1), não só reduzir o atrito, já que a amostragem
 de `mousemove` pode subestimar gestos muito rápidos.
+
+## 2026-07-24 — Boost de velocidade na inércia (mais rápida que scroll de roda)
+
+**O que mudou:** o feedback do usuário deixou claro que o pedido não era só "durar mais tempo" —
+era ser genuinamente **mais rápida que um scroll de roda normal**. Adicionado `INERTIA_BOOST = 3`
+em `setupTeleprompterDragScroll`: ao soltar o mouse, a velocidade capturada é multiplicada por 3
+antes de iniciar o loop de inércia, então o início do movimento é bem mais veloz que antes,
+desacelerando com o mesmo atrito (`INERTIA_FRICTION = 0.985`) já calibrado.
+
+**Motivo:** feedback direto do usuário ("pode deixar bem rápido, a ideia é ser mais rápido que o
+scroll") — os ajustes anteriores só reduziam o atrito (duração), sem aumentar a velocidade inicial.
+
+**Validação:** suíte Electron completa (47 testes, 1 skip esperado) e `eslint --max-warnings=0`
+limpos.
+
+**Risco que sobrou:** calibração subjetiva, como as anteriores — o valor `3` foi uma estimativa
+inicial; pode precisar de mais um ajuste dependendo do "sentir" real do usuário.
