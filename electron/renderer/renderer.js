@@ -151,6 +151,23 @@ function detachTeleprompterTimeUpdate() {
   teleprompterTimeUpdateHandler = null;
 }
 
+// Mostra "voltar ao parágrafo atual" só quando o destaque ativo sai da área
+// visível do container (rolar manualmente para ler à frente/atrás não deve
+// disparar o botão enquanto o parágrafo ativo ainda está à vista).
+function updateTeleprompterFollowButton() {
+  const button = $("btn-teleprompter-follow");
+  const activeElement = teleprompterLastActiveEntry?.element;
+  if (!activeElement) {
+    button.classList.add("hidden");
+    return;
+  }
+  const container = $("teleprompter-text");
+  const containerBox = container.getBoundingClientRect();
+  const activeBox = activeElement.getBoundingClientRect();
+  const isVisible = activeBox.bottom > containerBox.top && activeBox.top < containerBox.bottom;
+  button.classList.toggle("hidden", isVisible);
+}
+
 function closeTeleprompter() {
   const player = $("episode-player");
   detachTeleprompterTimeUpdate();
@@ -161,6 +178,7 @@ function closeTeleprompter() {
   teleprompterTimingChunks = null;
   teleprompterLastActiveEntry = null;
   $("teleprompter-goto-input").value = "";
+  $("btn-teleprompter-follow").classList.add("hidden");
   $("teleprompter-modal").close();
 }
 
@@ -265,8 +283,10 @@ async function openTeleprompter(episode) {
     if (activeEntry) {
       activeEntry.element.scrollIntoView({ block: "center", behavior: "smooth" });
     }
+    updateTeleprompterFollowButton();
   };
   player.addEventListener("timeupdate", teleprompterTimeUpdateHandler);
+  updateTeleprompterFollowButton();
   $("teleprompter-modal").showModal();
 }
 
@@ -1403,7 +1423,14 @@ $("teleprompter-goto-form").addEventListener("submit", (event) => {
   if (player.paused) player.play().catch(() => player.focus());
   teleprompterLastActiveEntry = entry;
   entry.element.scrollIntoView({ block: "center", behavior: "smooth" });
+  updateTeleprompterFollowButton();
 });
+
+$("teleprompter-text").addEventListener("scroll", updateTeleprompterFollowButton);
+$("btn-teleprompter-follow").onclick = () => {
+  teleprompterLastActiveEntry?.element.scrollIntoView({ block: "center", behavior: "smooth" });
+  updateTeleprompterFollowButton();
+};
 
 // ── Configurações ─────────────────────────────────────────────────────────
 

@@ -305,6 +305,25 @@ test("o teleprompter só rola a tela quando o parágrafo ativo muda", () => {
   assert.match(handlerBody, /activeEntry\.element\.scrollIntoView\(/);
 });
 
+test("botão 'voltar ao parágrafo atual' aparece ao rolar para longe do destaque", () => {
+  const html = readRendererFile("index.html");
+  const renderer = readRendererFile("renderer.js");
+  const styles = readRendererFile("styles.css");
+
+  assert.match(html, /id="btn-teleprompter-follow"[^>]*class="teleprompter-follow hidden"/);
+  assert.match(renderer, /function updateTeleprompterFollowButton\(\)/);
+  assert.match(
+    renderer,
+    /"teleprompter-text"\)\.addEventListener\("scroll", updateTeleprompterFollowButton\)/
+  );
+  assert.match(renderer, /"btn-teleprompter-follow"\)\.onclick = \(\) => \{/);
+
+  // O botão precisa checar se o parágrafo ativo está fora da área visível
+  // do container (não só "existe um ativo") — senão ficaria sempre visível.
+  assert.match(renderer, /getBoundingClientRect\(\)/);
+  assert.match(styles, /\.teleprompter-follow \{/);
+});
+
 test("existe um único <audio> real, compartilhado entre dock, chunks e teleprompter", () => {
   const html = readRendererFile("index.html");
   const renderer = readRendererFile("renderer.js");

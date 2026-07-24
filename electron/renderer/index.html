@@ -236,7 +236,12 @@
       <input id="teleprompter-goto-input" type="number" min="1" inputmode="numeric" />
       <button type="submit" class="ghost">Pular</button>
     </form>
-    <div id="teleprompter-text" class="teleprompter-text" aria-live="polite"></div>
+    <div class="teleprompter-scroll-area">
+      <div id="teleprompter-text" class="teleprompter-text" aria-live="polite"></div>
+      <button id="btn-teleprompter-follow" class="teleprompter-follow hidden" type="button">
+        ↓ Voltar ao parágrafo atual
+      </button>
+    </div>
   </dialog>
 
   <!-- ══ Episódios ══ -->
