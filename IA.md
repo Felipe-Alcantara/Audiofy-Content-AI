@@ -1976,3 +1976,25 @@ Suíte Python completa (430 testes) confirmada sem alteração.
 
 **Risco que sobrou:** nenhum — feature aditiva, não interfere no destaque automático nem na
 navegação por número/clique já existentes.
+
+## 2026-07-24 — Arrastar o texto do teleprompter para rolar (drag-to-scroll)
+
+**O que mudou:** o container `#teleprompter-text` agora aceita arrastar com o mouse para rolar,
+como o scroll por toque de um celular (`setupTeleprompterDragScroll` em
+`electron/renderer/renderer.js`). `mousedown` registra a posição inicial; `mousemove` só ativa o
+arraste de fato (classe `dragging`, cursor "grabbing") depois de um deslocamento mínimo
+(`DRAG_THRESHOLD_PX = 6`) — um clique normal num parágrafo (que pula o áudio para aquele trecho)
+não pode virar um arraste acidental. Quando o deslocamento ultrapassa o limiar, o `click`
+subsequente é suprimido em fase de captura para não disparar `jumpToChunk` no fim do arraste.
+
+**Motivo:** pedido do usuário, na sequência das melhorias anteriores de navegação do teleprompter.
+
+**Validação:** TDD — teste estático novo em `electron/tests/frontend-quality.test.js` confirmando
+os listeners de mouse, o limiar de deslocamento e a supressão do clique acidental. Suíte Electron
+completa (47 testes, 1 skip esperado) e `eslint --max-warnings=0` limpos. Suíte Python completa
+(430 testes) confirmada sem alteração.
+
+**Risco que sobrou:** só funciona com mouse (arraste via `mousedown`/`mousemove`/`mouseup`); não
+implementa eventos de touch (`touchstart`/`touchmove`) — no app desktop isso não importa (não há
+tela sensível ao toque), mas se o Electron algum dia rodar numa tela touch, o gesto de toque
+nativo do sistema provavelmente já cobre o scroll sem precisar dessa lógica adicional.
