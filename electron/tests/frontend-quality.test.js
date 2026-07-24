@@ -353,3 +353,28 @@ test("existe um único <audio> real, compartilhado entre dock, chunks e teleprom
     /function playInApp\(path, title\) \{\s*if \(\$\("chunk-modal"\)\.open\) closeChunkReview\(\);\s*if \(\$\("teleprompter-modal"\)\.open\) closeTeleprompter\(\);/
   );
 });
+
+test("teleprompter permite arrastar o texto para rolar, como num celular", () => {
+  const renderer = readRendererFile("renderer.js");
+  const styles = readRendererFile("styles.css");
+
+  const dragSetupBody = renderer.match(
+    /function setupTeleprompterDragScroll\(\) \{([\s\S]*?)\n\}/
+  )[1];
+  assert.match(dragSetupBody, /const container = \$\("teleprompter-text"\);/);
+  assert.match(dragSetupBody, /addEventListener\("mousedown"/);
+  assert.match(dragSetupBody, /addEventListener\("mousemove"/);
+  assert.match(dragSetupBody, /addEventListener\("mouseup"/);
+  assert.match(dragSetupBody, /addEventListener\("mouseleave"/);
+  assert.match(renderer, /setupTeleprompterDragScroll\(\);\s*$/m);
+
+  // Um clique num parágrafo (que pula o áudio) não pode virar um "arraste"
+  // acidental — só ativa scroll de fato depois de um deslocamento mínimo.
+  assert.match(renderer, /DRAG_THRESHOLD_PX/);
+  assert.match(renderer, /Math\.abs\([^)]*\) > DRAG_THRESHOLD_PX/);
+
+  // Enquanto arrasta, o cursor muda e cliques de parágrafo ficam suspensos —
+  // senão o mouseup do fim do arraste dispararia jumpToChunk sem querer.
+  assert.match(styles, /\.teleprompter-text\.dragging/);
+  assert.match(renderer, /classList\.(add|toggle)\("dragging"/);
+});

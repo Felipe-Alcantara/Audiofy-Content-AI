@@ -531,7 +531,10 @@ dialog::backdrop { background: rgb(0 0 0 / 72%); }
   overflow-y: auto;
   font-size: 15px;
   line-height: 1.6;
+  cursor: grab;
+  user-select: none;
 }
+.teleprompter-text.dragging { cursor: grabbing; }
 .teleprompter-follow {
   position: absolute;
   bottom: 12px;

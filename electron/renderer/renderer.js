@@ -1432,6 +1432,57 @@ $("btn-teleprompter-follow").onclick = () => {
   updateTeleprompterFollowButton();
 };
 
+// Arrastar o texto com o mouse para rolar, como um scroll por toque em
+// celular. Um clique normal num parágrafo (que pula o áudio) não deve virar
+// arraste: só ativa scroll de fato depois de um deslocamento mínimo.
+function setupTeleprompterDragScroll() {
+  const container = $("teleprompter-text");
+  const DRAG_THRESHOLD_PX = 6;
+  let dragging = false;
+  let didDrag = false;
+  let startY = 0;
+  let startScrollTop = 0;
+
+  container.addEventListener("mousedown", (event) => {
+    dragging = true;
+    didDrag = false;
+    startY = event.clientY;
+    startScrollTop = container.scrollTop;
+  });
+
+  container.addEventListener("mousemove", (event) => {
+    if (!dragging) return;
+    const delta = event.clientY - startY;
+    if (!didDrag && Math.abs(delta) > DRAG_THRESHOLD_PX) {
+      didDrag = true;
+      container.classList.add("dragging");
+    }
+    if (didDrag) container.scrollTop = startScrollTop - delta;
+  });
+
+  // O arraste termina em captura, antes de qualquer onclick de parágrafo:
+  // se houve deslocamento real, o clique subsequente do mouseup é suprimido
+  // para não pular o áudio sem querer.
+  container.addEventListener(
+    "click",
+    (event) => {
+      if (didDrag) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+    },
+    true
+  );
+
+  const endDrag = () => {
+    dragging = false;
+    container.classList.remove("dragging");
+  };
+  container.addEventListener("mouseup", endDrag);
+  container.addEventListener("mouseleave", endDrag);
+}
+setupTeleprompterDragScroll();
+
 // ── Configurações ─────────────────────────────────────────────────────────
 
 let modelsCatalog = null; // {text_models, tts_models, gemini_voices, voice_catalogs, tts_tiers}
