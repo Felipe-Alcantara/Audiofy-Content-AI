@@ -2121,3 +2121,55 @@ confirmam que o padrão correto está presente, mas não executam o `<audio>` de
 simulam o timing real do carregamento. Um teste com JSDOM/Playwright que efetivamente carregasse
 um arquivo e verificasse `currentTime` após `loadedmetadata` daria confiança mais forte contra
 regressões futuras desse mesmo tipo de race condition.
+
+## 2026-07-24 — Fix: resume ainda voltava para o início (localStorage não é durável)
+
+**O que mudou:** mesmo depois da correção anterior (esperar `loadedmetadata`), o usuário reportou
+que fechar o app durante a reprodução e reabrir ainda sempre voltava para o início — a correção
+anterior tratou a race condition de timing do `currentTime`, mas não a causa raiz real: o
+Chromium/Electron **não garante que `localStorage.setItem` seja fisicamente sincronizado em disco
+no momento da chamada** — a escrita física acontece de forma assíncrona em background (commit em
+batch no LevelDB interno). Fechar a janela abruptamente (botão X) pode encerrar o processo antes
+desse commit terminar, perdendo dados ainda não sincronizados — potencialmente todo o histórico
+salvo, não só o último tick, dependendo do estado do commit pendente.
+
+A solução: substituir `localStorage` por persistência real via backend Python, que já escreve em
+disco de forma síncrona e atômica (arquivo temporário + `Path.replace()`, atômico no nível do
+sistema de arquivos, garantido pelo kernel — mesmo padrão já usado em `_save_json` de
+`pipeline.py`). Novo módulo `src/audiofy/playback_positions.py` (classe `PlaybackPositions`,
+teto de 200 entradas) grava/lê `.audiofy/playback-positions.json`. Novo factory
+`playback_positions_store()` em `config.py`. Dois comandos novos na bridge
+(`playback-position-get <source>` / `playback-position-save <source> <segundos>`), registrados
+também na allowlist `COMMAND_ARITY` de `electron/security.js`. No renderer, `savePlaybackPosition`
+chama a bridge (throttled a cada 3s — spawnar um processo Python a cada tick de `timeupdate`
+seria caro) e `readSavedPlaybackPosition`/`playInApp` viraram `async`, aguardando a resposta antes
+de posicionar o `currentTime`.
+
+**Motivo:** reportado pelo usuário pela segunda vez ("quando eu fecho, ainda volta do 0") após a
+correção anterior não resolver — a causa raiz não estava na race condition de timing do
+`<audio>` (que era real e também precisava de correção), mas na falta de durabilidade do
+`localStorage` do Chromium em fechamentos abruptos de janela.
+
+**Investigação:** tentativa de reproduzir o bug ao vivo rodando o Electron real (com
+`--remote-debugging-port` e Xvfb) falhou neste ambiente — o binário Electron sempre iniciava como
+processo Node puro (`app` chegava `undefined`), porque a variável de ambiente
+`ELECTRON_RUN_AS_NODE=1` estava herdada da sessão (o próprio Claude Code roda sob Electron/VS
+Code). Não foi possível confirmar a causa por execução real; a conclusão veio de análise estática
+rigorosa e conhecimento documentado do comportamento de `localStorage` em Chromium/Electron.
+
+**Validação:** TDD — 9 testes novos em `tests/unit/test_playback_positions.py` (leitura/escrita,
+persistência entre instâncias diferentes apontando pro mesmo arquivo — simulando fechar/reabrir o
+app —, atomicidade, resiliência a arquivo corrompido, teto de entradas, criação do diretório pai)
+e 3 em `tests/unit/test_bridge.py` para os novos comandos. Teste estático de
+`electron/tests/frontend-quality.test.js` reescrito para confirmar ausência de `localStorage` e
+uso da bridge. `electron/tests/security.test.js` estendido para os 2 comandos novos. Suíte Python
+completa (442 testes) e `ruff check`/`ruff format --check` (nos arquivos tocados) limpos. Suíte
+Electron completa (48 testes, 1 skip esperado) e `eslint --max-warnings=0` limpos.
+
+**Risco que sobrou:** o resultado da chamada assíncrona `savePlaybackPosition` (que dispara a
+bridge sem `await`, propositalmente, para não travar a UI a cada tick) não é aguardado — se o
+processo Python falhar silenciosamente numa gravação específica, essa posição pontual se perde
+sem erro visível, mas o próximo tick tenta de novo. Também não há garantia de que o **último**
+tick antes do fechamento abrupto complete a gravação a tempo (o intervalo de 3s entre saves
+significa que até ~3s do fim podem não ter sido persistidos) — isso é uma perda pequena e aceitável,
+bem diferente do bug anterior (perda total, sempre voltando a zero).
