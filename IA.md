@@ -2095,3 +2095,29 @@ do renderer (`electron/eslint.config.cjs`), mesmo padrão dos ajustes anteriores
 **Risco que sobrou:** a posição é por caminho absoluto do arquivo — se o episódio for movido/
 renomeado (fora do fluxo normal do Audiofy) ou o projeto for movido de pasta, a posição salva não
 será encontrada e o episódio toca do início, sem erro visível (comportamento seguro, mas silencioso).
+
+## 2026-07-24 — Fix: resume sempre voltava para o início (race condition)
+
+**O que mudou:** `playInApp` (`electron/renderer/renderer.js`) definia `player.currentTime` logo
+depois de `setPlayerSource` (que faz `player.src = url; player.load()`) — mas nesse instante o
+`<audio>` ainda não resolveu metadata/seekability do arquivo, e o navegador ignora silenciosamente
+o `currentTime` atribuído cedo demais. Por isso a posição salva nunca era aplicada de fato: o
+episódio sempre tocava do início, mesmo com o valor correto persistido em `localStorage`. Corrigido
+checando `player.readyState >= HTMLMediaElement.HAVE_METADATA` antes de posicionar; se ainda não
+estiver pronto, espera o evento `loadedmetadata` (uma vez) antes de aplicar o `currentTime` salvo.
+
+**Motivo:** reportado pelo usuário — "fechei enquanto reproduzia e quando abri de novo começou do
+0", confirmando que a implementação anterior nunca funcionava de fato, apesar de os testes
+estáticos (que checam presença de código, não comportamento real do `<audio>`) passarem.
+
+**Validação:** TDD — teste estendido em `electron/tests/frontend-quality.test.js` confirmando a
+checagem de `readyState` e o listener `loadedmetadata`. `HTMLMediaElement` precisou ser adicionado
+à allowlist de globals do ESLint do renderer, mesmo padrão dos ajustes anteriores. Suíte Electron
+completa (48 testes, 1 skip esperado) e `eslint --max-warnings=0` limpos. Suíte Python completa
+(430 testes) confirmada sem alteração.
+
+**Risco que sobrou:** os testes desta feature são estáticos (regex sobre o código-fonte) — eles
+confirmam que o padrão correto está presente, mas não executam o `<audio>` de verdade nem
+simulam o timing real do carregamento. Um teste com JSDOM/Playwright que efetivamente carregasse
+um arquivo e verificasse `currentTime` após `loadedmetadata` daria confiança mais forte contra
+regressões futuras desse mesmo tipo de race condition.
