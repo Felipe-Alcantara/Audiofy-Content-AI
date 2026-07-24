@@ -2069,3 +2069,29 @@ limpos.
 
 **Risco que sobrou:** calibração subjetiva, como as anteriores — o valor `3` foi uma estimativa
 inicial; pode precisar de mais um ajuste dependendo do "sentir" real do usuário.
+
+## 2026-07-24 — Retoma a reprodução de onde parou, mesmo após fechar o app
+
+**O que mudou:** o player global (`electron/renderer/renderer.js`) agora persiste em
+`localStorage` (sobrevive a fechar/reabrir o Electron, diferente de uma variável em memória) a
+posição de reprodução de cada episódio, indexada pela URL `file://` do MP3
+(`PLAYBACK_POSITIONS_KEY`, teto de `MAX_SAVED_PLAYBACK_POSITIONS = 200` entradas para não crescer
+sem limite ao longo de meses de uso). Um listener permanente de `timeupdate` no `#episode-player`
+salva a posição continuamente enquanto toca. `playInApp` consulta essa posição salva **só quando
+troca de episódio** (`isNewSource`) e retoma o `currentTime` de lá — clicar de novo no mesmo
+episódio que já está tocando não reinicia a posição.
+
+**Motivo:** pedido do usuário. Importante: não retoma tocando sozinho ao abrir o app — só quando
+o usuário decide ouvir aquele episódio de novo, evitando som inesperado na abertura (esclarecido
+via pergunta ao usuário antes de implementar).
+
+**Validação:** TDD — teste estático novo em `electron/tests/frontend-quality.test.js` cobrindo a
+chave de armazenamento, as funções de leitura/escrita, o consumo em `playInApp` e o listener de
+`timeupdate` que salva. `localStorage` precisou ser adicionado à allowlist de globals do ESLint
+do renderer (`electron/eslint.config.cjs`), mesmo padrão dos ajustes anteriores com
+`requestAnimationFrame`/`performance`. Suíte Electron completa (48 testes, 1 skip esperado) e
+`eslint --max-warnings=0` limpos. Suíte Python completa (430 testes) confirmada sem alteração.
+
+**Risco que sobrou:** a posição é por caminho absoluto do arquivo — se o episódio for movido/
+renomeado (fora do fluxo normal do Audiofy) ou o projeto for movido de pasta, a posição salva não
+será encontrada e o episódio toca do início, sem erro visível (comportamento seguro, mas silencioso).
