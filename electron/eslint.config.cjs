@@ -47,6 +47,7 @@ module.exports = [
         cancelAnimationFrame: readonly,
         confirm: readonly,
         document: readonly,
+        HTMLMediaElement: readonly,
         localStorage: readonly,
         performance: readonly,
         requestAnimationFrame: readonly,

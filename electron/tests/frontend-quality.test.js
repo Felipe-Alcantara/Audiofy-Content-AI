@@ -418,4 +418,11 @@ test("retoma a reprodução de onde parou, mesmo depois de fechar o app", () => 
   // não só ao fechar o app — não há hook de "antes de fechar" confiável o
   // bastante para não perder o progresso de um fechamento abrupto.
   assert.match(renderer, /"episode-player"\)\.addEventListener\("timeupdate", \(\) => \{[\s\S]*?savePlaybackPosition/);
+
+  // Definir currentTime logo após src/load() é ignorado silenciosamente: o
+  // elemento ainda não resolveu metadata/seekability nesse instante — por
+  // isso o resume sempre voltava para o início. Precisa esperar
+  // loadedmetadata quando o player ainda não estiver pronto.
+  assert.match(playInAppBody, /readyState >= HTMLMediaElement\.HAVE_METADATA/);
+  assert.match(playInAppBody, /addEventListener\("loadedmetadata", seekToSavedPosition, \{ once: true \}\)/);
 });

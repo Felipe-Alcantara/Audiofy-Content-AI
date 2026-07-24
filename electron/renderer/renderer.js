@@ -98,7 +98,20 @@ function playInApp(path, title) {
   const player = setPlayerSource(path, title);
   if (isNewSource) {
     const savedPosition = readSavedPlaybackPosition(url);
-    if (savedPosition !== null) player.currentTime = savedPosition;
+    if (savedPosition !== null) {
+      // Definir currentTime logo após load() é ignorado silenciosamente:
+      // o elemento ainda não resolveu metadata/seekability nesse instante.
+      // Precisa esperar loadedmetadata (ou já estar pronto, se a troca de
+      // fonte foi um no-op) antes de posicionar.
+      const seekToSavedPosition = () => {
+        player.currentTime = savedPosition;
+      };
+      if (player.readyState >= HTMLMediaElement.HAVE_METADATA) {
+        seekToSavedPosition();
+      } else {
+        player.addEventListener("loadedmetadata", seekToSavedPosition, { once: true });
+      }
+    }
   }
   player.play().catch(() => player.focus());
 }
