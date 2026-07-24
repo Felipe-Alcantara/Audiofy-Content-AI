@@ -412,24 +412,54 @@ test("retoma a reprodução de onde parou, mesmo depois de fechar o app", () => 
   assert.match(renderer, /PLAYBACK_POSITION_SAVE_INTERVAL_MS/);
   assert.match(renderer, /now - lastPlaybackPositionSaveAt < PLAYBACK_POSITION_SAVE_INTERVAL_MS/);
 
-  // playInApp precisa consultar a posição salva daquele episódio específico
-  // (pela URL do arquivo, mesma chave usada ao salvar) e retomar dali, não
-  // sempre do zero — só quando troca de fonte, não a cada clique no mesmo.
+  // seekWhenReady é compartilhada por playInApp e openTeleprompter (os dois
+  // trocam a fonte do player). Definir currentTime logo após src/load() é
+  // ignorado silenciosamente: o elemento ainda não resolveu metadata/
+  // seekability nesse instante — por isso o resume sempre voltava para o
+  // início. Precisa esperar loadedmetadata quando o player não estiver pronto.
+  const seekWhenReadyBody = renderer.match(
+    /function seekWhenReady\(player, seconds\) \{([\s\S]*?)\n\}/
+  )[1];
+  assert.match(seekWhenReadyBody, /readyState >= HTMLMediaElement\.HAVE_METADATA/);
+  assert.match(seekWhenReadyBody, /addEventListener\("loadedmetadata", applyPosition, \{ once: true \}\)/);
+
+  // playInApp precisa ler a posição ANTES de setPlayerSource trocar
+  // dataset.source: assim que ele aponta pra nova URL, o listener global de
+  // timeupdate já trata o player como "válido" para salvar, e load() dispara
+  // timeupdate com currentTime=0 durante o await — sobrescrevendo a posição
+  // salva com zero antes dela ser lida/aplicada, se a ordem for invertida.
   const playInAppBody = renderer.match(
     /async function playInApp\(path, title\) \{([\s\S]*?)\n\}/
   )[1];
-  assert.match(playInAppBody, /await readSavedPlaybackPosition\(url\)/);
+  const readIndexInPlayInApp = playInAppBody.indexOf("readSavedPlaybackPosition");
+  const setSourceIndexInPlayInApp = playInAppBody.indexOf("setPlayerSource(path, title)");
+  assert.ok(readIndexInPlayInApp !== -1 && setSourceIndexInPlayInApp !== -1);
+  assert.ok(readIndexInPlayInApp < setSourceIndexInPlayInApp);
   assert.match(playInAppBody, /isNewSource/);
+  assert.match(playInAppBody, /seekWhenReady\(player, savedPosition\)/);
+
+  // Mesma correção de ordem no teleprompter — reportado pelo usuário
+  // especificamente nesse caminho ("estou abrindo pelo teleprompter"), que
+  // não reusava playInApp e trocava player.src/dataset.source direto, sem
+  // nenhuma lógica de resume.
+  const openTeleprompterBody = renderer.match(
+    /async function openTeleprompter\(episode\) \{([\s\S]*?)\n\}/
+  )[1];
+  const readIndexInTeleprompter = openTeleprompterBody.indexOf("readSavedPlaybackPosition");
+  const setSrcIndexInTeleprompter = openTeleprompterBody.indexOf("player.src = url;");
+  assert.ok(readIndexInTeleprompter !== -1 && setSrcIndexInTeleprompter !== -1);
+  assert.ok(readIndexInTeleprompter < setSrcIndexInTeleprompter);
+  assert.match(openTeleprompterBody, /seekWhenReady\(player, savedPosition\)/);
 
   // A posição é salva ao ouvir (timeupdate) e ao pausar/trocar de episódio,
   // não só ao fechar o app — não há hook de "antes de fechar" confiável o
-  // bastante para não perder o progresso de um fechamento abrupto.
-  assert.match(renderer, /"episode-player"\)\.addEventListener\("timeupdate", \(\) => \{[\s\S]*?savePlaybackPosition/);
-
-  // Definir currentTime logo após src/load() é ignorado silenciosamente: o
-  // elemento ainda não resolveu metadata/seekability nesse instante — por
-  // isso o resume sempre voltava para o início. Precisa esperar
-  // loadedmetadata quando o player ainda não estiver pronto.
-  assert.match(playInAppBody, /readyState >= HTMLMediaElement\.HAVE_METADATA/);
-  assert.match(playInAppBody, /addEventListener\("loadedmetadata", seekToSavedPosition, \{ once: true \}\)/);
+  // bastante para não perder o progresso de um fechamento abrupto. Só
+  // enquanto o player está de fato tocando: um timeupdate com currentTime=0
+  // pode disparar antes do seekWhenReady aplicar a posição salva, e um
+  // player pausado nunca teve progresso real desta sessão para registrar.
+  const timeUpdateSaverBody = renderer.match(
+    /\$\("episode-player"\)\.addEventListener\("timeupdate", \(\) => \{([\s\S]*?)\n\}\);/
+  )[1];
+  assert.match(timeUpdateSaverBody, /if \(player\.paused\) return;/);
+  assert.match(timeUpdateSaverBody, /savePlaybackPosition/);
 });

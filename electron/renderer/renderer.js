@@ -75,29 +75,35 @@ function setPlayerSource(path, title = "Episódio") {
   return player;
 }
 
+// Compartilhada por playInApp e openTeleprompter — os dois trocam a fonte
+// do player e precisam do mesmo cuidado com timing: currentTime definido
+// logo após src/load() é ignorado silenciosamente, porque o elemento ainda
+// não resolveu metadata/seekability nesse instante. Precisa esperar
+// loadedmetadata (ou usar direto, se o player já estiver pronto).
+function seekWhenReady(player, seconds) {
+  const applyPosition = () => {
+    player.currentTime = seconds;
+  };
+  if (player.readyState >= HTMLMediaElement.HAVE_METADATA) {
+    applyPosition();
+  } else {
+    player.addEventListener("loadedmetadata", applyPosition, { once: true });
+  }
+}
+
 async function playInApp(path, title) {
   if ($("chunk-modal").open) closeChunkReview();
   if ($("teleprompter-modal").open) closeTeleprompter();
   const url = projectPathToFileUrl(path);
   const isNewSource = $("episode-player").dataset.source !== url;
+  // A posição precisa ser lida ANTES de setPlayerSource trocar dataset.source:
+  // assim que ele aponta pra nova URL, o listener global de timeupdate já
+  // trata o player como "válido" para salvar — e load() dispara timeupdate
+  // com currentTime=0 durante o await, sobrescrevendo a posição salva com
+  // zero antes dela ser aplicada.
+  const savedPosition = isNewSource ? await readSavedPlaybackPosition(url) : null;
   const player = setPlayerSource(path, title);
-  if (isNewSource) {
-    const savedPosition = await readSavedPlaybackPosition(url);
-    if (savedPosition !== null) {
-      // Definir currentTime logo após load() é ignorado silenciosamente:
-      // o elemento ainda não resolveu metadata/seekability nesse instante.
-      // Precisa esperar loadedmetadata (ou já estar pronto, se a troca de
-      // fonte foi um no-op) antes de posicionar.
-      const seekToSavedPosition = () => {
-        player.currentTime = savedPosition;
-      };
-      if (player.readyState >= HTMLMediaElement.HAVE_METADATA) {
-        seekToSavedPosition();
-      } else {
-        player.addEventListener("loadedmetadata", seekToSavedPosition, { once: true });
-      }
-    }
-  }
+  if (savedPosition !== null) seekWhenReady(player, savedPosition);
   player.play().catch(() => player.focus());
 }
 
@@ -303,8 +309,20 @@ async function openTeleprompter(episode) {
   $("teleprompter-goto-input").max = String(turnElements.length || "");
 
   if (episode.mp3) {
-    player.src = projectPathToFileUrl(episode.mp3);
-    player.load();
+    const url = projectPathToFileUrl(episode.mp3);
+    const isNewSource = player.dataset.source !== url;
+    if (isNewSource) {
+      // A posição precisa ser lida ANTES de trocar player.src/dataset.source:
+      // assim que dataset.source aponta pra nova URL, o listener global de
+      // timeupdate já trata o player como "válido" para salvar — e load()
+      // dispara timeupdate com currentTime=0 durante o await da leitura,
+      // sobrescrevendo a posição salva com zero antes dela ser aplicada.
+      const savedPosition = await readSavedPlaybackPosition(url);
+      player.src = url;
+      player.dataset.source = url;
+      player.load();
+      if (savedPosition !== null) seekWhenReady(player, savedPosition);
+    }
   }
   teleprompterTimeUpdateHandler = () => {
     if (!teleprompterTimingChunks) return;
@@ -1581,6 +1599,11 @@ setupTeleprompterDragScroll();
 $("episode-player").addEventListener("timeupdate", () => {
   const player = $("episode-player");
   if (!player.dataset.source) return;
+  // Um timeupdate pode disparar com currentTime=0 logo após load(), antes do
+  // seekWhenReady aplicar a posição salva — gravar nesse instante sobrescreve
+  // um resume válido com zero. Um player pausado nunca teve progresso real
+  // desta sessão para registrar.
+  if (player.paused) return;
   savePlaybackPosition(player.dataset.source, player.currentTime);
 });
 
