@@ -1998,3 +1998,29 @@ completa (47 testes, 1 skip esperado) e `eslint --max-warnings=0` limpos. Suíte
 implementa eventos de touch (`touchstart`/`touchmove`) — no app desktop isso não importa (não há
 tela sensível ao toque), mas se o Electron algum dia rodar numa tela touch, o gesto de toque
 nativo do sistema provavelmente já cobre o scroll sem precisar dessa lógica adicional.
+
+## 2026-07-24 — Inércia no arraste do teleprompter (momentum scroll)
+
+**O que mudou:** o drag-to-scroll do teleprompter parava seco ao soltar o mouse; agora continua
+desacelerando por conta própria, como o momentum scroll de um celular. `setupTeleprompterDragScroll`
+(`electron/renderer/renderer.js`) amostra a velocidade recente (px/ms) a cada `mousemove` durante
+o arraste; ao soltar (`mouseup`/`mouseleave`), se a velocidade for relevante, inicia um loop de
+`requestAnimationFrame` que aplica a velocidade ao `scrollTop` e a reduz por atrito
+(`INERTIA_FRICTION = 0.95` por frame) até cair abaixo de um piso (`INERTIA_MIN_VELOCITY`). Um novo
+`mousedown` ou um giro da roda do mouse (`wheel`) cancela a inércia em andamento, para não competir
+com outro gesto de scroll.
+
+**Motivo:** pedido do usuário, para "ficar igual rolagem rápida de celular" depois do
+drag-to-scroll simples da entrega anterior.
+
+**Validação:** TDD — teste estático estendido em `electron/tests/frontend-quality.test.js`
+cobrindo o loop de animação, a estimativa de velocidade e o cancelamento por novo arraste/roda do
+mouse. A implementação usa `requestAnimationFrame`, `cancelAnimationFrame` e `performance.now()`,
+globals de browser que não estavam na allowlist do ESLint do renderer
+(`electron/eslint.config.cjs`) — adicionados ali (são legítimos, não builds de Node). Suíte
+Electron completa (47 testes, 1 skip esperado) e `eslint --max-warnings=0` limpos. Suíte Python
+completa (430 testes) confirmada sem alteração.
+
+**Risco que sobrou:** os coeficientes de atrito/piso foram calibrados de forma subjetiva (não há
+uma "física real" de referência) — se o usuário achar a inércia rápida/lenta demais, ajustar
+`INERTIA_FRICTION`/`INERTIA_MIN_VELOCITY` é a forma direta de recalibrar.
