@@ -160,7 +160,7 @@ test("modal permite auditar e ouvir chunks individualmente", () => {
   const renderer = readRendererFile("renderer.js");
 
   assert.match(html, /<dialog id="chunk-modal"/);
-  assert.match(html, /id="chunk-player"[^>]*controls/);
+  assert.match(html, /id="chunk-player-slot"/);
   assert.match(renderer, /"audio-chunks", itemId/);
   assert.match(renderer, /projectPathToFileUrl\(chunk\.path\)/);
   assert.match(renderer, /chunk\.longest_silence_seconds/);
@@ -243,4 +243,79 @@ test("configuração da geração fica travada enquanto o episódio é sintetiza
   assert.match(html, /id="generation-options-lock"/);
   assert.match(html, /aborte e gere novamente/);
   assert.match(styles, /\.options-lock\s*\{/);
+});
+
+test("reabrir o teleprompter sempre remove o listener de timeupdate anterior", () => {
+  const renderer = readRendererFile("renderer.js");
+
+  // Reabrir sem passar por closeTeleprompter (ex.: clicar em "acompanhar" de
+  // outro episódio) deixaria um listener órfão no <audio>, que é persistente
+  // no DOM — cada um retém em closure o texto/turnos inteiros do episódio
+  // anterior. openTeleprompter precisa desanexar antes de registrar um novo.
+  assert.match(renderer, /function detachTeleprompterTimeUpdate\(\)/);
+  const openTeleprompterBody = renderer.match(
+    /async function openTeleprompter\(episode\) \{([\s\S]*?)\n\}/
+  )[1];
+  assert.match(openTeleprompterBody, /detachTeleprompterTimeUpdate\(\);/);
+  assert.match(renderer, /function closeTeleprompter\(\) \{[\s\S]*?detachTeleprompterTimeUpdate\(\);/);
+});
+
+test("acompanhar a leitura numera os parágrafos e permite pular por número", () => {
+  const html = readRendererFile("index.html");
+  const renderer = readRendererFile("renderer.js");
+
+  assert.match(html, /id="teleprompter-goto-form"/);
+  assert.match(html, /id="teleprompter-goto-input"[^>]*type="number"/);
+  assert.match(renderer, /makeElement\("span", "turn-number", `\$\{paragraphNumber\}`\)/);
+  assert.match(renderer, /"teleprompter-goto-form"\)\.addEventListener\("submit"/);
+  assert.match(
+    renderer,
+    /teleprompterTimingChunks\.find\(\(item\) => item\.paragraphNumber === target\)/
+  );
+  assert.match(renderer, /player\.currentTime = entry\.chunk\.start_seconds;/);
+});
+
+test("clicar num parágrafo do teleprompter pula o áudio para aquele trecho", () => {
+  const renderer = readRendererFile("renderer.js");
+  const styles = readRendererFile("styles.css");
+
+  assert.match(renderer, /turn\.setAttribute\("role", "button"\)/);
+  assert.match(renderer, /player\.currentTime = chunk\.start_seconds;/);
+  assert.match(renderer, /turn\.onclick = jumpToChunk;/);
+  assert.match(renderer, /turn\.onkeydown = \(event\) => \{/);
+  assert.match(styles, /\.teleprompter-turn\.clickable \{ cursor: pointer; \}/);
+
+  // Sem janela temporal auditada não há como pular com precisão — não finge
+  // que o clique funciona nesse caso.
+  assert.match(renderer, /if \(hasTiming\) classNames\.push\("clickable"\);/);
+});
+
+test("existe um único <audio> real, compartilhado entre dock, chunks e teleprompter", () => {
+  const html = readRendererFile("index.html");
+  const renderer = readRendererFile("renderer.js");
+
+  // Três elementos <audio> separados tocavam ao mesmo tempo sem se avisar —
+  // clicar em "ouvir" no card e depois em "acompanhar" sobrepunha dois áudios.
+  assert.equal((html.match(/<audio\b/g) || []).length, 1);
+  assert.match(html, /<audio id="episode-player"/);
+  assert.match(html, /id="chunk-player-slot"/);
+  assert.match(html, /id="teleprompter-player-slot"/);
+  assert.doesNotMatch(html, /id="chunk-player"[^-]/);
+  assert.doesNotMatch(html, /id="teleprompter-player"[^-]/);
+
+  assert.match(renderer, /function movePlayerTo\(slotId\)/);
+  assert.match(renderer, /function movePlayerHome\(\)/);
+  assert.match(renderer, /\$\(slotId\)\.appendChild\(\$\("episode-player"\)\)/);
+
+  // Abrir um dos modais precisa pausar/realojar o único player, e abrir um
+  // enquanto o outro está aberto precisa fechar o anterior — nunca dois
+  // players tocando ao mesmo tempo em contextos diferentes.
+  assert.match(renderer, /movePlayerTo\("chunk-player-slot"\)/);
+  assert.match(renderer, /movePlayerTo\("teleprompter-player-slot"\)/);
+  assert.match(renderer, /if \(\$\("teleprompter-modal"\)\.open\) closeTeleprompter\(\);/);
+  assert.match(renderer, /if \(\$\("chunk-modal"\)\.open\) closeChunkReview\(\);/);
+  assert.match(
+    renderer,
+    /function playInApp\(path, title\) \{\s*if \(\$\("chunk-modal"\)\.open\) closeChunkReview\(\);\s*if \(\$\("teleprompter-modal"\)\.open\) closeTeleprompter\(\);/
+  );
 });

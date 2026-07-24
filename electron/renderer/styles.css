@@ -489,7 +489,8 @@ dialog[open] {
 dialog::backdrop { background: rgb(0 0 0 / 72%); }
 .modal-header { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
 .modal-header h2 { margin-top: 0; }
-#chunk-player { width: 100%; flex-shrink: 0; }
+.player-slot { width: 100%; flex-shrink: 0; }
+.player-slot audio { width: 100%; }
 .chunk-list {
   display: grid;
   gap: 8px;
@@ -503,7 +504,18 @@ dialog::backdrop { background: rgb(0 0 0 / 72%); }
 .severity-critical { border-color: var(--danger); background: rgb(127 29 29 / 20%); }
 .severity-warning { border-color: var(--warning); background: rgb(120 53 15 / 18%); }
 
-#teleprompter-player { width: 100%; flex-shrink: 0; }
+.teleprompter-goto {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.teleprompter-goto input {
+  width: 70px;
+  padding: 4px 8px;
+}
 .teleprompter-text {
   display: flex;
   flex-direction: column;
@@ -515,11 +527,15 @@ dialog::backdrop { background: rgb(0 0 0 / 72%); }
   line-height: 1.6;
 }
 .teleprompter-turn {
+  display: flex;
+  gap: 10px;
   padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid transparent;
   transition: background 0.2s, border-color 0.2s;
 }
+.teleprompter-turn.clickable { cursor: pointer; }
+.teleprompter-turn.clickable:hover { background: rgb(126 34 206 / 8%); }
 .teleprompter-turn.commentary {
   font-style: italic;
   color: var(--muted);
@@ -530,6 +546,15 @@ dialog::backdrop { background: rgb(0 0 0 / 72%); }
   border-color: var(--accent);
   color: var(--fg);
 }
+.teleprompter-turn .turn-number {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  min-width: 24px;
+  text-align: right;
+}
+.teleprompter-turn .turn-body { min-width: 0; }
 .teleprompter-turn .turn-speaker { font-size: 11px; color: var(--muted); display: block; margin-bottom: 2px; }
 
 /* Chat */

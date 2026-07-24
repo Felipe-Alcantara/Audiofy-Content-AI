@@ -216,9 +216,7 @@
       </div>
       <button id="btn-close-chunks" class="ghost" aria-label="Fechar revisão">✕</button>
     </div>
-    <audio id="chunk-player" controls preload="metadata">
-      Seu navegador não suporta reprodução de áudio.
-    </audio>
+    <div id="chunk-player-slot" class="player-slot"></div>
     <p id="chunk-now-playing" class="muted small">Escolha um chunk para ouvir.</p>
     <ul id="chunk-list" class="chunk-list"></ul>
   </dialog>
@@ -231,10 +229,13 @@
       </div>
       <button id="btn-close-teleprompter" class="ghost" aria-label="Fechar acompanhamento">✕</button>
     </div>
-    <audio id="teleprompter-player" controls preload="metadata">
-      Seu navegador não suporta reprodução de áudio.
-    </audio>
+    <div id="teleprompter-player-slot" class="player-slot"></div>
     <p id="teleprompter-now-playing" class="muted small">Toque o episódio para acompanhar o texto.</p>
+    <form id="teleprompter-goto-form" class="teleprompter-goto">
+      <label for="teleprompter-goto-input">Ir para o parágrafo</label>
+      <input id="teleprompter-goto-input" type="number" min="1" inputmode="numeric" />
+      <button type="submit" class="ghost">Pular</button>
+    </form>
     <div id="teleprompter-text" class="teleprompter-text" aria-live="polite"></div>
   </dialog>
 

@@ -25,6 +25,18 @@ function projectPathToFileUrl(target) {
   return `file://${encoded.startsWith("/") ? encoded : `/${encoded}`}`;
 }
 
+// Único elemento <audio> real do app. Modais "emprestam" o player movendo-o
+// para dentro de um slot próprio (`movePlayerTo`) e devolvem ao dock do
+// header ao fechar (`movePlayerHome`) — assim nunca há duas reproduções
+// simultâneas nem controles duplicados fora de sincronia.
+function movePlayerTo(slotId) {
+  $(slotId).appendChild($("episode-player"));
+}
+
+function movePlayerHome() {
+  $("player-dock").insertBefore($("episode-player"), $("player-title").nextSibling);
+}
+
 function setPlayerSource(path, title = "Episódio") {
   const player = $("episode-player");
   const url = projectPathToFileUrl(path);
@@ -40,6 +52,8 @@ function setPlayerSource(path, title = "Episódio") {
 }
 
 function playInApp(path, title) {
+  if ($("chunk-modal").open) closeChunkReview();
+  if ($("teleprompter-modal").open) closeTeleprompter();
   const player = setPlayerSource(path, title);
   player.play().catch(() => player.focus());
 }
@@ -68,7 +82,10 @@ async function openChunkReview(itemId, title, language) {
     alert(result.error);
     return;
   }
+  if ($("teleprompter-modal").open) closeTeleprompter();
   const dialog = $("chunk-modal");
+  movePlayerTo("chunk-player-slot");
+  $("episode-player").pause();
   $("chunk-modal-title").textContent = `Revisão dos chunks · ${title}`;
   $("chunk-now-playing").textContent = "Escolha um chunk para ouvir.";
   const summary = result.audit;
@@ -102,7 +119,7 @@ async function openChunkReview(itemId, title, language) {
     row.appendChild(detail);
     const play = makeElement("button", "ghost", "▶️ ouvir");
     play.onclick = () => {
-      const player = $("chunk-player");
+      const player = $("episode-player");
       player.src = projectPathToFileUrl(chunk.path);
       player.load();
       $("chunk-now-playing").textContent =
@@ -116,30 +133,43 @@ async function openChunkReview(itemId, title, language) {
 }
 
 function closeChunkReview() {
-  const player = $("chunk-player");
+  const player = $("episode-player");
   player.pause();
   player.removeAttribute("src");
   player.load();
+  movePlayerHome();
   $("chunk-modal").close();
 }
 
 let teleprompterTimingChunks = null;
 let teleprompterTimeUpdateHandler = null;
 
+function detachTeleprompterTimeUpdate() {
+  if (!teleprompterTimeUpdateHandler) return;
+  $("episode-player").removeEventListener("timeupdate", teleprompterTimeUpdateHandler);
+  teleprompterTimeUpdateHandler = null;
+}
+
 function closeTeleprompter() {
-  const player = $("teleprompter-player");
-  if (teleprompterTimeUpdateHandler) {
-    player.removeEventListener("timeupdate", teleprompterTimeUpdateHandler);
-    teleprompterTimeUpdateHandler = null;
-  }
+  const player = $("episode-player");
+  detachTeleprompterTimeUpdate();
   player.pause();
   player.removeAttribute("src");
   player.load();
+  movePlayerHome();
   teleprompterTimingChunks = null;
+  $("teleprompter-goto-input").value = "";
   $("teleprompter-modal").close();
 }
 
 async function openTeleprompter(episode) {
+  // Reabrir sem fechar antes (ex.: clicar em "acompanhar" de outro episódio)
+  // deixaria o listener anterior órfão no <audio>, que é persistente no DOM —
+  // cada um retém em closure o texto/turnos inteiros do episódio anterior.
+  detachTeleprompterTimeUpdate();
+  if ($("chunk-modal").open) closeChunkReview();
+  movePlayerTo("teleprompter-player-slot");
+  $("episode-player").pause();
   const args = ["audio-chunks", episode.episode_id];
   if (episode.language) args.push(`--language=${episode.language}`);
   const result = await bridge(args);
@@ -159,30 +189,55 @@ async function openTeleprompter(episode) {
   const orderedChunks = [...result.chunks].sort(
     (a, b) => (a.chunk_index || 0) - (b.chunk_index || 0)
   );
-  const turnElements = [];
-  for (const chunk of orderedChunks) {
-    if (!chunk.text) continue;
-    const isCommentary = chunk.kind === "commentary";
-    const turn = makeElement("div", `teleprompter-turn${isCommentary ? " commentary" : ""}`);
-    const label = isCommentary ? "comentário do narrador" : speakerLabel(chunk).replace(/^ · /, "");
-    if (label) turn.appendChild(makeElement("span", "turn-speaker", label));
-    turn.appendChild(document.createTextNode(chunk.text));
-    turnElements.push({ chunk, element: turn });
-    textContainer.appendChild(turn);
-  }
-
   const hasTiming = orderedChunks.every(
     (chunk) => chunk.start_seconds !== null && chunk.end_seconds !== null
   );
+  const player = $("episode-player");
+  const turnElements = [];
+  let paragraphNumber = 0;
+  for (const chunk of orderedChunks) {
+    if (!chunk.text) continue;
+    paragraphNumber += 1;
+    const isCommentary = chunk.kind === "commentary";
+    const classNames = ["teleprompter-turn"];
+    if (isCommentary) classNames.push("commentary");
+    if (hasTiming) classNames.push("clickable");
+    const turn = makeElement("div", classNames.join(" "));
+    turn.appendChild(makeElement("span", "turn-number", `${paragraphNumber}`));
+    const body = makeElement("div", "turn-body");
+    const label = isCommentary ? "comentário do narrador" : speakerLabel(chunk).replace(/^ · /, "");
+    if (label) body.appendChild(makeElement("span", "turn-speaker", label));
+    body.appendChild(document.createTextNode(chunk.text));
+    turn.appendChild(body);
+    if (hasTiming) {
+      turn.setAttribute("role", "button");
+      turn.tabIndex = 0;
+      turn.title = "Clique para pular o áudio para este parágrafo";
+      const jumpToChunk = () => {
+        player.currentTime = chunk.start_seconds;
+        if (player.paused) player.play().catch(() => player.focus());
+      };
+      turn.onclick = jumpToChunk;
+      turn.onkeydown = (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          jumpToChunk();
+        }
+      };
+    }
+    turnElements.push({ chunk, element: turn, paragraphNumber });
+    textContainer.appendChild(turn);
+  }
+
   teleprompterTimingChunks = hasTiming ? turnElements : null;
   if (!hasTiming) {
     $("teleprompter-now-playing").textContent =
-      "Sem auditoria de áudio completa: o destaque automático não está disponível, só o texto.";
+      "Sem auditoria de áudio completa: o destaque automático e o pulo por parágrafo não estão disponíveis, só o texto.";
   } else {
     $("teleprompter-now-playing").textContent = "Toque o episódio para acompanhar o texto.";
   }
+  $("teleprompter-goto-input").max = String(turnElements.length || "");
 
-  const player = $("teleprompter-player");
   if (episode.mp3) {
     player.src = projectPathToFileUrl(episode.mp3);
     player.load();
@@ -1325,6 +1380,19 @@ $("btn-close-teleprompter").onclick = closeTeleprompter;
 $("teleprompter-modal").addEventListener("cancel", (event) => {
   event.preventDefault();
   closeTeleprompter();
+});
+
+$("teleprompter-goto-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!teleprompterTimingChunks) return;
+  const input = $("teleprompter-goto-input");
+  const target = Number.parseInt(input.value, 10);
+  const entry = teleprompterTimingChunks.find((item) => item.paragraphNumber === target);
+  if (!entry) return;
+  const player = $("episode-player");
+  player.currentTime = entry.chunk.start_seconds;
+  if (player.paused) player.play().catch(() => player.focus());
+  entry.element.scrollIntoView({ block: "center", behavior: "smooth" });
 });
 
 // ── Configurações ─────────────────────────────────────────────────────────
