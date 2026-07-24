@@ -1956,3 +1956,23 @@ confirmada sem alteração.
 
 **Risco que sobrou:** nenhum novo — a correção é estritamente mais permissiva com o scroll manual
 do usuário, sem remover a funcionalidade de destaque automático.
+
+## 2026-07-24 — Botão "voltar ao parágrafo atual" no teleprompter
+
+**O que mudou:** depois da correção anterior (scroll automático só quando o parágrafo muda), rolar
+manualmente para ler à frente/atrás deixa de ser interrompido — mas também deixa de haver um jeito
+rápido de voltar ao ponto sendo narrado. Novo botão flutuante `#btn-teleprompter-follow`
+("↓ Voltar ao parágrafo atual") aparece sobre o texto sempre que o parágrafo em destaque sai da
+área visível do container (`updateTeleprompterFollowButton`, comparando
+`getBoundingClientRect()` do parágrafo ativo com o do container via listener de `scroll`); some
+sozinho quando o parágrafo ativo volta a ficar visível. Clicar nele rola de volta suavemente.
+
+**Motivo:** pedido do usuário, na sequência direta da correção do scroll automático.
+
+**Validação:** TDD — teste estático novo em `electron/tests/frontend-quality.test.js` confirmando
+a lógica de visibilidade via `getBoundingClientRect`, o listener de `scroll` e o `onclick` do
+botão. Suíte Electron completa (46 testes, 1 skip esperado) e `eslint --max-warnings=0` limpos.
+Suíte Python completa (430 testes) confirmada sem alteração.
+
+**Risco que sobrou:** nenhum — feature aditiva, não interfere no destaque automático nem na
+navegação por número/clique já existentes.
