@@ -1886,3 +1886,52 @@ retroatividade não foi versionado (script pontual de dados, não ferramenta reu
 novos episódios legados precisarem do mesmo tratamento, a lógica de cruzamento
 `chunk_index`↔`turns` documentada acima deve ser reaplicada.
 exige migração de dados existentes.
+
+## 2026-07-24 — Navegação por parágrafo no teleprompter, correção de leak e player único
+
+**O que mudou:**
+- Corrigido um memory leak real no teleprompter, achado por uma auditoria estática do código
+  (`electron/renderer/renderer.js`): `openTeleprompter` nunca removia o listener `timeupdate`
+  de uma abertura anterior antes de registrar um novo no mesmo `<audio>` (elemento persistente
+  no DOM, nunca recriado). Reabrir o teleprompter várias vezes sem passar por
+  `closeTeleprompter` acumulava listeners, cada um retendo em closure o texto/turnos inteiros
+  do episódio anterior. Nova função `detachTeleprompterTimeUpdate()` é chamada tanto no fechamento
+  quanto no início da abertura, eliminando o acúmulo.
+- Teleprompter ganhou numeração de parágrafo (cada trecho de texto mostra seu número) e duas
+  formas de navegação: um campo "ir para o parágrafo N" (form `#teleprompter-goto-form`) e clique
+  direto no parágrafo — ambos pulam `player.currentTime` para o `start_seconds` do chunk
+  correspondente. Só ficam ativos quando o episódio tem janela temporal completa (`start_seconds`/
+  `end_seconds` em todos os chunks); sem isso, o clique não finge uma precisão que não existe.
+- **Player de áudio unificado**: existiam 3 elementos `<audio>` separados (dock do header, modal
+  de revisão de chunks, modal do teleprompter) que podiam tocar simultaneamente e se sobrepor —
+  reportado pelo usuário ao notar que botões diferentes de "ouvir" iniciavam reproduções
+  paralelas. Agora há um único `<audio id="episode-player">` real, movido via
+  `movePlayerTo(slotId)`/`movePlayerHome()` (usando `appendChild`, que reancora o elemento sem
+  recriá-lo — preserva `currentTime`/estado de reprodução) para dentro do slot do modal ativo e
+  de volta ao dock do header ao fechar. Abrir qualquer um dos três contextos agora pausa e, se
+  necessário, fecha os outros dois primeiro, garantindo que nunca haja duas reproduções ativas.
+
+**Motivo:** pedido do usuário (numerar parágrafos e permitir pular por número ou clique) somado a
+uma auditoria de memory leak solicitada após o PC do usuário travar por esgotamento de RAM/swap —
+a auditoria confirmou um leak real e concreto no teleprompter (outros pontos investigados —
+polling de status, renderização de episódios/custos, IPC/spawn de processo — usam padrões seguros
+como `replaceChildren()`/`clearTimeout` pareado e não apresentaram problema). Player duplicado foi
+um achado do próprio usuário ao testar a feature nova.
+
+**Validação:** TDD — testes estáticos escritos cobrindo cada mudança em
+`electron/tests/frontend-quality.test.js` (correção do leak, numeração/navegação por parágrafo,
+clique-para-pular, player único) e ajuste do teste pré-existente `"modal permite auditar e ouvir
+chunks individualmente"` para a nova estrutura de slot. Suíte Electron completa (44 testes, 1 skip
+esperado no Windows) e `eslint --max-warnings=0` limpos. Suíte Python completa (430 testes) e
+`ruff check` confirmados sem alteração (mudança restrita ao Electron).
+
+**Risco que sobrou:** a auditoria de memory leak foi estática (leitura de código, sem profiling ao
+vivo) — o mecanismo do leak tem alta confiança, mas a magnitude real em bytes por abertura não foi
+medida; um profiling com heap snapshot do DevTools do Electron confirmaria o tamanho do impacto.
+O DOM de mensagens do chat (`#chat-messages`) também cresce sem limite até o usuário clicar em
+"Limpar" — achado da mesma auditoria, mas de impacto bem menor (exige uso muito prolongado do
+chat) e não foi corrigido nesta entrega. O upload dos MP3s grandes (8 de 10 episódios) para um
+storage externo (Google Drive) não foi possível nesta sessão: o conector Google Drive do usuário
+está autorizado em claude.ai, mas essa conexão não é exposta ao Claude Code (CLI) — são superfícies
+diferentes; os episódios grandes continuam só com `Caminho do arquivo (local)` preenchido no Notion,
+sem link externo real.
