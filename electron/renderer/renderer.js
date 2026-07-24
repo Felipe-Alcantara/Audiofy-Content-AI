@@ -37,6 +37,45 @@ function movePlayerHome() {
   $("player-dock").insertBefore($("episode-player"), $("player-title").nextSibling);
 }
 
+// Guarda em disco (localStorage, sobrevive a fechar o app) o ponto em que o
+// usuário parou de ouvir cada episódio, por caminho de arquivo. Não retoma
+// sozinho ao abrir o app — só quando o usuário decide ouvir aquele episódio
+// de novo (playInApp), evitando som inesperado na abertura.
+const PLAYBACK_POSITIONS_KEY = "audiofy-playback-positions";
+const MAX_SAVED_PLAYBACK_POSITIONS = 200;
+
+function readPlaybackPositions() {
+  try {
+    const raw = localStorage.getItem(PLAYBACK_POSITIONS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePlaybackPosition(path, currentTime) {
+  const positions = readPlaybackPositions();
+  positions[path] = currentTime;
+  const entries = Object.entries(positions);
+  // Sem teto, o registro cresceria para sempre ao longo de meses de uso —
+  // mantém só as entradas mais recentes quando passa do limite.
+  const trimmed = entries.length > MAX_SAVED_PLAYBACK_POSITIONS
+    ? Object.fromEntries(entries.slice(entries.length - MAX_SAVED_PLAYBACK_POSITIONS))
+    : positions;
+  try {
+    localStorage.setItem(PLAYBACK_POSITIONS_KEY, JSON.stringify(trimmed));
+  } catch {
+    // Armazenamento indisponível/cheio: perder o resume não é motivo para
+    // quebrar a reprodução.
+  }
+}
+
+function readSavedPlaybackPosition(path) {
+  const value = readPlaybackPositions()[path];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 function setPlayerSource(path, title = "Episódio") {
   const player = $("episode-player");
   const url = projectPathToFileUrl(path);
@@ -54,7 +93,13 @@ function setPlayerSource(path, title = "Episódio") {
 function playInApp(path, title) {
   if ($("chunk-modal").open) closeChunkReview();
   if ($("teleprompter-modal").open) closeTeleprompter();
+  const url = projectPathToFileUrl(path);
+  const isNewSource = $("episode-player").dataset.source !== url;
   const player = setPlayerSource(path, title);
+  if (isNewSource) {
+    const savedPosition = readSavedPlaybackPosition(url);
+    if (savedPosition !== null) player.currentTime = savedPosition;
+  }
   player.play().catch(() => player.focus());
 }
 
@@ -1530,6 +1575,16 @@ function setupTeleprompterDragScroll() {
   container.addEventListener("wheel", stopInertia, { passive: true });
 }
 setupTeleprompterDragScroll();
+
+// Listener permanente do player global (independente do teleprompter estar
+// aberto): salva a posição a cada tick para retomar de onde parou na
+// próxima vez que o usuário ouvir este mesmo episódio, mesmo depois de
+// fechar e reabrir o app.
+$("episode-player").addEventListener("timeupdate", () => {
+  const player = $("episode-player");
+  if (!player.dataset.source) return;
+  savePlaybackPosition(player.dataset.source, player.currentTime);
+});
 
 // ── Configurações ─────────────────────────────────────────────────────────
 

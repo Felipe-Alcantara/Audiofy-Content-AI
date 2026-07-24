@@ -393,3 +393,29 @@ test("teleprompter permite arrastar o texto para rolar, como num celular", () =>
   assert.match(dragSetupBody2, /addEventListener\("mousedown".*\n\s*stopInertia\(\);/);
   assert.match(dragSetupBody2, /addEventListener\("wheel", stopInertia/);
 });
+
+test("retoma a reprodução de onde parou, mesmo depois de fechar o app", () => {
+  const renderer = readRendererFile("renderer.js");
+
+  // A posição precisa persistir entre sessões do Electron (localStorage
+  // sobrevive a fechar/abrir o app), não só em memória.
+  assert.match(renderer, /const PLAYBACK_POSITIONS_KEY = "audiofy-playback-positions"/);
+  assert.match(renderer, /function savePlaybackPosition\(path, currentTime\)/);
+  assert.match(renderer, /function readSavedPlaybackPosition\(path\)/);
+  assert.match(renderer, /localStorage\.setItem\(PLAYBACK_POSITIONS_KEY/);
+  assert.match(renderer, /localStorage\.getItem\(PLAYBACK_POSITIONS_KEY\)/);
+
+  // playInApp precisa consultar a posição salva daquele episódio específico
+  // (pela URL do arquivo, mesma chave usada ao salvar) e retomar dali, não
+  // sempre do zero — só quando troca de fonte, não a cada clique no mesmo.
+  const playInAppBody = renderer.match(
+    /function playInApp\(path, title\) \{([\s\S]*?)\n\}/
+  )[1];
+  assert.match(playInAppBody, /readSavedPlaybackPosition\(url\)/);
+  assert.match(playInAppBody, /isNewSource/);
+
+  // A posição é salva ao ouvir (timeupdate) e ao pausar/trocar de episódio,
+  // não só ao fechar o app — não há hook de "antes de fechar" confiável o
+  // bastante para não perder o progresso de um fechamento abrupto.
+  assert.match(renderer, /"episode-player"\)\.addEventListener\("timeupdate", \(\) => \{[\s\S]*?savePlaybackPosition/);
+});
