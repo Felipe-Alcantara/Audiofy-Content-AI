@@ -1438,11 +1438,13 @@ $("btn-teleprompter-follow").onclick = () => {
 function setupTeleprompterDragScroll() {
   const container = $("teleprompter-text");
   const DRAG_THRESHOLD_PX = 6;
-  // Quanto a velocidade encolhe a cada frame (~60fps) e o piso abaixo do
-  // qual a inércia para — valores calibrados para "sentir" como o momentum
-  // scroll de um celular, sem exigir física real.
+  // Quanto a velocidade encolhe a cada frame (~60fps), o piso abaixo do qual
+  // a inércia para, e um multiplicador aplicado à velocidade capturada no
+  // solto do mouse — o pedido era ser mais rápido que um scroll de roda
+  // normal, não só durar mais tempo.
   const INERTIA_FRICTION = 0.985;
   const INERTIA_MIN_VELOCITY = 0.5;
+  const INERTIA_BOOST = 3;
   let dragging = false;
   let didDrag = false;
   let startY = 0;
@@ -1516,6 +1518,7 @@ function setupTeleprompterDragScroll() {
 
   const endDrag = () => {
     if (dragging && didDrag && Math.abs(velocity) >= INERTIA_MIN_VELOCITY) {
+      velocity *= INERTIA_BOOST;
       inertiaFrameId = requestAnimationFrame(runInertia);
     }
     dragging = false;
