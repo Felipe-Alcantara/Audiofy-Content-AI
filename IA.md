@@ -1935,3 +1935,24 @@ storage externo (Google Drive) não foi possível nesta sessão: o conector Goog
 está autorizado em claude.ai, mas essa conexão não é exposta ao Claude Code (CLI) — são superfícies
 diferentes; os episódios grandes continuam só com `Caminho do arquivo (local)` preenchido no Notion,
 sem link externo real.
+
+## 2026-07-24 — Fix: teleprompter rolava a tela sozinho a cada tick
+
+**O que mudou:** o handler de `timeupdate` do teleprompter (`electron/renderer/renderer.js`)
+chamava `scrollIntoView({ block: "center" })` toda vez que o evento disparava — várias vezes por
+segundo enquanto o áudio toca — mesmo quando o parágrafo ativo continuava sendo o mesmo de antes.
+Isso cancelava qualquer tentativa do usuário de rolar manualmente a tela: ela "subia sozinha" de
+volta ao centro a cada fração de segundo. Nova variável `teleprompterLastActiveEntry` guarda o
+último parágrafo destacado; o scroll só acontece quando o parágrafo ativo realmente muda. É
+resetada ao abrir/fechar o teleprompter para não herdar estado do episódio anterior, e sincronizada
+pelo botão "ir para o parágrafo" (que ainda rola sempre, por ser ação explícita do usuário).
+
+**Motivo:** reportado pelo usuário — "não dá pra descer, ele fica subindo sozinho".
+
+**Validação:** TDD — teste estático novo em `electron/tests/frontend-quality.test.js` confirmando
+que o scroll só ocorre quando `activeEntry` muda em relação ao anterior. Suíte Electron completa
+(46 testes, 1 skip esperado) e `eslint --max-warnings=0` limpos. Suíte Python completa (430 testes)
+confirmada sem alteração.
+
+**Risco que sobrou:** nenhum novo — a correção é estritamente mais permissiva com o scroll manual
+do usuário, sem remover a funcionalidade de destaque automático.
