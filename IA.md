@@ -2037,3 +2037,18 @@ então a inércia dura mais tempo antes de cair abaixo do piso (`INERTIA_MIN_VEL
 limpos; mudança de uma única constante, sem novo comportamento a testar.
 
 **Risco que sobrou:** mesmo da entrega anterior — calibração subjetiva, sem física de referência.
+
+## 2026-07-24 — Inércia do teleprompter ainda mais longa
+
+**O que mudou:** `INERTIA_FRICTION` subiu de `0.97` para `0.985` — o ajuste anterior ainda
+pareceu fraco para o usuário.
+
+**Motivo:** feedback direto do usuário ("ainda tá meio fraco") após o ajuste anterior.
+
+**Validação:** suíte Electron completa (47 testes, 1 skip esperado) e `eslint --max-warnings=0`
+limpos; mudança de uma única constante.
+
+**Risco que sobrou:** mesmo das entregas anteriores — calibração subjetiva. Se ainda não for
+suficiente, o próximo ajuste deveria considerar também amplificar a velocidade capturada no
+solto do mouse (ex.: multiplicar por um fator > 1), não só reduzir o atrito, já que a amostragem
+de `mousemove` pode subestimar gestos muito rápidos.
