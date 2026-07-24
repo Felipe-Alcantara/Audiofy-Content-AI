@@ -2024,3 +2024,16 @@ completa (430 testes) confirmada sem alteração.
 **Risco que sobrou:** os coeficientes de atrito/piso foram calibrados de forma subjetiva (não há
 uma "física real" de referência) — se o usuário achar a inércia rápida/lenta demais, ajustar
 `INERTIA_FRICTION`/`INERTIA_MIN_VELOCITY` é a forma direta de recalibrar.
+
+## 2026-07-24 — Aumenta a duração da inércia do teleprompter
+
+**O que mudou:** `INERTIA_FRICTION` subiu de `0.95` para `0.97` em `setupTeleprompterDragScroll`
+(`electron/renderer/renderer.js`) — quanto mais perto de 1, menos a velocidade encolhe por frame,
+então a inércia dura mais tempo antes de cair abaixo do piso (`INERTIA_MIN_VELOCITY`, inalterado).
+
+**Motivo:** pedido do usuário — a inércia calibrada na entrega anterior parecia curta demais.
+
+**Validação:** suíte Electron completa (47 testes, 1 skip esperado) e `eslint --max-warnings=0`
+limpos; mudança de uma única constante, sem novo comportamento a testar.
+
+**Risco que sobrou:** mesmo da entrega anterior — calibração subjetiva, sem física de referência.
