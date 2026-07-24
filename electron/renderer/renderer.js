@@ -37,43 +37,28 @@ function movePlayerHome() {
   $("player-dock").insertBefore($("episode-player"), $("player-title").nextSibling);
 }
 
-// Guarda em disco (localStorage, sobrevive a fechar o app) o ponto em que o
-// usuário parou de ouvir cada episódio, por caminho de arquivo. Não retoma
-// sozinho ao abrir o app — só quando o usuário decide ouvir aquele episódio
-// de novo (playInApp), evitando som inesperado na abertura.
-const PLAYBACK_POSITIONS_KEY = "audiofy-playback-positions";
-const MAX_SAVED_PLAYBACK_POSITIONS = 200;
+// Guarda em disco, via bridge Python (escrita atômica: arquivo temporário +
+// replace), o ponto em que o usuário parou de ouvir cada episódio. Não usa
+// localStorage: o Chromium não garante que localStorage seja fisicamente
+// sincronizado no momento do setItem — fechar a janela abruptamente perdia
+// todo o progresso ainda não commitado, fazendo o resume sempre voltar ao
+// início. Não retoma sozinho ao abrir o app — só quando o usuário decide
+// ouvir aquele episódio de novo (playInApp), evitando som inesperado.
+const PLAYBACK_POSITION_SAVE_INTERVAL_MS = 3000;
+let lastPlaybackPositionSaveAt = 0;
 
-function readPlaybackPositions() {
-  try {
-    const raw = localStorage.getItem(PLAYBACK_POSITIONS_KEY);
-    const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
+function savePlaybackPosition(source, currentTime) {
+  // Chamar a bridge (spawna um processo Python) a cada tick de timeupdate
+  // seria custoso; persiste no máximo a cada poucos segundos.
+  const now = Date.now();
+  if (now - lastPlaybackPositionSaveAt < PLAYBACK_POSITION_SAVE_INTERVAL_MS) return;
+  lastPlaybackPositionSaveAt = now;
+  bridge(["playback-position-save", source, String(currentTime)]);
 }
 
-function savePlaybackPosition(path, currentTime) {
-  const positions = readPlaybackPositions();
-  positions[path] = currentTime;
-  const entries = Object.entries(positions);
-  // Sem teto, o registro cresceria para sempre ao longo de meses de uso —
-  // mantém só as entradas mais recentes quando passa do limite.
-  const trimmed = entries.length > MAX_SAVED_PLAYBACK_POSITIONS
-    ? Object.fromEntries(entries.slice(entries.length - MAX_SAVED_PLAYBACK_POSITIONS))
-    : positions;
-  try {
-    localStorage.setItem(PLAYBACK_POSITIONS_KEY, JSON.stringify(trimmed));
-  } catch {
-    // Armazenamento indisponível/cheio: perder o resume não é motivo para
-    // quebrar a reprodução.
-  }
-}
-
-function readSavedPlaybackPosition(path) {
-  const value = readPlaybackPositions()[path];
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
+async function readSavedPlaybackPosition(source) {
+  const result = await bridge(["playback-position-get", source]);
+  return result.ok && typeof result.seconds === "number" ? result.seconds : null;
 }
 
 function setPlayerSource(path, title = "Episódio") {
@@ -90,14 +75,14 @@ function setPlayerSource(path, title = "Episódio") {
   return player;
 }
 
-function playInApp(path, title) {
+async function playInApp(path, title) {
   if ($("chunk-modal").open) closeChunkReview();
   if ($("teleprompter-modal").open) closeTeleprompter();
   const url = projectPathToFileUrl(path);
   const isNewSource = $("episode-player").dataset.source !== url;
   const player = setPlayerSource(path, title);
   if (isNewSource) {
-    const savedPosition = readSavedPlaybackPosition(url);
+    const savedPosition = await readSavedPlaybackPosition(url);
     if (savedPosition !== null) {
       // Definir currentTime logo após load() é ignorado silenciosamente:
       // o elemento ainda não resolveu metadata/seekability nesse instante.

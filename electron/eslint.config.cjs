@@ -48,7 +48,6 @@ module.exports = [
         confirm: readonly,
         document: readonly,
         HTMLMediaElement: readonly,
-        localStorage: readonly,
         performance: readonly,
         requestAnimationFrame: readonly,
         window: readonly,

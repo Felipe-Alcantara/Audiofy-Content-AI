@@ -397,21 +397,28 @@ test("teleprompter permite arrastar o texto para rolar, como num celular", () =>
 test("retoma a reprodução de onde parou, mesmo depois de fechar o app", () => {
   const renderer = readRendererFile("renderer.js");
 
-  // A posição precisa persistir entre sessões do Electron (localStorage
-  // sobrevive a fechar/abrir o app), não só em memória.
-  assert.match(renderer, /const PLAYBACK_POSITIONS_KEY = "audiofy-playback-positions"/);
-  assert.match(renderer, /function savePlaybackPosition\(path, currentTime\)/);
-  assert.match(renderer, /function readSavedPlaybackPosition\(path\)/);
-  assert.match(renderer, /localStorage\.setItem\(PLAYBACK_POSITIONS_KEY/);
-  assert.match(renderer, /localStorage\.getItem\(PLAYBACK_POSITIONS_KEY\)/);
+  // Persiste via bridge Python (escrita atômica em arquivo), não o
+  // armazenamento de página do Chromium: ele não garante sincronização
+  // física imediata — fechar a janela abruptamente perdia todo o progresso
+  // ainda não commitado, e o resume sempre voltava para o início.
+  assert.doesNotMatch(renderer, /localStorage\./);
+  assert.match(renderer, /function savePlaybackPosition\(source, currentTime\)/);
+  assert.match(renderer, /async function readSavedPlaybackPosition\(source\)/);
+  assert.match(renderer, /bridge\(\["playback-position-save", source, String\(currentTime\)\]\)/);
+  assert.match(renderer, /bridge\(\["playback-position-get", source\]\)/);
+
+  // Chamar a bridge a cada tick de timeupdate spawnaria um processo Python
+  // várias vezes por segundo — precisa ser limitado no tempo.
+  assert.match(renderer, /PLAYBACK_POSITION_SAVE_INTERVAL_MS/);
+  assert.match(renderer, /now - lastPlaybackPositionSaveAt < PLAYBACK_POSITION_SAVE_INTERVAL_MS/);
 
   // playInApp precisa consultar a posição salva daquele episódio específico
   // (pela URL do arquivo, mesma chave usada ao salvar) e retomar dali, não
   // sempre do zero — só quando troca de fonte, não a cada clique no mesmo.
   const playInAppBody = renderer.match(
-    /function playInApp\(path, title\) \{([\s\S]*?)\n\}/
+    /async function playInApp\(path, title\) \{([\s\S]*?)\n\}/
   )[1];
-  assert.match(playInAppBody, /readSavedPlaybackPosition\(url\)/);
+  assert.match(playInAppBody, /await readSavedPlaybackPosition\(url\)/);
   assert.match(playInAppBody, /isNewSource/);
 
   // A posição é salva ao ouvir (timeupdate) e ao pausar/trocar de episódio,

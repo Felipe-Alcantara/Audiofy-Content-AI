@@ -33,6 +33,10 @@ test("bridge aceita somente comandos públicos conhecidos", () => {
   assert.deepEqual(validateBridgeRequest(
     ["generate", "custom", "livro", "--mode=verbatim", "--voice=Sulafat"]
   ), ["generate", "custom", "livro", "--mode=verbatim", "--voice=Sulafat"]);
+  assert.deepEqual(validateBridgeRequest(["playback-position-get", "file:///a/ep.mp3"]),
+    ["playback-position-get", "file:///a/ep.mp3"]);
+  assert.deepEqual(validateBridgeRequest(["playback-position-save", "file:///a/ep.mp3", "12.3"]),
+    ["playback-position-save", "file:///a/ep.mp3", "12.3"]);
   assert.throws(() => validateBridgeRequest(["run-generation", "x", "y"]));
   assert.throws(() => validateBridgeRequest("status"));
 });
