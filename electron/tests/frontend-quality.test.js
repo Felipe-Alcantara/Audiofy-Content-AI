@@ -377,4 +377,19 @@ test("teleprompter permite arrastar o texto para rolar, como num celular", () =>
   // senão o mouseup do fim do arraste dispararia jumpToChunk sem querer.
   assert.match(styles, /\.teleprompter-text\.dragging/);
   assert.match(renderer, /classList\.(add|toggle)\("dragging"/);
+
+  // Soltar o mouse em movimento continua o scroll com inércia (momentum),
+  // igual ao gesto de arrastar rápido num celular — não para seco.
+  const dragSetupBody2 = renderer.match(
+    /function setupTeleprompterDragScroll\(\) \{([\s\S]*?)\n\}/
+  )[1];
+  assert.match(dragSetupBody2, /requestAnimationFrame/);
+  assert.match(dragSetupBody2, /cancelAnimationFrame/);
+  assert.match(dragSetupBody2, /velocity/i);
+
+  // Um novo arraste ou giro da roda do mouse durante a inércia precisa
+  // cancelá-la — senão os dois scrolls competiriam entre si.
+  assert.match(dragSetupBody2, /function stopInertia\(\)/);
+  assert.match(dragSetupBody2, /addEventListener\("mousedown".*\n\s*stopInertia\(\);/);
+  assert.match(dragSetupBody2, /addEventListener\("wheel", stopInertia/);
 });

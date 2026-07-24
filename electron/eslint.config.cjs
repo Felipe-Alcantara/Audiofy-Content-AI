@@ -44,8 +44,11 @@ module.exports = [
     languageOptions: {
       globals: {
         alert: readonly,
+        cancelAnimationFrame: readonly,
         confirm: readonly,
         document: readonly,
+        performance: readonly,
+        requestAnimationFrame: readonly,
         window: readonly,
       },
     },

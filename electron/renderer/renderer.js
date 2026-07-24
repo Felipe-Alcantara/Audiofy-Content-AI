@@ -1438,16 +1438,48 @@ $("btn-teleprompter-follow").onclick = () => {
 function setupTeleprompterDragScroll() {
   const container = $("teleprompter-text");
   const DRAG_THRESHOLD_PX = 6;
+  // Quanto a velocidade encolhe a cada frame (~60fps) e o piso abaixo do
+  // qual a inércia para — valores calibrados para "sentir" como o momentum
+  // scroll de um celular, sem exigir física real.
+  const INERTIA_FRICTION = 0.95;
+  const INERTIA_MIN_VELOCITY = 0.5;
   let dragging = false;
   let didDrag = false;
   let startY = 0;
   let startScrollTop = 0;
+  // Velocidade recente (px/ms), amostrada a cada mousemove, para estimar o
+  // impulso no momento em que o usuário solta o botão.
+  let lastMoveTime = 0;
+  let lastMoveY = 0;
+  let velocity = 0;
+  let inertiaFrameId = null;
+
+  function stopInertia() {
+    if (inertiaFrameId !== null) {
+      cancelAnimationFrame(inertiaFrameId);
+      inertiaFrameId = null;
+    }
+  }
+
+  function runInertia() {
+    velocity *= INERTIA_FRICTION;
+    if (Math.abs(velocity) < INERTIA_MIN_VELOCITY) {
+      inertiaFrameId = null;
+      return;
+    }
+    container.scrollTop -= velocity;
+    inertiaFrameId = requestAnimationFrame(runInertia);
+  }
 
   container.addEventListener("mousedown", (event) => {
+    stopInertia();
     dragging = true;
     didDrag = false;
     startY = event.clientY;
     startScrollTop = container.scrollTop;
+    lastMoveTime = performance.now();
+    lastMoveY = event.clientY;
+    velocity = 0;
   });
 
   container.addEventListener("mousemove", (event) => {
@@ -1458,6 +1490,14 @@ function setupTeleprompterDragScroll() {
       container.classList.add("dragging");
     }
     if (didDrag) container.scrollTop = startScrollTop - delta;
+
+    const now = performance.now();
+    const elapsed = now - lastMoveTime;
+    if (elapsed > 0) {
+      velocity = (event.clientY - lastMoveY) / elapsed;
+      lastMoveTime = now;
+      lastMoveY = event.clientY;
+    }
   });
 
   // O arraste termina em captura, antes de qualquer onclick de parágrafo:
@@ -1475,11 +1515,16 @@ function setupTeleprompterDragScroll() {
   );
 
   const endDrag = () => {
+    if (dragging && didDrag && Math.abs(velocity) >= INERTIA_MIN_VELOCITY) {
+      inertiaFrameId = requestAnimationFrame(runInertia);
+    }
     dragging = false;
     container.classList.remove("dragging");
   };
   container.addEventListener("mouseup", endDrag);
   container.addEventListener("mouseleave", endDrag);
+  // Girar a roda do mouse durante a inércia faria os dois scrolls competirem.
+  container.addEventListener("wheel", stopInertia, { passive: true });
 }
 setupTeleprompterDragScroll();
 
