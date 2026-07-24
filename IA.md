@@ -2173,3 +2173,53 @@ sem erro visível, mas o próximo tick tenta de novo. Também não há garantia 
 tick antes do fechamento abrupto complete a gravação a tempo (o intervalo de 3s entre saves
 significa que até ~3s do fim podem não ter sido persistidos) — isso é uma perda pequena e aceitável,
 bem diferente do bug anterior (perda total, sempre voltando a zero).
+
+## 2026-07-24 — Fix: resume ainda voltava para o início (caminho do teleprompter)
+
+**O que mudou:** o usuário reportou que o resume ainda voltava sempre para o início mesmo após a
+correção anterior. Investigação revelou que ele estava usando especificamente o botão
+"📖 acompanhar" (teleprompter), não o "▶️ ouvir" do card — e `openTeleprompter`
+(`electron/renderer/renderer.js`) tinha sua própria lógica de troca de fonte do player
+(`player.src = ...`), **sem nenhuma chamada à lógica de resume** adicionada em `playInApp` na
+correção anterior. Além disso, mesmo em `playInApp`, havia uma race condition sutil: a leitura da
+posição salva (`await readSavedPlaybackPosition`) rodava **depois** de `setPlayerSource` já trocar
+`dataset.source`/`src`/`load()` — assim que `dataset.source` aponta pra nova URL, o listener global
+de `timeupdate` já trata o player como "válido" para salvar, e o primeiro `timeupdate` disparado
+por `load()` (com `currentTime=0`) podia sobrescrever a posição salva com zero **durante o
+`await`**, antes dela ser lida/aplicada.
+
+Duas correções: (1) extraída a lógica de "esperar `loadedmetadata`/`readyState` e posicionar" para
+uma função compartilhada `seekWhenReady(player, seconds)`, usada tanto por `playInApp` quanto por
+`openTeleprompter` — o teleprompter passou a ter a mesma lógica de resume que faltava
+completamente; (2) em ambos os fluxos, a leitura da posição salva agora acontece **antes** de
+qualquer troca de `dataset.source`/`src`, eliminando a janela de corrida. Como reforço adicional,
+o listener global de `timeupdate` que salva a posição agora só grava quando `!player.paused` — um
+`timeupdate` com `currentTime=0` antes do play real não deveria sobrescrever nada.
+
+**Motivo:** reportado pelo usuário pela terceira vez ("sempre que dou play volta do 0"). A pergunta
+decisiva ("você está abrindo pelo teleprompter?") revelou que o caminho corrigido anteriormente
+(`playInApp`, botão "▶️ ouvir" do card) nunca era o caminho que o usuário de fato usava.
+
+**Investigação:** desta vez foi possível rodar o Electron real e reproduzir o bug ao vivo — a
+variável `ELECTRON_RUN_AS_NODE=1` herdada do ambiente (o próprio Claude Code roda sob Electron)
+impedia isso antes; rodando o binário num subshell com `unset ELECTRON_RUN_AS_NODE` e
+`--remote-debugging-port`, foi possível conectar via Chrome DevTools Protocol (websockets em
+Python) e executar JavaScript diretamente na página real do app, incluindo cliques nos botões
+reais e inspeção do estado do `<audio>`. Isso confirmou o mecanismo exato do bug e validou a
+correção antes de fechar: um teste limpo (processo novo, arquivo de posição preparado com 77s,
+um único clique em "acompanhar", 5s de espera) mostrou `player.currentTime === 77` ao final.
+
+**Validação:** TDD — teste estático de `electron/tests/frontend-quality.test.js` reescrito para
+verificar a ordem relativa (leitura antes da troca de fonte) via índice de substring no corpo de
+`playInApp` e `openTeleprompter`, a existência da função `seekWhenReady` compartilhada, e o guard
+`if (player.paused) return;` no listener de salvamento. Suíte Electron completa (48 testes, 1 skip
+esperado) e `eslint --max-warnings=0` limpos. Suíte Python completa (442 testes) confirmada sem
+alteração. Validação adicional ao vivo via CDP, conforme descrito acima — não só testes estáticos
+desta vez.
+
+**Risco que sobrou:** a validação ao vivo cobriu o caminho principal (app novo → abrir teleprompter
+→ resume correto) uma vez; não foram testados exaustivamente todos os cenários de troca rápida
+entre chunk-review/teleprompter/dock que os testes estáticos descrevem. O ambiente de teste (Xvfb +
+Electron sob sandbox) se mostrou instável para sessões muito longas ou repetidas rapidamente —
+processos ocasionalmente falharam ao subir ou a reproduzir de forma consistente entre tentativas
+consecutivas, então parte da investigação combinou evidência ao vivo com análise estática do código.
