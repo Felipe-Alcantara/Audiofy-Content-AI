@@ -143,6 +143,7 @@ function closeChunkReview() {
 
 let teleprompterTimingChunks = null;
 let teleprompterTimeUpdateHandler = null;
+let teleprompterLastActiveEntry = null;
 
 function detachTeleprompterTimeUpdate() {
   if (!teleprompterTimeUpdateHandler) return;
@@ -158,6 +159,7 @@ function closeTeleprompter() {
   player.load();
   movePlayerHome();
   teleprompterTimingChunks = null;
+  teleprompterLastActiveEntry = null;
   $("teleprompter-goto-input").value = "";
   $("teleprompter-modal").close();
 }
@@ -230,6 +232,7 @@ async function openTeleprompter(episode) {
   }
 
   teleprompterTimingChunks = hasTiming ? turnElements : null;
+  teleprompterLastActiveEntry = null;
   if (!hasTiming) {
     $("teleprompter-now-playing").textContent =
       "Sem auditoria de áudio completa: o destaque automático e o pulo por parágrafo não estão disponíveis, só o texto.";
@@ -252,8 +255,14 @@ async function openTeleprompter(episode) {
         activeEntry = entry;
       }
     }
+    if (activeEntry) activeEntry.element.classList.add("active");
+    // timeupdate dispara várias vezes por segundo; rolar a tela a cada tick
+    // (mesmo com o parágrafo ativo inalterado) cancelava qualquer tentativa
+    // do usuário de rolar manualmente — a tela "subia sozinha" de volta ao
+    // centro. Só rola quando o parágrafo ativo realmente muda.
+    if (activeEntry === teleprompterLastActiveEntry) return;
+    teleprompterLastActiveEntry = activeEntry;
     if (activeEntry) {
-      activeEntry.element.classList.add("active");
       activeEntry.element.scrollIntoView({ block: "center", behavior: "smooth" });
     }
   };
@@ -1392,6 +1401,7 @@ $("teleprompter-goto-form").addEventListener("submit", (event) => {
   const player = $("episode-player");
   player.currentTime = entry.chunk.start_seconds;
   if (player.paused) player.play().catch(() => player.focus());
+  teleprompterLastActiveEntry = entry;
   entry.element.scrollIntoView({ block: "center", behavior: "smooth" });
 });
 

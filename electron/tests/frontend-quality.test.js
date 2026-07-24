@@ -290,6 +290,21 @@ test("clicar num parágrafo do teleprompter pula o áudio para aquele trecho", (
   assert.match(renderer, /if \(hasTiming\) classNames\.push\("clickable"\);/);
 });
 
+test("o teleprompter só rola a tela quando o parágrafo ativo muda", () => {
+  const renderer = readRendererFile("renderer.js");
+
+  // timeupdate dispara várias vezes por segundo; chamar scrollIntoView em
+  // todo tick (mesmo com o mesmo parágrafo ainda ativo) cancelava qualquer
+  // tentativa do usuário de rolar manualmente — a tela "subia sozinha" de
+  // volta ao centro a cada fração de segundo.
+  const handlerBody = renderer.match(
+    /teleprompterTimeUpdateHandler = \(\) => \{([\s\S]*?)\n {2}\};/
+  )[1];
+  assert.match(handlerBody, /if \(activeEntry === teleprompterLastActiveEntry\) return;/);
+  assert.match(handlerBody, /teleprompterLastActiveEntry = activeEntry;/);
+  assert.match(handlerBody, /activeEntry\.element\.scrollIntoView\(/);
+});
+
 test("existe um único <audio> real, compartilhado entre dock, chunks e teleprompter", () => {
   const html = readRendererFile("index.html");
   const renderer = readRendererFile("renderer.js");
