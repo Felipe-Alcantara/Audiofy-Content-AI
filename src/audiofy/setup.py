@@ -100,11 +100,18 @@ def inspect_setup() -> list[SetupCheck]:
             "pode ser instalado automaticamente",
         ),
         SetupCheck(
+            "pdftotext",
+            "Leitor de PDF (Poppler)",
+            shutil.which("pdftotext") is not None,
+            False,
+            "recomendado; extrai PDF sem partir palavras (instale poppler-utils)",
+        ),
+        SetupCheck(
             "pypdf",
             "Leitor de PDF (pypdf)",
             importlib.util.find_spec("pypdf") is not None,
             False,
-            "opcional; extrai texto de PDFs enviados como arquivo",
+            "reserva quando o Poppler não está instalado",
         ),
         SetupCheck(
             "python-docx",
@@ -241,12 +248,19 @@ _WINGET_IDS = {
     "git": "Git.Git",
     "ffmpeg": "Gyan.FFmpeg",
     "tesseract": "UB-Mannheim.TesseractOCR",
+    "pdftotext": "oschwartz10612.Poppler",
 }
 # O Tesseract muda de nome entre distribuições; apt/dnf também têm o pacote
 # de idioma português separado, essencial para OCR de conteúdo em pt-BR.
+# O `pdftotext` vem dentro do Poppler, cujo pacote tem nome próprio em cada
+# gerenciador e nunca coincide com o do binário.
 _SYSTEM_PACKAGES = {
     ("apt-get", "tesseract"): ["tesseract-ocr", "tesseract-ocr-por"],
     ("dnf", "tesseract"): ["tesseract", "tesseract-langpack-por"],
+    ("apt-get", "pdftotext"): ["poppler-utils"],
+    ("dnf", "pdftotext"): ["poppler-utils"],
+    ("pacman", "pdftotext"): ["poppler"],
+    ("brew", "pdftotext"): ["poppler"],
 }
 
 _APT_TESSERACT_PACKAGES = (
@@ -541,7 +555,7 @@ def apply_setup() -> dict:
     actions: list[dict] = []
 
     # git primeiro: o akita-articles é instalado via ``git+https://``.
-    for tool in ("git", "ffmpeg", "tesseract"):
+    for tool in ("git", "ffmpeg", "tesseract", "pdftotext"):
         if tool in before and not before[tool].ok:
             actions.append(_install_system(tool))
 

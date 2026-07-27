@@ -2223,3 +2223,51 @@ entre chunk-review/teleprompter/dock que os testes estáticos descrevem. O ambie
 Electron sob sandbox) se mostrou instável para sessões muito longas ou repetidas rapidamente —
 processos ocasionalmente falharam ao subir ou a reproduzir de forma consistente entre tentativas
 consecutivas, então parte da investigação combinou evidência ao vivo com análise estática do código.
+
+## 2026-07-27 — Extração de PDF migrada para Poppler (texto vinha com palavras partidas)
+
+**O que mudou:** a extração de PDF passou a usar `pdftotext` (Poppler) como via principal, com
+`pypdf` mantido apenas como reserva. Antes, `_extract_pdf` (`src/audiofy/file_extraction.py`)
+usava `pypdf` direto, que parte palavras em PDFs de livro diagramado: no arquivo real de "O
+cavaleiro preso na armadura" o texto extraído trazia 276 quebras do tipo `"cav a-\nleiro"` (em vez
+de `"cavaleiro"`), `"men ção"`, `"drag ões"`, `"Chris topher"`. Como os modos de leitura fiel
+(`verbatim`/`reflexive`) garantem por asserção que o texto não muda depois da ingestão
+(`pipeline.py`), o defeito atravessava o pipeline inteiro e chegava quebrado no áudio e no
+teleprompter.
+
+**Por que:** medição direta no mesmo PDF — `pypdf` produzia 276 quebras de hifenização; `pdftotext`
+produz **zero**, e ainda recupera palavras que no `pypdf` nunca apareciam inteiras (`menção`,
+`patrão`, `predileção` iam a 0 ocorrências). Como a extração acontece na camada de texto do PDF,
+o ganho independe do idioma do documento. O defeito é específico de PDF: DOCX/EPUB/TXT armazenam
+texto por parágrafo, sem layout de página, então não há hifenização de fim de linha para quebrar —
+verificado por execução nos três formatos.
+
+**Alternativa descartada:** uma primeira tentativa corrigia o texto *depois* de extraído — regex +
+dicionário `hunspell pt_BR` + vocabulário do próprio documento, e uma passada opcional por LLM
+(`--fix-hyphenation` na bridge + checkbox na UI, commit `769463d`). Foi removida: cobria só ~25 dos
+~270 casos, exigia heurística frágil (`"mas eu"` não pode virar `"maseu"`, o que obrigou a descartar
+sufixos ambíguos), custava créditos de IA por arquivo e só funcionava para português — enquanto a
+troca de extrator resolve 100% dos casos, de graça, em qualquer idioma. Corrigir na origem se
+mostrou estritamente melhor que remendar depois.
+
+**Sobre idioma:** a detecção e a tradução automática já existiam e continuam valendo —
+`detect_language()` (`languages.py`) seguido de `_translate_if_needed()` (`pipeline.py`), que traduz
+para o idioma configurado e cacheia em `translation.json`. Verificado na prática: dos 8 itens em
+`data/inbox/`, 3 artigos foram detectados como `en` e 5 como `pt-BR`.
+
+**Validação:** TDD — 4 testes novos em `tests/unit/test_file_extraction.py` (`PdftotextTest`)
+cobrindo via principal, reserva quando o binário falta, reserva quando o processo falha e reserva
+quando o Poppler devolve texto vazio (PDF escaneado, que segue para OCR). Suíte Python completa:
+446 testes passando. `ruff check` e `ruff format` limpos; `node --check` no renderer OK. Execução
+real, não só teste: o PDF do cavaleiro extraído pelo app dá `method=pdftotext`, 98.232 chars e 0
+quebras; outros 4 PDFs de origens diferentes também deram 0. A reserva foi exercitada de verdade
+(simulando ausência do binário): cai para `pypdf`, extrai 96.936 chars com as 276 quebras
+conhecidas — degrada, mas não falha. `setup-check` da bridge agora reporta "Leitor de PDF
+(Poppler)" no Diagnóstico.
+
+**Risco que sobrou:** o Poppler é dependência de sistema (`poppler-utils`), não pacote Python — em
+máquina sem ele a extração continua funcionando pela reserva, mas volta a produzir texto com
+palavras partidas. O Diagnóstico sinaliza a ausência, porém a instalação não é automática como a
+dos pacotes Python. Os arquivos do episódio do cavaleiro já ingeridos seguem com o texto corrigido
+manualmente antes desta mudança (~254 dos ~270 casos); para ficarem 100% corretos precisariam ser
+reimportados do PDF original com o extrator novo — o áudio já gerado não foi refeito.

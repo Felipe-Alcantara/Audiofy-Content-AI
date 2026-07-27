@@ -750,16 +750,15 @@ function fileBaseName(filePath) {
 
 function describeExtraction(result) {
   const methodLabels = {
-    "pypdf": "PDF lido localmente",
+    "pdftotext": "PDF lido localmente (Poppler)",
+    "pypdf": "PDF lido localmente (pypdf)",
     "python-docx": "DOCX lido localmente",
     "ebooklib": "EPUB lido localmente",
     "plain-text": "texto lido diretamente",
     "tesseract-ocr": "OCR local (Tesseract)",
   };
   const method = methodLabels[result.method] || result.method;
-  const cost = result.dehyphenation_cost_usd;
-  const suffix = cost ? ` · hifenização corrigida (US$ ${cost.toFixed(4)})` : "";
-  return `${result.title} — ${result.words} palavras · ${method}${suffix}`;
+  return `${result.title} — ${result.words} palavras · ${method}`;
 }
 
 async function askAgentToExtract(filePath, reason) {
@@ -789,16 +788,6 @@ async function askAgentToExtract(filePath, reason) {
 $("btn-add-files").onclick = async () => {
   const paths = await window.audiofy.chooseContentFiles();
   if (!paths.length) return;
-  const fixHyphenation = $("fix-hyphenation").checked;
-  if (fixHyphenation) {
-    const confirmed = confirm(
-      "Corrigir hifenização quebrada usa IA para reler cada arquivo em blocos.\n\n" +
-      "⚠️ Isso consome créditos pequenos por arquivo (cobrados por bloco de texto). " +
-      "Sem isso, palavras quebradas na extração do PDF (ex.: \"cav a-leiro\") " +
-      "podem continuar corrompidas no episódio."
-    );
-    if (!confirmed) return;
-  }
   const button = $("btn-add-files");
   const status = $("add-files-status");
   button.disabled = true;
@@ -808,9 +797,7 @@ $("btn-add-files").onclick = async () => {
   for (const [index, filePath] of paths.entries()) {
     status.textContent =
       `Extraindo ${index + 1}/${paths.length}: ${fileBaseName(filePath)}…`;
-    const args = ["add-file", filePath];
-    if (fixHyphenation) args.push("--fix-hyphenation");
-    const result = await bridge(args);
+    const result = await bridge(["add-file", filePath]);
     if (!result.ok) {
       failed.push(`${fileBaseName(filePath)}: ${result.error}`);
     } else if (result.added) {

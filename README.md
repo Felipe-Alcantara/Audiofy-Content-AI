@@ -152,6 +152,9 @@ O botão **🛠️ Instalar/corrigir** (aba Configurações) instala o resto —
 `ffmpeg`, as dependências Python e, quando npm está disponível, o desktop pelo lockfile — usando
 o gerenciador do sistema (brew, apt, dnf, pacman ou winget). No macOS é preciso ter o
 [Homebrew](https://brew.sh) instalado.
+Para enviar PDF, o Setup também instala o Poppler (`pdftotext`), que extrai o texto sem partir
+palavras no fim da linha — sem ele a leitura recai sobre o `pypdf`, que em livros diagramados
+devolve trechos como "cav a-leiro" no lugar de "cavaleiro".
 O Tesseract opcional (OCR) nunca exige senha nem privilégio de administrador: o Setup primeiro
 procura uma instalação existente, inclusive fora do `PATH`, e só então instala uma cópia
 particular em `.audiofy/tools`, sem alterar o sistema. Os idiomas de OCR (português e inglês)

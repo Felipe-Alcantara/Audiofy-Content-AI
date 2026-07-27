@@ -21,7 +21,7 @@
     python3 -m audiofy.bridge abort <item-id>
     python3 -m audiofy.bridge tts-catalog
     python3 -m audiofy.bridge costs
-    python3 -m audiofy.bridge add-file <caminho-do-arquivo> [--fix-hyphenation]
+    python3 -m audiofy.bridge add-file <caminho-do-arquivo>
     python3 -m audiofy.bridge setup-check|setup-install
 """
 
@@ -318,35 +318,6 @@ def _cmd_audio_chunks(item_id: str, language: str = "") -> dict:
         "source_key": manifest.get("source_key"),
         "generation_mode": manifest.get("generation_mode"),
     }
-
-
-def _dehyphenate_extraction(text: str) -> tuple[str, float]:
-    """Corrige hifenização quebrada de PDF via LLM, usando a chave/perfil ativos.
-
-    Reaproveita audit_model (mais barato, já usado no pipeline para tarefas
-    auxiliares) em vez do modelo de texto principal do perfil.
-    """
-    from .config import api_key_candidates
-    from .file_extraction import dehyphenate_with_llm
-    from .providers import openrouter
-
-    settings = Settings()
-    candidates = api_key_candidates(settings) or [("chave atual", settings)]
-    cost = 0.0
-
-    def chat_fn(system: str, prompt: str) -> dict:
-        nonlocal cost
-        for _, candidate in candidates:
-            try:
-                result = openrouter.chat_json(candidate, settings.audit_model, system, prompt)
-                cost += result.cost_usd
-                return result.data
-            except openrouter.OpenRouterError:
-                continue
-        raise RuntimeError("Nenhuma chave OpenRouter disponível para corrigir hifenização.")
-
-    fixed_text = dehyphenate_with_llm(text, chat_fn)
-    return fixed_text, cost
 
 
 def _cmd_sources() -> dict:
@@ -1112,10 +1083,9 @@ def main() -> None:
             )
             result = {"item_id": item_id, "source": "custom"}
         elif command == "add-file" and rest:
-            from .file_extraction import dehyphenate_with_llm, extract_file
+            from .file_extraction import extract_file
             from .sources.custom import CustomSource
 
-            fix_hyphenation = "--fix-hyphenation" in rest[1:]
             extraction = extract_file(Path(rest[0]))
             if extraction.needs_fallback:
                 result = {
@@ -1125,19 +1095,14 @@ def main() -> None:
                     "title": extraction.title,
                 }
             else:
-                text = extraction.text
-                dehyphenation_cost_usd = 0.0
-                if fix_hyphenation:
-                    text, dehyphenation_cost_usd = _dehyphenate_extraction(text)
-                item_id = CustomSource().add_text(extraction.title, text)
+                item_id = CustomSource().add_text(extraction.title, extraction.text)
                 result = {
                     "added": True,
                     "item_id": item_id,
                     "source": "custom",
                     "title": extraction.title,
                     "method": extraction.method,
-                    "words": len(text.split()),
-                    "dehyphenation_cost_usd": dehyphenation_cost_usd,
+                    "words": len(extraction.text.split()),
                 }
         elif command == "chat":
             from .chat import ChatSession

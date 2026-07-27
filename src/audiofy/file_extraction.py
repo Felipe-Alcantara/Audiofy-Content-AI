@@ -1,20 +1,31 @@
 """Extração de texto de arquivos locais por código, sem custo de IA.
 
-Ordem de prioridade deliberada: bibliotecas Python puras primeiro (pypdf,
-python-docx, ebooklib), OCR local (Tesseract) para imagens e PDFs escaneados,
-e somente quando nada disso funciona o chamador decide se aciona um modelo
-de IA — arquivos grandes (livros, centenas de páginas) tornariam a via de IA
-lenta e cara, então ela nunca é automática.
+Ordem de prioridade deliberada: Poppler (`pdftotext`) para PDF e bibliotecas
+Python puras para os demais formatos (python-docx, ebooklib), OCR local
+(Tesseract) para imagens e PDFs escaneados, e somente quando nada disso
+funciona o chamador decide se aciona um modelo de IA — arquivos grandes
+(livros, centenas de páginas) tornariam a via de IA lenta e cara, então ela
+nunca é automática.
+
+Em PDF o Poppler vem antes do `pypdf` por qualidade de extração: o `pypdf`
+parte palavras em livros diagramados ("cav a-\\nleiro" em vez de "cavaleiro"),
+defeito que atravessa o pipeline e chega no áudio. Como a extração é feita na
+camada de texto do PDF, o resultado independe do idioma do documento.
 """
 
 from __future__ import annotations
 
 import html
 import re
+import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 MAX_FILE_BYTES = 200 * 1024 * 1024
+# Livro de centenas de páginas extrai em segundos; o teto só evita travar a UI
+# se o binário ficar preso em um arquivo malformado.
+_PDFTOTEXT_TIMEOUT_SECONDS = 180
 _TEXT_SUFFIXES = {".txt", ".md", ".markdown", ".text"}
 _IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff", ".bmp"}
 SUPPORTED_SUFFIXES = {".pdf", ".docx", ".epub"} | _TEXT_SUFFIXES | _IMAGE_SUFFIXES
@@ -82,71 +93,6 @@ def _normalize(text: str) -> str:
 
 def _title_from_path(path: Path) -> str:
     return re.sub(r"[-_]+", " ", path.stem).strip() or path.stem
-
-
-_DEHYPHENATE_MAX_CHARS_PER_CALL = 6000
-# Um bloco corrigido não deveria mudar de tamanho de forma relevante — só
-# hífens e espaços somem. Fora dessa margem, o LLM reescreveu/resumiu em vez
-# de corrigir, então o bloco original é mantido para não perder conteúdo.
-_DEHYPHENATE_MAX_LENGTH_DELTA_RATIO = 0.15
-
-_DEHYPHENATE_SYSTEM = (
-    "Você corrige apenas defeitos de extração de PDF em texto de um livro/artigo: "
-    "palavras quebradas por hifenização de fim de linha (ex.: 'cav a-\\nleiro' -> "
-    "'cavaleiro') e espaços espúrios no meio de palavras (ex.: 'drag ões' -> "
-    "'dragões'). Não reescreva, resuma, traduza, corrija gramática ou altere "
-    "qualquer outra parte do texto — preserve pontuação, quebras de parágrafo e "
-    "todas as palavras que já estão corretas exatamente como estão. "
-    'Responda em JSON: {"text": "<texto corrigido>"}.'
-)
-
-
-def _split_for_dehyphenation(text: str, max_chars: int) -> list[str]:
-    if len(text) <= max_chars:
-        return [text]
-    blocks: list[str] = []
-    for paragraph in text.split("\n\n"):
-        if blocks and len(blocks[-1]) + len(paragraph) + 2 <= max_chars:
-            blocks[-1] = blocks[-1] + "\n\n" + paragraph
-        else:
-            blocks.append(paragraph)
-    return blocks
-
-
-def dehyphenate_with_llm(
-    text: str,
-    chat_fn,
-    max_chars_per_call: int = _DEHYPHENATE_MAX_CHARS_PER_CALL,
-) -> str:
-    """Corrige hifenização/espaçamento quebrados por extração de PDF via LLM.
-
-    `chat_fn(system, prompt) -> dict` é injetado para permitir teste sem rede e
-    reuso do provedor/custo já configurado pelo chamador. Cada bloco processado
-    é validado contra o tamanho original; falha na chamada ou resposta muito
-    diferente do esperado mantém o bloco original em vez de arriscar perda de
-    conteúdo — esta função nunca lança, sempre retorna algum texto usável.
-    """
-    if not text:
-        return text
-    blocks = _split_for_dehyphenation(text, max_chars_per_call)
-    fixed_blocks = []
-    for block in blocks:
-        fixed_blocks.append(_dehyphenate_block(block, chat_fn))
-    return "\n\n".join(fixed_blocks)
-
-
-def _dehyphenate_block(block: str, chat_fn) -> str:
-    try:
-        data = chat_fn(_DEHYPHENATE_SYSTEM, block)
-        fixed = data["text"]
-    except Exception:
-        return block
-    if not isinstance(fixed, str) or not fixed.strip():
-        return block
-    delta_ratio = abs(len(fixed) - len(block)) / max(len(block), 1)
-    if delta_ratio > _DEHYPHENATE_MAX_LENGTH_DELTA_RATIO:
-        return block
-    return fixed
 
 
 def extract_file(path: Path) -> ExtractionResult:
@@ -267,7 +213,55 @@ def _strip_running_headers(pages: list[str]) -> list[str]:
     return cleaned
 
 
-def _extract_pdf(path: Path) -> ExtractionResult:
+def _pdftotext_binary() -> str | None:
+    """Caminho do `pdftotext` (pacote poppler-utils), ou None se não instalado."""
+    return shutil.which("pdftotext")
+
+
+def _run_pdftotext(binary: str, path: Path) -> str:
+    """Extrai o texto do PDF pelo Poppler, preservando a ordem de leitura.
+
+    `-layout` manteria o alinhamento visual em colunas, o que atrapalha leitura
+    em voz alta; o padrão (fluxo contínuo) é o que queremos para TTS.
+    """
+    completed = subprocess.run(
+        [binary, "-enc", "UTF-8", "-nopgbrk", str(path), "-"],
+        capture_output=True,
+        timeout=_PDFTOTEXT_TIMEOUT_SECONDS,
+        check=True,
+    )
+    return completed.stdout.decode("utf-8", errors="replace")
+
+
+def _extract_pdf_with_pypdf(path: Path) -> str:
+    """Via reserva: só entra quando o Poppler não está disponível ou falha."""
+    reader = _open_pdf(path)
+    pages = [page.extract_text() or "" for page in reader.pages]
+    return _normalize("\n\n".join(_strip_running_headers(pages)))
+
+
+def _extract_pdf_text(path: Path) -> tuple[str, str]:
+    """Devolve (método, texto) da melhor via disponível para PDF com texto.
+
+    O Poppler vem primeiro porque o `pypdf` parte palavras em PDFs de livro
+    diagramado: no PDF real de "O cavaleiro preso na armadura" ele produzia 276
+    quebras ("cav a-\\nleiro", "men ção", "Chris topher"), que atravessavam o
+    pipeline inteiro e chegavam quebradas no áudio. O mesmo arquivo pelo
+    pdftotext dá zero — a correção acontece na origem, sem heurística depois.
+    Por operar na camada de texto do PDF, vale para qualquer idioma.
+    """
+    binary = _pdftotext_binary()
+    if binary:
+        try:
+            text = _normalize(_run_pdftotext(binary, path))
+            if text.strip():
+                return "pdftotext", text
+        except (OSError, subprocess.SubprocessError):
+            pass  # Poppler indisponível/falhou: a via reserva assume.
+    return "pypdf", _extract_pdf_with_pypdf(path)
+
+
+def _open_pdf(path: Path):
     try:
         from pypdf import PdfReader
     except ImportError as error:
@@ -283,27 +277,31 @@ def _extract_pdf(path: Path) -> ExtractionResult:
             reader.decrypt("")
         except Exception as error:
             raise ValueError("O PDF é protegido por senha.") from error
-    pages = [page.extract_text() or "" for page in reader.pages]
-    text = _normalize("\n\n".join(_strip_running_headers(pages)))
+    return reader
+
+
+def _extract_pdf(path: Path) -> ExtractionResult:
+    reader = _open_pdf(path)
+    method, text = _extract_pdf_text(path)
     title = ""
     if reader.metadata and reader.metadata.title:
         title = str(reader.metadata.title).strip()
     title = title or _title_from_path(path)
     # Camada de texto ausente/ínfima = PDF escaneado; texto "extraído" seria lixo.
-    if len(text) < max(_MIN_TOTAL_CHARS, _MIN_CHARS_PER_PAGE * len(pages)):
+    if len(text) < max(_MIN_TOTAL_CHARS, _MIN_CHARS_PER_PAGE * len(reader.pages)):
         if ocr_available():
             return _ocr_pdf(path, title, reader)
         return ExtractionResult(
             title,
             "",
-            "pypdf",
+            method,
             needs_fallback=True,
             reason=(
                 "O PDF parece ser escaneado (sem camada de texto) e o OCR local "
                 "(Tesseract) não está instalado."
             ),
         )
-    return ExtractionResult(title, text, "pypdf")
+    return ExtractionResult(title, text, method)
 
 
 def _ocr_pdf(path: Path, title: str, reader) -> ExtractionResult:
