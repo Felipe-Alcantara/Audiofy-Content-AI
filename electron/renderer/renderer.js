@@ -214,8 +214,11 @@ async function openChunkReview(itemId, title, language) {
       const player = $("episode-player");
       player.src = projectPathToFileUrl(chunk.path);
       player.load();
-      $("chunk-now-playing").textContent =
-        `Tocando chunk ${chunkIndex} de ${chunkTotal} · ${chunk.file}`;
+      const nowPlaying = `Tocando chunk ${chunkIndex} de ${chunkTotal} · ${chunk.file}`;
+      $("chunk-now-playing").textContent = nowPlaying;
+      // O dock mostra o que o player está tocando de verdade — aqui, um trecho
+      // avulso, não o episódio inteiro.
+      $("player-title").textContent = `🎧 Chunk ${chunkIndex} de ${chunkTotal} · ${title}`;
       player.play().catch(() => player.focus());
     };
     row.appendChild(play);
@@ -290,6 +293,10 @@ async function openTeleprompter(episode) {
   }
   const title = episode.title || episode.episode_id;
   $("teleprompter-modal-title").textContent = `Acompanhar a leitura · ${title}`;
+  // O player mora no dock e fica à vista com o modal aberto: sem nomear o
+  // episódio aqui, o dock anunciaria "Nenhum episódio selecionado" enquanto
+  // toca justamente este episódio.
+  $("player-title").textContent = `🎧 ${title}`;
   const chunksWithText = result.chunks.filter((chunk) => chunk.text);
   $("teleprompter-summary").textContent = chunksWithText.length
     ? `${chunksWithText.length} trecho(s) de texto disponível para acompanhamento.`

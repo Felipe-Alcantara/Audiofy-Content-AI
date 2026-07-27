@@ -8,6 +8,7 @@ episódio interrompe a geração no próximo checkpoint.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import sys
@@ -1206,8 +1207,34 @@ def _synthesize_turns(
         raise ValueError(
             "Nenhuma fala gerou áudio: o texto não tem conteúdo que o TTS consiga pronunciar."
         )
+    _discard_orphan_segments(segments_dir, paths)
     return paths
 
+
+def _discard_orphan_segments(segments_dir: Path, paths: list[Path]) -> None:
+    """Apaga áudios de gerações anteriores que sobraram na pasta de segmentos.
+
+    O total de trechos entra no nome do arquivo, então regerar com uma divisão
+    diferente (texto reextraído, outro modo de leitura) cria nomes novos em vez
+    de sobrescrever os antigos. Os órfãos não entram na montagem do MP3, mas o
+    acompanhamento da leitura lista o que está no diretório: passava a mostrar
+    trechos duplicados e, por faltar duração auditada neles, desligava o
+    destaque e o pulo por parágrafo do episódio inteiro.
+    """
+    mantidos = {path.name for path in paths}
+    for arquivo in segments_dir.glob("*.*"):
+        if arquivo.name in mantidos or not arquivo.is_file():
+            continue
+        # Só descarta áudio: outros arquivos na pasta não são deste controle.
+        if arquivo.suffix.lower() not in _SEGMENT_AUDIO_SUFFIXES:
+            continue
+        with contextlib.suppress(OSError):
+            arquivo.unlink()
+            print(f"   Removido segmento de geração anterior: {arquivo.name}", flush=True)
+
+
+#: Extensões que a síntese produz — só elas entram na limpeza de órfãos.
+_SEGMENT_AUDIO_SUFFIXES = frozenset({".wav", ".mp3", ".pcm", ".opus", ".flac", ".aac", ".m4a"})
 
 _FFMPEG_TIMEOUT = 1800
 

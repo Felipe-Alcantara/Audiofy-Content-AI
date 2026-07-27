@@ -533,6 +533,80 @@ class TrechoSemAudioTest(unittest.TestCase):
             _synthesize_turns(_settings(), self.directory, self._turns(2), self.tracker)
 
 
+class SegmentosOrfaosTest(unittest.TestCase):
+    """Regerar com outra quantidade de trechos não pode deixar áudio antigo.
+
+    Caso real: reextrair o texto de um livro mudou a divisão de 112 para 195
+    trechos. Como o total entra no nome do arquivo, os antigos (`de-112`) não
+    foram sobrescritos e ficaram na pasta. O teleprompter lista os segmentos do
+    diretório: passou a ver 307 trechos, com parágrafos duplicados, e — como os
+    órfãos não tinham duração auditada — desligou o destaque e o pulo por
+    parágrafo, que dependem da janela temporal de todos os trechos.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.directory = Path(self._tmp.name)
+        self.tracker = GenerationTracker(self.directory, "episodio")
+        self.addCleanup(self._tmp.cleanup)
+
+    @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_remove_segmentos_de_geracoes_anteriores(self, text_to_speech, _cost):
+        segments = self.directory / "segments"
+        segments.mkdir()
+        orfao = segments / segment_audio_filename(
+            "custom", "livro", "reflexive", 1, 112, "narrador", "wav"
+        )
+        _valid_wav(orfao)
+        text_to_speech.side_effect = [SpeechResult(b"\x00\x00" * 300, "gen-1")]
+
+        paths = _synthesize_turns(
+            _settings(),
+            self.directory,
+            [{"speaker": "narrador", "text": "única fala da nova geração"}],
+            self.tracker,
+        )
+
+        self.assertFalse(orfao.exists(), "o áudio da geração anterior precisa sair da pasta")
+        self.assertEqual([path.name for path in sorted(segments.glob("*.wav"))], [paths[0].name])
+
+    @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_preserva_os_segmentos_da_geracao_atual(self, text_to_speech, _cost):
+        text_to_speech.side_effect = [
+            SpeechResult(b"\x00\x00" * 300, "gen-1"),
+            SpeechResult(b"\x00\x00" * 300, "gen-2"),
+        ]
+        turns = [
+            {"speaker": "narrador", "text": "primeira"},
+            {"speaker": "narrador", "text": "segunda"},
+        ]
+
+        paths = _synthesize_turns(_settings(), self.directory, turns, self.tracker)
+
+        self.assertEqual(len(paths), 2)
+        self.assertTrue(all(path.is_file() for path in paths))
+
+    @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_nao_remove_outros_arquivos_da_pasta(self, text_to_speech, _cost):
+        segments = self.directory / "segments"
+        segments.mkdir()
+        anotacao = segments / "leia-me.txt"
+        anotacao.write_text("não é áudio, não deve sumir", encoding="utf-8")
+        text_to_speech.side_effect = [SpeechResult(b"\x00\x00" * 300, "gen-1")]
+
+        _synthesize_turns(
+            _settings(),
+            self.directory,
+            [{"speaker": "narrador", "text": "fala"}],
+            self.tracker,
+        )
+
+        self.assertTrue(anotacao.is_file())
+
+
 class ConcatLineTest(unittest.TestCase):
     def test_usa_barras_normais_para_o_ffmpeg(self):
         line = _concat_line(Path("/tmp/ep/001.wav"))

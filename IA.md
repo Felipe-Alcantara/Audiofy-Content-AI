@@ -2321,3 +2321,44 @@ comportamento acima roda o código real do renderer, mas em DOM simulado: resta 
 fluxo completo de abrir/fechar os modais com áudio tocando. Itens importados antes desta mudança
 não têm `source-file` e continuam exigindo reenvio do arquivo — só novas importações registram a
 origem.
+
+## 2026-07-27 — Segmentos órfãos desligavam o acompanhamento; dock sem nome do episódio
+
+**O que mudou:** a síntese passou a apagar, ao final, os áudios de gerações anteriores que
+sobraram na pasta `segments/` (`_discard_orphan_segments`), e abrir o acompanhamento (ou tocar um
+chunk avulso) passou a nomear o episódio no dock.
+
+**Por que (órfãos):** o total de trechos entra no nome do arquivo de cada segmento. Reextrair o
+texto de "O cavaleiro preso na armadura" mudou a divisão de 112 para 195 trechos, então os novos
+(`de-195`) ganharam nomes diferentes dos antigos (`de-112`) em vez de sobrescrevê-los — a pasta
+ficou com 307 arquivos de duas gerações. O MP3 final usa só os 195 do manifesto, mas
+`audio-chunks` lista o que está no diretório: o teleprompter passou a mostrar 307 trechos com
+parágrafos duplicados e, como os órfãos não têm duração auditada, `_add_cumulative_timing` anulou
+a janela temporal de **todos** (uma soma parcial daria posições erradas). Sem timing,
+`hasTiming` fica falso e o teleprompter desliga o destaque automático e o pulo por parágrafo — foi
+o que o usuário reportou como "não dá mais pra ver onde ele está lendo nem clicar no trecho".
+
+**Por que (título do dock):** com o player fixo no dock (mudança de `d06c6cb`), ele fica à vista
+com o modal aberto. `openTeleprompter` troca a fonte do player mas nunca chamou
+`setPlayerSource`, que é quem escreve `player-title` — o dock anunciava "Nenhum episódio
+selecionado" enquanto tocava aquele episódio. O mesmo valia para a revisão de chunks, que agora
+mostra qual trecho está tocando.
+
+**Correção pontual aplicada:** os 112 WAVs órfãos do episódio do cavaleiro foram retirados da
+pasta (backup fora do repositório). Com isso `audio-chunks` voltou a 195 trechos, todos com
+`start_seconds`, e `hasTiming` voltou a ser verdadeiro.
+
+**Validação:** TDD nas duas frentes. Três testes novos em `test_pipeline_resume.py`
+(`SegmentosOrfaosTest`) cobrem remover o áudio da geração anterior, preservar os da atual e não
+tocar em arquivos que não sejam áudio; um teste novo em `frontend-quality.test.js` exige o título
+no dock ao abrir o acompanhamento. Todos confirmados falhando antes da implementação. Suítes
+completas: 457 testes Python e 59 Electron (58 pass, 1 skip esperado), `ruff` e `eslint` limpos.
+Verificação real pela bridge: `audio-chunks` saiu de 307 trechos com 112 sem duração (hasTiming
+falso) para 195 com timing completo (hasTiming verdadeiro).
+
+**Risco que sobrou:** a limpeza roda ao fim da síntese, então uma geração interrompida no meio
+ainda deixa órfãos até a próxima execução completar — o que não impede a retomada, porque ela é
+guiada pelo manifesto, não pela varredura do diretório. Episódios antigos que já acumularam
+órfãos de execuções anteriores só serão limpos quando forem regerados. E, como nas mudanças
+anteriores desta sessão, não foi possível validar com o app Electron em execução neste ambiente
+(`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).

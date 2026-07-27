@@ -362,6 +362,17 @@ test("modais comandam o player do dock em vez de sequestrá-lo", () => {
   assert.doesNotMatch(fecharTeleprompter[1], /removeAttribute\("src"\)/);
 });
 
+test("abrir o acompanhamento nomeia o episódio no dock", () => {
+  const renderer = readRendererFile("renderer.js");
+
+  // Com o player fixo no dock, ele fica à vista ao abrir o teleprompter: sem
+  // atualizar o título, o dock anunciava "Nenhum episódio selecionado" enquanto
+  // o áudio daquele episódio tocava.
+  const abrir = renderer.match(/async function openTeleprompter\(episode\) \{([\s\S]*?)\n\}/);
+  assert.ok(abrir, "openTeleprompter deve existir");
+  assert.match(abrir[1], /\$\("player-title"\)\.textContent = `🎧 \$\{title\}`/);
+});
+
 test("o dock fica visível enquanto um modal de áudio está aberto", () => {
   const renderer = readRendererFile("renderer.js");
 
