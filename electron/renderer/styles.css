@@ -489,8 +489,9 @@ dialog[open] {
 dialog::backdrop { background: rgb(0 0 0 / 72%); }
 .modal-header { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
 .modal-header h2 { margin-top: 0; }
-.player-slot { width: 100%; flex-shrink: 0; }
-.player-slot audio { width: 100%; }
+/* Transporte dos modais: comanda o <audio> que vive no dock do header. */
+.modal-transport { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.modal-transport button { flex-shrink: 0; }
 .chunk-list {
   display: grid;
   gap: 8px;

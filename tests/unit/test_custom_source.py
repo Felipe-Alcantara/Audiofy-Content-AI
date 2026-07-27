@@ -3,6 +3,7 @@
 import sys
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
@@ -98,6 +99,61 @@ class CustomSourceTest(unittest.TestCase):
     def test_item_id_nao_permite_escapar_da_caixa_de_entrada(self):
         with self.assertRaisesRegex(ValueError, "ID do conteúdo"):
             self.source.get_item("../../segredo")
+
+
+class ArquivoDeOrigemTest(unittest.TestCase):
+    """Guardar de qual arquivo o texto veio permite reextrair depois.
+
+    Sem isso, melhorar o extrator (como a troca de pypdf por Poppler) não
+    alcançava itens já importados: a única saída era reenviar o arquivo, o que
+    criava um item duplicado em vez de corrigir o existente.
+    """
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.source = CustomSource(Path(self.directory.name))
+
+    def test_registra_o_arquivo_de_origem_quando_informado(self):
+        item_id = self.source.add_text("Livro", "corpo", source_file="/tmp/livro.pdf")
+        self.assertEqual(self.source.source_file(item_id), "/tmp/livro.pdf")
+
+    def test_item_sem_origem_devolve_vazio(self):
+        item_id = self.source.add_text("Colado", "corpo")
+        self.assertEqual(self.source.source_file(item_id), "")
+
+    def test_origem_nao_vaza_para_o_texto_do_item(self):
+        item_id = self.source.add_text("Livro", "corpo", source_file="/tmp/livro.pdf")
+        self.assertEqual(self.source.get_item(item_id).text, "corpo")
+
+    def test_origem_com_quebra_de_linha_nao_injeta_campo_no_frontmatter(self):
+        item_id = self.source.add_text("Livro", "corpo", source_file="/tmp/a.pdf\ndate: 1999-01-01")
+        self.assertEqual(self.source.get_item(item_id).published_at, date.today().isoformat())
+
+    def test_replace_text_troca_o_conteudo_preservando_id_e_metadados(self):
+        item_id = self.source.add_text("Livro", "texto quebrado", source_file="/tmp/livro.pdf")
+
+        self.source.replace_text(item_id, "texto corrigido")
+
+        item = self.source.get_item(item_id)
+        self.assertEqual(item.text, "texto corrigido")
+        self.assertEqual(item.title, "Livro")
+        self.assertEqual(self.source.source_file(item_id), "/tmp/livro.pdf")
+
+    def test_replace_text_nao_cria_item_novo(self):
+        item_id = self.source.add_text("Livro", "antes")
+        self.source.replace_text(item_id, "depois")
+        self.assertEqual(len(self.source.list_items()), 1)
+
+    def test_replace_text_recusa_conteudo_vazio(self):
+        item_id = self.source.add_text("Livro", "conteúdo real")
+        with self.assertRaises(ValueError):
+            self.source.replace_text(item_id, "   ")
+        self.assertEqual(self.source.get_item(item_id).text, "conteúdo real")
+
+    def test_replace_text_em_item_inexistente_falha(self):
+        with self.assertRaises(LookupError):
+            self.source.replace_text("nao-existe", "corpo")
 
 
 class PublicUrlValidationTest(unittest.TestCase):

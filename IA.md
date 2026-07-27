@@ -2271,3 +2271,53 @@ palavras partidas. O Diagnóstico sinaliza a ausência, porém a instalação n�
 dos pacotes Python. Os arquivos do episódio do cavaleiro já ingeridos seguem com o texto corrigido
 manualmente antes desta mudança (~254 dos ~270 casos); para ficarem 100% corretos precisariam ser
 reimportados do PDF original com o extrator novo — o áudio já gerado não foi refeito.
+
+## 2026-07-27 — Áudio desacoplado das janelas e reextração de arquivo já importado
+
+**O que mudou (player):** o elemento `<audio>` deixou de ser movido pelo DOM entre o dock e os
+modais. Antes, `movePlayerTo`/`movePlayerHome` faziam `appendChild` — que **move** o elemento, não
+copia — para "emprestar" o player a quem abrisse a revisão de chunks ou o teleprompter. Mover um
+`<audio>` em reprodução faz o Chromium reiniciar a mídia, e o player voltava mudo ao dock. Agora o
+player mora no dock e nunca sai; os modais ganharam transporte próprio (`bindModalTransport`) que
+comanda esse player e espelha o estado dele.
+
+**Bugs que isso corrige:** abrir "acompanhar" com o episódio tocando **pausava o áudio**
+(`openTeleprompter` chamava `pause()` logo após mover o player); fechar a revisão de chunks
+**destruía a fonte** do player (`removeAttribute("src")` + `load()`), deixando o dock sem mídia
+carregada — mesmo defeito já corrigido no teleprompter em `769463d`, que continuava presente no
+caminho dos chunks. Como o dock passou a hospedar o player de forma permanente,
+`ensurePlayerDockVisible()` garante que ele fique à vista com um modal aberto, senão não haveria
+como pausar o que está tocando.
+
+**O que mudou (reextração):** `CustomSource.add_text` passou a aceitar `source_file`, gravado no
+frontmatter, e ganhou `replace_text`, que troca o corpo preservando id, título e metadados. O
+comando `reextract-file <item-id>` reprocessa o arquivo original com a extração atual, e a
+interface mostra "🔄 Reextrair do arquivo" no item quando há origem registrada.
+
+**Por quê:** a troca do extrator para Poppler (`b75fc3c`) não alcançava itens já importados — o
+`.md` guardava só o texto, não a procedência. A única saída era reenviar o arquivo, o que criava
+item duplicado (`add_text` gera `-2`, `-3`… quando o id colide) em vez de corrigir o existente.
+Regerar o episódio também não resolvia: a geração lê o `.md` de `data/inbox/`, nunca o PDF.
+
+**Correção pontual aplicada:** o texto-fonte do episódio "O cavaleiro preso na armadura" foi
+reextraído do PDF original e regravado no mesmo `item_id` — 28 hifenizações partidas e 43
+ocorrências de palavras quebradas (`drag ões`, `n ão`, `cabe ça`, `come çou`) foram a zero;
+16.605 → 16.783 palavras. O áudio já gerado **não** foi refeito (custo de TTS): para o episódio
+refletir o texto correto é preciso gerar novamente.
+
+**Validação:** TDD nas duas frentes. Além dos testes estáticos de `frontend-quality.test.js`
+(reescritos para exigir a arquitetura nova), foi criado `tests/player-transport.test.js`, que
+avalia as funções reais de `renderer.js` em um DOM mínimo e verifica **comportamento**: abrir um
+modal não pausa, não perde a posição e não descarta a fonte; o botão reflete mudanças feitas fora
+do modal; fechar solta os listeners sem vazar. Suítes completas: 58 testes Electron (57 pass, 1
+skip esperado) e 454 Python, `ruff` e `eslint --max-warnings=0` limpos. O ciclo de reextração foi
+exercitado de verdade pela bridge: origem gravada no frontmatter, arquivo alterado, `reextract-file`
+atualizando o texto sem criar item novo, e a mensagem correta para item sem origem.
+
+**Risco que sobrou:** não foi possível validar com o app Electron em execução — o binário do
+Electron não sobe neste ambiente porque `ELECTRON_RUN_AS_NODE=1` está fixa no ambiente do agente e
+faz o processo rodar como Node puro (`app` fica `undefined` em `main.js`). A cobertura de
+comportamento acima roda o código real do renderer, mas em DOM simulado: resta confirmar no app o
+fluxo completo de abrir/fechar os modais com áudio tocando. Itens importados antes desta mudança
+não têm `source-file` e continuam exigindo reenvio do arquivo — só novas importações registram a
+origem.

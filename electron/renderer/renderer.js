@@ -25,16 +25,53 @@ function projectPathToFileUrl(target) {
   return `file://${encoded.startsWith("/") ? encoded : `/${encoded}`}`;
 }
 
-// Único elemento <audio> real do app. Modais "emprestam" o player movendo-o
-// para dentro de um slot próprio (`movePlayerTo`) e devolvem ao dock do
-// header ao fechar (`movePlayerHome`) — assim nunca há duas reproduções
-// simultâneas nem controles duplicados fora de sincronia.
-function movePlayerTo(slotId) {
-  $(slotId).appendChild($("episode-player"));
+// Único elemento <audio> real do app, e ele NUNCA sai do dock do header.
+// Antes os modais o "emprestavam" movendo-o pelo DOM (appendChild move o
+// elemento, não copia): mover um <audio> em reprodução faz o Chromium
+// reiniciar a mídia, e o player voltava mudo para o dock. Agora os modais
+// só comandam este player pelos próprios botões — a reprodução não depende
+// de qual janela está aberta.
+function ensurePlayerDockVisible() {
+  $("player-dock").classList.remove("hidden");
 }
 
-function movePlayerHome() {
-  $("player-dock").insertBefore($("episode-player"), $("player-title").nextSibling);
+// Botão de tocar/pausar de um modal, espelhando o estado real do player.
+function bindModalTransport(buttonId, elapsedId) {
+  const player = $("episode-player");
+  const button = $(buttonId);
+  const elapsed = $(elapsedId);
+
+  const render = () => {
+    button.textContent = player.paused ? "▶️ Tocar" : "⏸️ Pausar";
+    elapsed.textContent = formatSeconds(player.currentTime);
+  };
+
+  button.onclick = () => {
+    if (player.paused) {
+      player.play().catch(() => player.focus());
+    } else {
+      player.pause();
+    }
+  };
+  for (const event of ["play", "pause", "timeupdate", "loadedmetadata"]) {
+    player.addEventListener(event, render);
+  }
+  render();
+  // Devolvido para o chamador desligar os listeners ao fechar o modal, senão
+  // cada abertura empilharia mais um conjunto no <audio>, que é persistente.
+  return () => {
+    for (const event of ["play", "pause", "timeupdate", "loadedmetadata"]) {
+      player.removeEventListener(event, render);
+    }
+    button.onclick = null;
+  };
+}
+
+function formatSeconds(value) {
+  if (!Number.isFinite(value)) return "0:00";
+  const total = Math.max(0, Math.floor(value));
+  const minutes = Math.floor(total / 60);
+  return `${minutes}:${String(total % 60).padStart(2, "0")}`;
 }
 
 // Guarda em disco, via bridge Python (escrita atômica: arquivo temporário +
@@ -71,7 +108,7 @@ function setPlayerSource(path, title = "Episódio") {
     player.load();
   }
   $("player-title").textContent = `🎧 ${title}`;
-  $("player-dock").classList.remove("hidden");
+  ensurePlayerDockVisible();
   return player;
 }
 
@@ -123,6 +160,10 @@ function speakerLabel(chunk) {
   return ` · voz ${chunk.speaker}`;
 }
 
+// Desligam os listeners do transporte de cada modal ao fechar.
+let releaseChunkTransport = null;
+let releaseTeleprompterTransport = null;
+
 async function openChunkReview(itemId, title, language) {
   const args = ["audio-chunks", itemId];
   if (language) args.push(`--language=${language}`);
@@ -133,8 +174,10 @@ async function openChunkReview(itemId, title, language) {
   }
   if ($("teleprompter-modal").open) closeTeleprompter();
   const dialog = $("chunk-modal");
-  movePlayerTo("chunk-player-slot");
+  // A revisão toca trechos avulsos, não o episódio: pausar aqui é correto,
+  // porque a fonte do player vai ser trocada ao escolher um chunk.
   $("episode-player").pause();
+  releaseChunkTransport = bindModalTransport("btn-chunk-toggle", "chunk-elapsed");
   $("chunk-modal-title").textContent = `Revisão dos chunks · ${title}`;
   $("chunk-now-playing").textContent = "Escolha um chunk para ouvir.";
   const summary = result.audit;
@@ -182,11 +225,11 @@ async function openChunkReview(itemId, title, language) {
 }
 
 function closeChunkReview() {
-  const player = $("episode-player");
-  player.pause();
-  player.removeAttribute("src");
-  player.load();
-  movePlayerHome();
+  // Só pausa: destruir a fonte (removeAttribute("src") + load()) deixava o
+  // player do dock sem mídia carregada e travava o play depois de fechar.
+  $("episode-player").pause();
+  releaseChunkTransport?.();
+  releaseChunkTransport = null;
   $("chunk-modal").close();
 }
 
@@ -218,12 +261,11 @@ function updateTeleprompterFollowButton() {
 }
 
 function closeTeleprompter() {
-  // Ao contrário de closeChunkReview, o teleprompter reproduz o mesmo
-  // episódio que já tocava no player principal (só "empresta" o <audio>) —
-  // por isso não deve remover src/load(), senão o player volta ao dock
-  // sem áudio carregado e o play trava.
+  // Fechar o acompanhamento não interrompe a escuta: o áudio segue tocando no
+  // dock, de onde nunca saiu. Nada de pausar nem de mexer na fonte aqui.
   detachTeleprompterTimeUpdate();
-  movePlayerHome();
+  releaseTeleprompterTransport?.();
+  releaseTeleprompterTransport = null;
   teleprompterTimingChunks = null;
   teleprompterLastActiveEntry = null;
   $("teleprompter-goto-input").value = "";
@@ -237,8 +279,8 @@ async function openTeleprompter(episode) {
   // cada um retém em closure o texto/turnos inteiros do episódio anterior.
   detachTeleprompterTimeUpdate();
   if ($("chunk-modal").open) closeChunkReview();
-  movePlayerTo("teleprompter-player-slot");
-  $("episode-player").pause();
+  // Abrir o acompanhamento com o episódio tocando não pode pausar nada: o
+  // usuário só quer ver o texto do que já está ouvindo.
   const args = ["audio-chunks", episode.episode_id];
   if (episode.language) args.push(`--language=${episode.language}`);
   const result = await bridge(args);
@@ -348,6 +390,13 @@ async function openTeleprompter(episode) {
   };
   player.addEventListener("timeupdate", teleprompterTimeUpdateHandler);
   updateTeleprompterFollowButton();
+  // O player fica no dock: mantê-lo à vista garante que dá para pausar o que
+  // está tocando mesmo com o acompanhamento aberto.
+  ensurePlayerDockVisible();
+  releaseTeleprompterTransport = bindModalTransport(
+    "btn-teleprompter-toggle",
+    "teleprompter-elapsed"
+  );
   $("teleprompter-modal").showModal();
 }
 
@@ -659,9 +708,37 @@ async function selectItem(item, row) {
   $("detail-title").textContent = detail.title;
   $("detail-meta").textContent =
     `${detail.published_at} · ~${detail.words} palavras · ${detail.url || "texto local"}`;
+  // Reextrair só faz sentido para itens que vieram de um arquivo local e
+  // guardaram de onde: texto colado ou URL não têm o que reprocessar.
+  $("detail-reextract-row").classList.toggle("hidden", !detail.source_file);
   renderItemEstimate();
   refreshStatus();
 }
+
+$("btn-reextract").onclick = async () => {
+  if (!selectedItem) return;
+  const confirmed = confirm(
+    "Reprocessar o arquivo original com a extração atual?\n\n" +
+    "O texto deste conteúdo será substituído — útil quando a leitura do arquivo " +
+    "melhorou desde a importação. O item continua o mesmo (não cria duplicata) e " +
+    "não há custo de IA. Episódios já gerados não mudam: para atualizá-los, gere " +
+    "novamente depois."
+  );
+  if (!confirmed) return;
+  const button = $("btn-reextract");
+  button.disabled = true;
+  const result = await bridge(["reextract-file", selectedItem.item_id]);
+  button.disabled = false;
+  if (!result.ok || !result.reextracted) {
+    alert(result.error || result.reason || "Não foi possível reextrair o arquivo.");
+    return;
+  }
+  alert(
+    `Texto reprocessado (${result.method}): ` +
+    `${result.words_before} → ${result.words} palavras.`
+  );
+  await loadItems($("search").value.trim());
+};
 
 function selectedEstimate() {
   if (!selectedItem) return null;

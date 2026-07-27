@@ -18,6 +18,8 @@ test("bridge aceita somente comandos públicos conhecidos", () => {
     ["audio-chunks", "livro", "--language=en"]);
   assert.deepEqual(validateBridgeRequest(["abort", "livro", "--language=en"]),
     ["abort", "livro", "--language=en"]);
+  assert.deepEqual(validateBridgeRequest(["reextract-file", "livro"]),
+    ["reextract-file", "livro"]);
   assert.deepEqual(validateBridgeRequest(["repair", "custom", "livro"]),
     ["repair", "custom", "livro"]);
   assert.deepEqual(validateBridgeRequest(["repair", "custom", "livro", "--language=en"]),

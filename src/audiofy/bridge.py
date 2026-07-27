@@ -22,6 +22,7 @@
     python3 -m audiofy.bridge tts-catalog
     python3 -m audiofy.bridge costs
     python3 -m audiofy.bridge add-file <caminho-do-arquivo>
+    python3 -m audiofy.bridge reextract-file <item-id>
     python3 -m audiofy.bridge setup-check|setup-install
 """
 
@@ -320,6 +321,46 @@ def _cmd_audio_chunks(item_id: str, language: str = "") -> dict:
     }
 
 
+def _cmd_reextract_file(item_id: str) -> dict:
+    """Reprocessa o arquivo de origem de um item já importado.
+
+    Substitui o texto preservando o mesmo item_id, para que episódios e
+    histórico continuem apontando para ele. Só funciona em itens que guardaram
+    a origem (importados por arquivo depois que o campo passou a existir).
+    """
+    from .file_extraction import extract_file
+    from .sources.custom import CustomSource
+
+    source = CustomSource()
+    origin = source.source_file(item_id)
+    if not origin:
+        return {
+            "reextracted": False,
+            "reason": (
+                "Este conteúdo não registra o arquivo de origem — foi colado, veio de "
+                "URL ou foi importado antes desse recurso. Envie o arquivo novamente."
+            ),
+        }
+    path = Path(origin)
+    if not path.is_file():
+        return {
+            "reextracted": False,
+            "reason": f"O arquivo de origem não está mais em {origin}.",
+        }
+    extraction = extract_file(path)
+    if extraction.needs_fallback:
+        return {"reextracted": False, "reason": extraction.reason}
+    before = len(source.get_item(item_id).text.split())
+    source.replace_text(item_id, extraction.text)
+    return {
+        "reextracted": True,
+        "item_id": item_id,
+        "method": extraction.method,
+        "words": len(extraction.text.split()),
+        "words_before": before,
+    }
+
+
 def _cmd_sources() -> dict:
     return {
         "sources": [
@@ -358,6 +399,13 @@ def _cmd_item(source_key: str, item_id: str) -> dict:
     payload["estimates"] = {mode: asdict(value) for mode, value in estimates.items()}
     metrics = read_episode_metrics(_episode_dir(item_id))
     payload["actual"] = asdict(metrics) if metrics else None
+    # A interface só oferece "reextrair" quando há um arquivo de origem guardado.
+    payload["source_file"] = ""
+    if source_key == "custom":
+        from .sources.custom import CustomSource
+
+        with contextlib.suppress(LookupError, ValueError):
+            payload["source_file"] = CustomSource().source_file(item_id)
     return payload
 
 
@@ -1095,7 +1143,13 @@ def main() -> None:
                     "title": extraction.title,
                 }
             else:
-                item_id = CustomSource().add_text(extraction.title, extraction.text)
+                # Guarda a origem para permitir reextrair depois, quando a
+                # extração melhorar, sem reenviar o arquivo (o que duplicaria).
+                item_id = CustomSource().add_text(
+                    extraction.title,
+                    extraction.text,
+                    source_file=str(Path(rest[0]).resolve()),
+                )
                 result = {
                     "added": True,
                     "item_id": item_id,
@@ -1104,6 +1158,8 @@ def main() -> None:
                     "method": extraction.method,
                     "words": len(extraction.text.split()),
                 }
+        elif command == "reextract-file" and rest:
+            result = _cmd_reextract_file(rest[0])
         elif command == "chat":
             from .chat import ChatSession
 

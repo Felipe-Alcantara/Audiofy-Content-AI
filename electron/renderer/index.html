@@ -131,6 +131,11 @@
       <div id="detail" class="hidden">
         <h2 id="detail-title"></h2>
         <p class="muted" id="detail-meta"></p>
+        <p id="detail-reextract-row" class="muted small hidden">
+          <button id="btn-reextract" class="ghost">🔄 Reextrair do arquivo</button>
+          <span class="muted small">Reprocessa o arquivo original com a extração atual,
+            sem criar um item novo.</span>
+        </p>
         <p id="detail-estimate" class="estimate"></p>
         <div class="generation-options">
           <p id="generation-options-lock" class="options-lock hidden" role="status">
@@ -216,7 +221,10 @@
       </div>
       <button id="btn-close-chunks" class="ghost" aria-label="Fechar revisão">✕</button>
     </div>
-    <div id="chunk-player-slot" class="player-slot"></div>
+    <div class="modal-transport">
+      <button id="btn-chunk-toggle" class="ghost" aria-label="Reproduzir ou pausar">▶️ Tocar</button>
+      <span id="chunk-elapsed" class="muted small" role="timer">0:00</span>
+    </div>
     <p id="chunk-now-playing" class="muted small">Escolha um chunk para ouvir.</p>
     <ul id="chunk-list" class="chunk-list"></ul>
   </dialog>
@@ -229,7 +237,13 @@
       </div>
       <button id="btn-close-teleprompter" class="ghost" aria-label="Fechar acompanhamento">✕</button>
     </div>
-    <div id="teleprompter-player-slot" class="player-slot"></div>
+    <div class="modal-transport">
+      <button id="btn-teleprompter-toggle" class="ghost" aria-label="Reproduzir ou pausar">
+        ▶️ Tocar
+      </button>
+      <span id="teleprompter-elapsed" class="muted small" role="timer">0:00</span>
+      <span class="muted small">O player do topo continua controlando a reprodução.</span>
+    </div>
     <p id="teleprompter-now-playing" class="muted small">Toque o episódio para acompanhar o texto.</p>
     <form id="teleprompter-goto-form" class="teleprompter-goto">
       <label for="teleprompter-goto-input">Ir para o parágrafo</label>

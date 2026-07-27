@@ -160,7 +160,7 @@ test("modal permite auditar e ouvir chunks individualmente", () => {
   const renderer = readRendererFile("renderer.js");
 
   assert.match(html, /<dialog id="chunk-modal"/);
-  assert.match(html, /id="chunk-player-slot"/);
+  assert.match(html, /id="btn-chunk-toggle"/);
   assert.match(renderer, /"audio-chunks", itemId/);
   assert.match(renderer, /projectPathToFileUrl\(chunk\.path\)/);
   assert.match(renderer, /chunk\.longest_silence_seconds/);
@@ -324,7 +324,7 @@ test("botão 'voltar ao parágrafo atual' aparece ao rolar para longe do destaqu
   assert.match(styles, /\.teleprompter-follow \{/);
 });
 
-test("existe um único <audio> real, compartilhado entre dock, chunks e teleprompter", () => {
+test("existe um único <audio> real e ele nunca sai do dock", () => {
   const html = readRendererFile("index.html");
   const renderer = readRendererFile("renderer.js");
 
@@ -332,26 +332,43 @@ test("existe um único <audio> real, compartilhado entre dock, chunks e teleprom
   // clicar em "ouvir" no card e depois em "acompanhar" sobrepunha dois áudios.
   assert.equal((html.match(/<audio\b/g) || []).length, 1);
   assert.match(html, /<audio id="episode-player"/);
-  assert.match(html, /id="chunk-player-slot"/);
-  assert.match(html, /id="teleprompter-player-slot"/);
-  assert.doesNotMatch(html, /id="chunk-player"[^-]/);
-  assert.doesNotMatch(html, /id="teleprompter-player"[^-]/);
 
-  assert.match(renderer, /function movePlayerTo\(slotId\)/);
-  assert.match(renderer, /function movePlayerHome\(\)/);
-  assert.match(renderer, /\$\(slotId\)\.appendChild\(\$\("episode-player"\)\)/);
+  // O <audio> mora no dock e fica lá. Movê-lo pelo DOM (appendChild move o
+  // elemento, não copia) enquanto tocava reiniciava a mídia no Chromium e
+  // deixava o player mudo ao voltar — a reprodução não pode depender de qual
+  // janela está aberta.
+  assert.doesNotMatch(renderer, /function movePlayerTo\b/);
+  assert.doesNotMatch(renderer, /function movePlayerHome\b/);
+  assert.doesNotMatch(renderer, /appendChild\(\$\("episode-player"\)\)/);
+  assert.doesNotMatch(html, /id="chunk-player-slot"/);
+  assert.doesNotMatch(html, /id="teleprompter-player-slot"/);
+});
 
-  // Abrir um dos modais precisa pausar/realojar o único player, e abrir um
-  // enquanto o outro está aberto precisa fechar o anterior — nunca dois
-  // players tocando ao mesmo tempo em contextos diferentes.
-  assert.match(renderer, /movePlayerTo\("chunk-player-slot"\)/);
-  assert.match(renderer, /movePlayerTo\("teleprompter-player-slot"\)/);
-  assert.match(renderer, /if \(\$\("teleprompter-modal"\)\.open\) closeTeleprompter\(\);/);
-  assert.match(renderer, /if \(\$\("chunk-modal"\)\.open\) closeChunkReview\(\);/);
-  assert.match(
-    renderer,
-    /function playInApp\(path, title\) \{\s*if \(\$\("chunk-modal"\)\.open\) closeChunkReview\(\);\s*if \(\$\("teleprompter-modal"\)\.open\) closeTeleprompter\(\);/
+test("modais comandam o player do dock em vez de sequestrá-lo", () => {
+  const renderer = readRendererFile("renderer.js");
+
+  // Abrir "acompanhar" com o episódio tocando não pode pausar nem trocar a
+  // fonte: o usuário só quer ver o texto do que já está ouvindo.
+  const abrirTeleprompter = renderer.match(
+    /async function openTeleprompter\(episode\) \{([\s\S]*?)\n\}/
   );
+  assert.ok(abrirTeleprompter, "openTeleprompter deve existir");
+  assert.doesNotMatch(abrirTeleprompter[1], /\$\("episode-player"\)\.pause\(\)/);
+
+  // Fechar qualquer um dos modais devolve o controle ao dock sem destruir a
+  // mídia carregada — nada de removeAttribute("src") no caminho do episódio.
+  const fecharTeleprompter = renderer.match(/function closeTeleprompter\(\) \{([\s\S]*?)\n\}/);
+  assert.ok(fecharTeleprompter, "closeTeleprompter deve existir");
+  assert.doesNotMatch(fecharTeleprompter[1], /removeAttribute\("src"\)/);
+});
+
+test("o dock fica visível enquanto um modal de áudio está aberto", () => {
+  const renderer = readRendererFile("renderer.js");
+
+  // Com o player fixo no dock, esconder o dock esconderia os controles do que
+  // está tocando: quem abre o teleprompter precisa continuar podendo pausar.
+  assert.match(renderer, /function ensurePlayerDockVisible\(\)/);
+  assert.match(renderer, /\$\("player-dock"\)\.classList\.remove\("hidden"\)/);
 });
 
 test("teleprompter permite arrastar o texto para rolar, como num celular", () => {

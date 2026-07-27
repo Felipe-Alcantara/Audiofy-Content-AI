@@ -102,10 +102,17 @@ class CustomSource(ContentSource):
 
     # ── Escrita ──────────────────────────────────────────────────────────
 
-    def add_text(self, title: str, text: str, url: str = "") -> str:
-        """Guarda um conteúdo colado e retorna o item_id."""
+    def add_text(self, title: str, text: str, url: str = "", source_file: str = "") -> str:
+        """Guarda um conteúdo colado e retorna o item_id.
+
+        ``source_file`` registra de qual arquivo local o texto foi extraído,
+        permitindo reprocessá-lo depois (:meth:`replace_text`) quando a
+        extração melhorar — sem isso, a única saída seria reenviar o arquivo,
+        criando um item duplicado em vez de corrigir o existente.
+        """
         title = " ".join(str(title).split())
         url = " ".join(str(url).split())
+        source_file = " ".join(str(source_file).split())
         if not title or len(title) > 300:
             raise ValueError("O título é obrigatório e pode ter no máximo 300 caracteres.")
         if not isinstance(text, str) or not text.strip():
@@ -117,12 +124,43 @@ class CustomSource(ContentSource):
         while (self.inbox_dir / f"{item_id}.md").exists():
             item_id, counter = f"{base}-{counter}", counter + 1
         path = self.inbox_dir / f"{item_id}.md"
+        origin_line = f"source-file: {source_file}\n" if source_file else ""
         with path.open("w", encoding="utf-8", newline="") as output:
             output.write(
-                f"---\ntitle: {title}\nurl: {url}\ndate: {today}\n"
+                f"---\ntitle: {title}\nurl: {url}\ndate: {today}\n{origin_line}"
                 f"content-format: exact-v1\n---\n{text}"
             )
         return item_id
+
+    def source_file(self, item_id: str) -> str:
+        """Arquivo local de onde o item foi extraído, ou vazio se não houver."""
+        item_id = validate_identifier(item_id, "ID do conteúdo")
+        path = self.inbox_dir / f"{item_id}.md"
+        if not path.is_file():
+            raise LookupError(f"Conteúdo '{item_id}' não existe em {self.inbox_dir}.")
+        meta, _ = self._parse(path)
+        return meta.get("source-file", "")
+
+    def replace_text(self, item_id: str, text: str) -> None:
+        """Troca o corpo do item preservando id, título e demais metadados.
+
+        Usado ao reextrair um arquivo já importado: o episódio e o histórico
+        continuam apontando para o mesmo item_id.
+        """
+        item_id = validate_identifier(item_id, "ID do conteúdo")
+        path = self.inbox_dir / f"{item_id}.md"
+        if not path.is_file():
+            raise LookupError(f"Conteúdo '{item_id}' não existe em {self.inbox_dir}.")
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError("O conteúdo não pode ser vazio.")
+        meta, _ = self._parse(path)
+        lines = "".join(
+            f"{key}: {value}\n"
+            for key, value in meta.items()
+            if key != "content-format"
+        )
+        with path.open("w", encoding="utf-8", newline="") as output:
+            output.write(f"---\n{lines}content-format: exact-v1\n---\n{text}")
 
     def add_url(self, url: str) -> str:
         """Baixa uma página, extrai o texto principal e guarda como item."""
