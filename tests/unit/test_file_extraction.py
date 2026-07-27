@@ -18,6 +18,7 @@ from audiofy.file_extraction import (  # noqa: E402
     _ocr_pdf,
     _strip_running_headers,
     _title_from_path,
+    dehyphenate_with_llm,
     extract_file,
     ocr_available,
 )
@@ -467,6 +468,72 @@ class OcrDisponibilidadeTest(unittest.TestCase):
     def test_binario_presente_e_pytesseract_instalado_habilita_ocr(self):
         with patch("audiofy.setup.configure_tesseract", return_value="/usr/bin/tesseract"):
             self.assertTrue(ocr_available())
+
+
+class DehyphenateComLlmTest(unittest.TestCase):
+    """Correção de hifenização/espaçamento quebrados por extração de PDF via LLM.
+
+    Cobre o padrão real encontrado (extração de PDF com espaço espúrio antes do
+    hífen de fim de linha, ex. "cav a-\\nleiro"), quando a regex determinística de
+    _normalize() não é suficiente porque o defeito varia demais para um padrão fixo.
+    """
+
+    def test_corrige_texto_usando_o_resultado_do_llm(self):
+        texto = "Ele fazia tudo que um cav a-\nleiro bondoso faz."
+
+        def chat_fake(system, prompt):
+            self.assertIn("cav a-\nleiro", prompt)
+            return {"text": "Ele fazia tudo que um cavaleiro bondoso faz."}
+
+        resultado = dehyphenate_with_llm(texto, chat_fake)
+        self.assertEqual(resultado, "Ele fazia tudo que um cavaleiro bondoso faz.")
+
+    def test_processa_em_blocos_quando_o_texto_excede_o_tamanho_maximo(self):
+        bloco_a = "Primeiro trecho. " * 400
+        bloco_b = "Segundo trecho. " * 400
+        texto = bloco_a + "\n\n" + bloco_b
+        chamadas = []
+
+        def chat_fake(system, prompt):
+            chamadas.append(prompt)
+            return {"text": prompt}
+
+        resultado = dehyphenate_with_llm(texto, chat_fake, max_chars_per_call=len(bloco_a) + 10)
+        self.assertGreaterEqual(len(chamadas), 2)
+        self.assertIn("Primeiro trecho.", resultado)
+        self.assertIn("Segundo trecho.", resultado)
+
+    def test_bloco_com_tamanho_muito_diferente_do_original_e_descartado(self):
+        # Se o LLM devolver algo muito menor/maior que o original, é sinal de
+        # que reescreveu/resumiu em vez de só corrigir hifenização — mantém o
+        # texto original desse bloco em vez de arriscar perder conteúdo.
+        texto = "Um parágrafo de tamanho normal para verificação de integridade."
+
+        def chat_fake(system, prompt):
+            return {"text": "Resumo curto."}
+
+        resultado = dehyphenate_with_llm(texto, chat_fake)
+        self.assertEqual(resultado, texto)
+
+    def test_falha_na_chamada_mantem_o_texto_original_do_bloco(self):
+        texto = "Texto que não deve ser perdido se o LLM falhar."
+
+        def chat_fake(system, prompt):
+            raise RuntimeError("erro de rede simulado")
+
+        resultado = dehyphenate_with_llm(texto, chat_fake)
+        self.assertEqual(resultado, texto)
+
+    def test_texto_vazio_nao_faz_chamada(self):
+        chamadas = []
+
+        def chat_fake(system, prompt):
+            chamadas.append(prompt)
+            return {"text": prompt}
+
+        resultado = dehyphenate_with_llm("", chat_fake)
+        self.assertEqual(resultado, "")
+        self.assertEqual(chamadas, [])
 
 
 if __name__ == "__main__":

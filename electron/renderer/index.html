@@ -105,6 +105,11 @@
             <p class="muted small">PDF, DOCX, EPUB, TXT/MD e imagens. O texto é extraído
               localmente por bibliotecas — sem custo de IA.</p>
           </div>
+          <label class="check-option" id="fix-hyphenation-option"
+            title="Usa IA para corrigir palavras quebradas por hifenização malformada na extração de PDF (ex.: 'cav a-leiro' → 'cavaleiro'). Custo pequeno, cobrado por arquivo.">
+            <input id="fix-hyphenation" type="checkbox" />
+            <span>Corrigir hifenização quebrada de PDF (IA, custo pequeno)</span>
+          </label>
           <p id="add-files-status" class="muted small" role="status"></p>
           <div class="add-content-divider"><span>ou cole o texto</span></div>
           <input id="add-title" type="text" placeholder="Título"

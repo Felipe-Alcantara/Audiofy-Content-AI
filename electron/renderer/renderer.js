@@ -218,11 +218,11 @@ function updateTeleprompterFollowButton() {
 }
 
 function closeTeleprompter() {
-  const player = $("episode-player");
+  // Ao contrário de closeChunkReview, o teleprompter reproduz o mesmo
+  // episódio que já tocava no player principal (só "empresta" o <audio>) —
+  // por isso não deve remover src/load(), senão o player volta ao dock
+  // sem áudio carregado e o play trava.
   detachTeleprompterTimeUpdate();
-  player.pause();
-  player.removeAttribute("src");
-  player.load();
   movePlayerHome();
   teleprompterTimingChunks = null;
   teleprompterLastActiveEntry = null;
@@ -757,7 +757,9 @@ function describeExtraction(result) {
     "tesseract-ocr": "OCR local (Tesseract)",
   };
   const method = methodLabels[result.method] || result.method;
-  return `${result.title} — ${result.words} palavras · ${method}`;
+  const cost = result.dehyphenation_cost_usd;
+  const suffix = cost ? ` · hifenização corrigida (US$ ${cost.toFixed(4)})` : "";
+  return `${result.title} — ${result.words} palavras · ${method}${suffix}`;
 }
 
 async function askAgentToExtract(filePath, reason) {
@@ -787,6 +789,16 @@ async function askAgentToExtract(filePath, reason) {
 $("btn-add-files").onclick = async () => {
   const paths = await window.audiofy.chooseContentFiles();
   if (!paths.length) return;
+  const fixHyphenation = $("fix-hyphenation").checked;
+  if (fixHyphenation) {
+    const confirmed = confirm(
+      "Corrigir hifenização quebrada usa IA para reler cada arquivo em blocos.\n\n" +
+      "⚠️ Isso consome créditos pequenos por arquivo (cobrados por bloco de texto). " +
+      "Sem isso, palavras quebradas na extração do PDF (ex.: \"cav a-leiro\") " +
+      "podem continuar corrompidas no episódio."
+    );
+    if (!confirmed) return;
+  }
   const button = $("btn-add-files");
   const status = $("add-files-status");
   button.disabled = true;
@@ -796,7 +808,9 @@ $("btn-add-files").onclick = async () => {
   for (const [index, filePath] of paths.entries()) {
     status.textContent =
       `Extraindo ${index + 1}/${paths.length}: ${fileBaseName(filePath)}…`;
-    const result = await bridge(["add-file", filePath]);
+    const args = ["add-file", filePath];
+    if (fixHyphenation) args.push("--fix-hyphenation");
+    const result = await bridge(args);
     if (!result.ok) {
       failed.push(`${fileBaseName(filePath)}: ${result.error}`);
     } else if (result.added) {

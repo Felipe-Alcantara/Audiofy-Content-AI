@@ -18,6 +18,11 @@ electron/node_modules/
 npm-debug.log*
 data/source/akitaonrails.github.io/
 
+# Conteúdo gerado (episódios, áudio, fontes importadas) — grande demais para o
+# GitHub (limite de 100MB por arquivo) e reproduzível a partir do pipeline.
+data/episodes/
+data/inbox/
+
 # Editores e sistema operacional
 .DS_Store
 .idea/

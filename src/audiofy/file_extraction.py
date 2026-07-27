@@ -84,6 +84,71 @@ def _title_from_path(path: Path) -> str:
     return re.sub(r"[-_]+", " ", path.stem).strip() or path.stem
 
 
+_DEHYPHENATE_MAX_CHARS_PER_CALL = 6000
+# Um bloco corrigido não deveria mudar de tamanho de forma relevante — só
+# hífens e espaços somem. Fora dessa margem, o LLM reescreveu/resumiu em vez
+# de corrigir, então o bloco original é mantido para não perder conteúdo.
+_DEHYPHENATE_MAX_LENGTH_DELTA_RATIO = 0.15
+
+_DEHYPHENATE_SYSTEM = (
+    "Você corrige apenas defeitos de extração de PDF em texto de um livro/artigo: "
+    "palavras quebradas por hifenização de fim de linha (ex.: 'cav a-\\nleiro' -> "
+    "'cavaleiro') e espaços espúrios no meio de palavras (ex.: 'drag ões' -> "
+    "'dragões'). Não reescreva, resuma, traduza, corrija gramática ou altere "
+    "qualquer outra parte do texto — preserve pontuação, quebras de parágrafo e "
+    "todas as palavras que já estão corretas exatamente como estão. "
+    'Responda em JSON: {"text": "<texto corrigido>"}.'
+)
+
+
+def _split_for_dehyphenation(text: str, max_chars: int) -> list[str]:
+    if len(text) <= max_chars:
+        return [text]
+    blocks: list[str] = []
+    for paragraph in text.split("\n\n"):
+        if blocks and len(blocks[-1]) + len(paragraph) + 2 <= max_chars:
+            blocks[-1] = blocks[-1] + "\n\n" + paragraph
+        else:
+            blocks.append(paragraph)
+    return blocks
+
+
+def dehyphenate_with_llm(
+    text: str,
+    chat_fn,
+    max_chars_per_call: int = _DEHYPHENATE_MAX_CHARS_PER_CALL,
+) -> str:
+    """Corrige hifenização/espaçamento quebrados por extração de PDF via LLM.
+
+    `chat_fn(system, prompt) -> dict` é injetado para permitir teste sem rede e
+    reuso do provedor/custo já configurado pelo chamador. Cada bloco processado
+    é validado contra o tamanho original; falha na chamada ou resposta muito
+    diferente do esperado mantém o bloco original em vez de arriscar perda de
+    conteúdo — esta função nunca lança, sempre retorna algum texto usável.
+    """
+    if not text:
+        return text
+    blocks = _split_for_dehyphenation(text, max_chars_per_call)
+    fixed_blocks = []
+    for block in blocks:
+        fixed_blocks.append(_dehyphenate_block(block, chat_fn))
+    return "\n\n".join(fixed_blocks)
+
+
+def _dehyphenate_block(block: str, chat_fn) -> str:
+    try:
+        data = chat_fn(_DEHYPHENATE_SYSTEM, block)
+        fixed = data["text"]
+    except Exception:
+        return block
+    if not isinstance(fixed, str) or not fixed.strip():
+        return block
+    delta_ratio = abs(len(fixed) - len(block)) / max(len(block), 1)
+    if delta_ratio > _DEHYPHENATE_MAX_LENGTH_DELTA_RATIO:
+        return block
+    return fixed
+
+
 def extract_file(path: Path) -> ExtractionResult:
     """Extrai texto do arquivo pela melhor via local disponível."""
     if not path.is_file():
