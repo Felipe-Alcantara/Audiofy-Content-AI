@@ -508,7 +508,7 @@ function loadVoiceHelpers() {
   const start = source.indexOf("function voiceLabel");
   const end = source.indexOf("function addPresenterRow");
   const factory = new Function(
-    `${source.slice(start, end)}; return { voiceLabel, voiceToneLabel };`,
+    `${source.slice(start, end)}; return { voiceLabel, voiceToneLabel, sortVoicesByLanguage };`,
   );
   return factory();
 }
@@ -564,4 +564,77 @@ test("voz do MAI-Voice-2 mostra nome limpo e idioma por extenso", () => {
   assert.equal(voiceLabel("es-MX-Valeria:MAI-Voice-2", model), "Valeria (espanhol — México)");
   assert.equal(voiceLabel("fr-FR-Soleil:MAI-Voice-2", model), "Soleil (francês)");
   assert.equal(voiceLabel("de-DE-Klaus:MAI-Voice-2", model), "Klaus (alemão)");
+});
+
+test("vozes são ordenadas por idioma: pt-BR, pt-PT, inglês, espanhol, resto", () => {
+  const { sortVoicesByLanguage } = loadVoiceHelpers();
+
+  // Mistura idiomas e convenções de ID (prefixo do Kokoro, locale do MAI,
+  // idioma só na descrição do Deepgram) fora de ordem de propósito.
+  const entries = [
+    ["zm_yunxi", "masculina (zh-CN)"],
+    ["aura-2-thalia-en", "feminina, clara (en-us)"],
+    ["ef_dora", "feminina (es)"],
+    ["pt-PT-Rui:MAI-Voice-2", "masculina (pt-PT)"],
+    ["ff_siwis", "feminina (fr-FR)"],
+    ["pf_dora", "feminina (pt-BR)"],
+    ["en-US-Harper:MAI-Voice-2", "feminina (en-US)"],
+    ["aura-2-agustina-es", "feminina, calma (es-es)"],
+  ];
+
+  const ordered = sortVoicesByLanguage(entries).map(([name]) => name);
+
+  assert.deepEqual(ordered, [
+    "pf_dora",
+    "pt-PT-Rui:MAI-Voice-2",
+    "aura-2-thalia-en",
+    "en-US-Harper:MAI-Voice-2",
+    "ef_dora",
+    "aura-2-agustina-es",
+    // "Resto" preserva a ordem de entrada: zm_yunxi vinha antes de ff_siwis.
+    "zm_yunxi",
+    "ff_siwis",
+  ]);
+});
+
+test("ordenação por idioma é estável dentro do mesmo grupo", () => {
+  const { sortVoicesByLanguage } = loadVoiceHelpers();
+
+  // Dentro de um idioma, a ordem curada do catálogo precisa ser preservada
+  // (o Kokoro lista af_heart antes de af_alloy de propósito, por exemplo).
+  const entries = [
+    ["am_adam", "firme (en)"],
+    ["af_heart", "brilhante (en)"],
+    ["af_alloy", "neutra (en)"],
+  ];
+
+  assert.deepEqual(
+    sortVoicesByLanguage(entries).map(([name]) => name),
+    ["am_adam", "af_heart", "af_alloy"],
+  );
+});
+
+test("vozes multilíngues e sem idioma detectável ficam no fim da lista", () => {
+  const { sortVoicesByLanguage } = loadVoiceHelpers();
+
+  const entries = [
+    ["Kore", "firme (multilíngue)"],
+    ["pf_dora", "feminina (pt-BR)"],
+    ["none", "sem preset — usa a voz padrão do modelo"],
+    ["aura-2-thalia-en", "feminina, clara (en-us)"],
+  ];
+
+  assert.deepEqual(
+    sortVoicesByLanguage(entries).map(([name]) => name),
+    ["pf_dora", "aura-2-thalia-en", "Kore", "none"],
+  );
+});
+
+test("os dois seletores de voz usam a mesma ordem por idioma", () => {
+  const renderer = readRendererFile("renderer.js");
+
+  // Perfil (addPresenterRow) e leitura fiel (narration-voice) mostram o mesmo
+  // catálogo; ordenar só um deles deixaria as listas divergentes.
+  assert.match(renderer, /sortVoicesByLanguage\(Object\.entries\(catalog\)\)/);
+  assert.match(renderer, /sortVoicesByLanguage\(Object\.entries\(activeCatalog\)\)/);
 });

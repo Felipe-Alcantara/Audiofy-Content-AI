@@ -1742,7 +1742,7 @@ function renderActiveConfig(info) {
   const previousVoice = voiceSelect.value;
   voiceSelect.replaceChildren();
   const activeCatalog = (info.voice_catalogs && info.voice_catalogs[info.tts_model]) || {};
-  const catalogEntries = Object.entries(activeCatalog);
+  const catalogEntries = sortVoicesByLanguage(Object.entries(activeCatalog));
   const profileVoice = info.presenters.length === 1 ? info.presenters[0].voice : "";
   if (catalogEntries.length) {
     for (const [voice, style] of catalogEntries) {
@@ -2345,10 +2345,51 @@ function voiceToneLabel(tone, voice) {
     .trim();
 }
 
+// Prioridade de idioma no seletor: o público do app é brasileiro, então
+// pt-BR vem primeiro, pt-PT logo depois, e as línguas mais prováveis na
+// sequência. O resto (japonês, chinês, hindi…) fica no fim, junto das vozes
+// multilíngues e das que não declaram idioma.
+const VOICE_LANGUAGE_ORDER = ["pt-br", "pt-pt", "en", "es"];
+const VOICE_LANGUAGE_FALLBACK_RANK = VOICE_LANGUAGE_ORDER.length + 1;
+
+// Descobre o idioma de uma voz nas três convenções em uso: prefixo do Kokoro
+// ("pf_dora"), locale no início do ID ("pt-PT-Rui:MAI-Voice-2") e código no
+// fim da descrição ("feminina, clara (en-us)", do Deepgram e afins).
+function voiceLanguageCode(voice, tone) {
+  const kokoroPrefixes = { a: "en", b: "en", e: "es", f: "fr", h: "hi", i: "it", j: "ja", p: "pt-br", z: "zh" };
+  const kokoroCode = typeof voice === "string" && voice.match(/^([a-z])[fm][_-]/i);
+  if (kokoroCode) return kokoroPrefixes[kokoroCode[1].toLowerCase()] || "";
+
+  const localeCode = typeof voice === "string" && voice.match(/^([a-z]{2}-[a-z]{2})-/i);
+  if (localeCode) return localeCode[1].toLowerCase();
+
+  const toneCode = typeof tone === "string" && tone.match(/\(([a-z]{2}(?:-[a-z]{2,3})?)\)\s*$/i);
+  return toneCode ? toneCode[1].toLowerCase() : "";
+}
+
+function voiceLanguageRank(voice, tone) {
+  const code = voiceLanguageCode(voice, tone);
+  if (!code) return VOICE_LANGUAGE_FALLBACK_RANK;
+  // "en-us"/"en-gb"/"es-mx" caem no grupo do idioma base; pt-BR e pt-PT são
+  // grupos distintos de propósito, porque a pronúncia difere bastante.
+  const base = code.startsWith("pt") ? code : code.split("-")[0];
+  const rank = VOICE_LANGUAGE_ORDER.indexOf(base);
+  return rank === -1 ? VOICE_LANGUAGE_FALLBACK_RANK : rank;
+}
+
+// Ordena por grupo de idioma preservando a ordem curada do catálogo dentro de
+// cada grupo (Array.prototype.sort é estável no V8).
+function sortVoicesByLanguage(entries) {
+  return [...entries].sort(
+    ([voiceA, toneA], [voiceB, toneB]) =>
+      voiceLanguageRank(voiceA, toneA) - voiceLanguageRank(voiceB, toneB),
+  );
+}
+
 function addPresenterRow(speaker = "", voice = "Kore", style = "") {
   const catalog = currentVoiceCatalog();
   const ttsModel = $("pf-tts-model") && $("pf-tts-model").value;
-  const voices = catalog ? Object.entries(catalog) : [];
+  const voices = catalog ? sortVoicesByLanguage(Object.entries(catalog)) : [];
   const row = document.createElement("div");
   row.className = "presenter-row";
   const speakerInput = makeElement("input", "pf-speaker");
