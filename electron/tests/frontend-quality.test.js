@@ -72,8 +72,8 @@ test("vozes mostram nomes normalizados sem origem do catálogo", () => {
 test("idioma da voz continua visível para provedores fora do Kokoro", () => {
   const renderer = readRendererFile("renderer.js");
 
-  assert.match(renderer, /isKokoroVoice = typeof voice === "string" && \/\^\[a-z\]\[fm\]\[_-\]\/i\.test\(voice\)/);
-  assert.match(renderer, /if \(!isKokoroVoice\) return tone\.trim\(\);/);
+  assert.match(renderer, /const hasLanguageInId =/);
+  assert.match(renderer, /if \(!hasLanguageInId\) return tone\.trim\(\);/);
   assert.match(renderer, /voiceToneLabel\(style, voice\)/);
   assert.match(renderer, /voiceToneLabel\(tone, name\)/);
 });
@@ -499,4 +499,69 @@ test("retoma a reprodução de onde parou, mesmo depois de fechar o app", () => 
   )[1];
   assert.match(timeUpdateSaverBody, /if \(player\.paused\) return;/);
   assert.match(timeUpdateSaverBody, /savePlaybackPosition/);
+});
+
+// Carrega voiceLabel/voiceToneLabel do renderer para testar o texto que o
+// usuário realmente vê, em vez de casar regex contra o código-fonte.
+function loadVoiceHelpers() {
+  const source = readRendererFile("renderer.js");
+  const start = source.indexOf("function voiceLabel");
+  const end = source.indexOf("function addPresenterRow");
+  const factory = new Function(
+    `${source.slice(start, end)}; return { voiceLabel, voiceToneLabel };`,
+  );
+  return factory();
+}
+
+test("rótulo da voz mostra o idioma uma única vez em todos os idiomas do Kokoro", () => {
+  const { voiceLabel, voiceToneLabel } = loadVoiceHelpers();
+  const model = "hexgrad/kokoro-82m";
+  // O Kokoro tem 54 vozes em 9 idiomas; voiceLabel() já exibe o idioma pelo
+  // prefixo do ID, então a descrição não pode repeti-lo.
+  const cases = [
+    ["pf_dora", "feminina (pt-BR)", "português — Brasil"],
+    ["ff_siwis", "feminina (fr-FR)", "francês"],
+    ["zm_yunxi", "masculina (zh-CN)", "chinês"],
+    ["jf_nezumi", "feminina, suave (ja)", "japonês"],
+    ["ef_dora", "feminina (es)", "espanhol"],
+    ["hf_alpha", "feminina (hi)", "hindi"],
+    ["if_sara", "feminina (it)", "italiano"],
+    ["bm_fable", "masculina, narrativa (en-GB)", "inglês — Reino Unido"],
+  ];
+
+  for (const [voice, tone, expectedLanguage] of cases) {
+    const label = voiceLabel(voice, model);
+    assert.match(label, new RegExp(`\\(${expectedLanguage}\\)$`), `idioma em ${voice}`);
+
+    const cleanTone = voiceToneLabel(tone, voice);
+    assert.doesNotMatch(cleanTone, /\(/, `${voice} repete o idioma na descrição: ${cleanTone}`);
+    assert.ok(cleanTone.length > 0, `${voice} ficou sem descrição de tom`);
+  }
+});
+
+test("idioma continua na descrição de vozes que não seguem a convenção do Kokoro", () => {
+  const { voiceToneLabel } = loadVoiceHelpers();
+
+  // Deepgram/MAI-Voice-2 não codificam idioma no prefixo do ID, então o idioma
+  // só existe na descrição e precisa continuar visível.
+  assert.equal(
+    voiceToneLabel("feminina, clara, confiante (en-us)", "aura-2-thalia-en"),
+    "feminina, clara, confiante (en-us)",
+  );
+  // Já o MAI-Voice-2 codifica o locale no ID, e voiceLabel() o exibe por
+  // extenso — repetir "(en-US)" na descrição seria redundante.
+  assert.equal(voiceToneLabel("feminina (en-US)", "en-US-Harper:MAI-Voice-2"), "feminina");
+  assert.equal(voiceToneLabel("masculina (de-DE)", "de-DE-Klaus:MAI-Voice-2"), "masculina");
+});
+
+test("voz do MAI-Voice-2 mostra nome limpo e idioma por extenso", () => {
+  const { voiceLabel } = loadVoiceHelpers();
+  const model = "microsoft/mai-voice-2";
+
+  // O ID traz locale e sufixo do modelo ("en-US-Harper:MAI-Voice-2"); o rótulo
+  // precisa virar nome legível + idioma por extenso, sem repetir o modelo.
+  assert.equal(voiceLabel("en-US-Harper:MAI-Voice-2", model), "Harper (inglês — EUA)");
+  assert.equal(voiceLabel("es-MX-Valeria:MAI-Voice-2", model), "Valeria (espanhol — México)");
+  assert.equal(voiceLabel("fr-FR-Soleil:MAI-Voice-2", model), "Soleil (francês)");
+  assert.equal(voiceLabel("de-DE-Klaus:MAI-Voice-2", model), "Klaus (alemão)");
 });

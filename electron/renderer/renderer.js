@@ -2269,6 +2269,34 @@ function voiceLabel(voice, ttsModel) {
   };
   const kokoroCode = voice.match(/^([a-z])([fm])[_-]/i);
   const kokoroLanguage = kokoroCode && kokoroLanguages[kokoroCode[1].toLowerCase()];
+
+  // MAI-Voice-2 nomeia as vozes como "en-US-Harper:MAI-Voice-2": o locale vem
+  // no início e o modelo repetido depois de ":". Sem tratar, o seletor mostra
+  // "En US Harper:MAI Voice 2" — ilegível e com o idioma só em código.
+  const localeVoice = voice.match(/^([a-z]{2})-([a-z]{2})-([^:]+)(?::.*)?$/i);
+  if (localeVoice) {
+    const [, primary, region, name] = localeVoice;
+    const locale = `${primary}-${region}`.toLowerCase();
+    const localeNames = {
+      "en-us": "inglês — EUA",
+      "en-gb": "inglês — Reino Unido",
+      "en-au": "inglês — Austrália",
+      "pt-br": "português — Brasil",
+      "pt-pt": "português — Portugal",
+      "es-mx": "espanhol — México",
+      "es-es": "espanhol",
+      "fr-fr": "francês",
+      "de-de": "alemão",
+      "it-it": "italiano",
+      "ja-jp": "japonês",
+      "ko-kr": "coreano",
+      "zh-cn": "chinês",
+    };
+    const readable = name.replace(/[_-]+/g, " ").trim();
+    const localeLabel = localeNames[locale] || locale;
+    return `${readable} (${localeLabel})`;
+  }
+
   let label = voice.replace(/[_-]+/g, " ").trim();
   const languageNames = {
     en: "inglês",
@@ -2302,9 +2330,19 @@ function voiceToneLabel(tone, voice) {
   // Só remove o idioma da descrição quando voiceLabel() já o exibe separado
   // (convenção de prefixo do Kokoro, ex. "pf_dora"). Para os demais provedores,
   // o idioma vem só na descrição e precisa continuar visível.
-  const isKokoroVoice = typeof voice === "string" && /^[a-z][fm][_-]/i.test(voice);
-  if (!isKokoroVoice) return tone.trim();
-  return tone.replace(/\s*\((?:pt-br|en|en-gb)\)\s*$/i, "").trim();
+  // Remove o idioma da descrição só quando voiceLabel() já o exibe separado:
+  // pela convenção de prefixo do Kokoro ("pf_dora") ou pelo locale no início
+  // do ID ("en-US-Harper:MAI-Voice-2"). Nos demais provedores (Deepgram,
+  // Voxtral…) o idioma existe só na descrição e precisa continuar visível.
+  if (typeof voice !== "string") return tone.trim();
+  const hasLanguageInId = /^[a-z][fm][_-]/i.test(voice) || /^[a-z]{2}-[a-z]{2}-/i.test(voice);
+  if (!hasLanguageInId) return tone.trim();
+  // O código removido é genérico ("xx" ou "xx-YY") em vez de uma lista fixa —
+  // senão vozes como ff_siwis (fr-FR) mostrariam o idioma duas vezes.
+  return tone
+    .replace(/\s*\([a-z]{2}(?:-[a-z]{2,3})?\)\s*$/i, "")
+    .replace(/,\s*$/, "")
+    .trim();
 }
 
 function addPresenterRow(speaker = "", voice = "Kore", style = "") {
