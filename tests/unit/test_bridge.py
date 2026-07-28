@@ -327,6 +327,38 @@ class CatalogContractTest(unittest.TestCase):
         self.assertEqual(result["tts_models"][0]["id"], "v/voice")
         self.assertIsNone(result["catalog_error"])
 
+    @patch("audiofy.providers.openrouter.list_tts_models")
+    @patch("audiofy.catalog.load_models")
+    def test_atualizacao_dinamica_preserva_descricao_de_voz_ja_catalogada(
+        self, load_models, list_tts_models
+    ):
+        # A API ao vivo do OpenRouter só retorna nomes de voz, sem idioma/tom.
+        # Sobrescrever o catálogo estático com isso apagava a descrição que já
+        # tínhamos curado (ex.: "masculina (pt-BR)" nas vozes do MAI-Voice-2).
+        from audiofy.voices import TTS_VOICE_CATALOGS
+
+        model_id = "microsoft/mai-voice-2"
+        original_catalog = dict(TTS_VOICE_CATALOGS[model_id])
+        self.addCleanup(TTS_VOICE_CATALOGS.__setitem__, model_id, original_catalog)
+
+        load_models.return_value = []
+        list_tts_models.return_value = [
+            {
+                "id": model_id,
+                "name": "MAI Voice 2",
+                "prompt_price": "0.000001",
+                "completion_price": "0.000002",
+                "supported_voices": ["pt-BR-Caio:MAI-Voice-2", "pt-BR-Nova:MAI-Voice-2"],
+            }
+        ]
+
+        result = bridge._cmd_models_list()
+        catalog = result["voice_catalogs"][model_id]
+
+        self.assertEqual(catalog["pt-BR-Caio:MAI-Voice-2"], "masculina (pt-BR)")
+        # Voz nova retornada pela API ao vivo, ainda sem descrição curada.
+        self.assertEqual(catalog["pt-BR-Nova:MAI-Voice-2"], "")
+
 
 class SettingsInfoTest(unittest.TestCase):
     @patch("audiofy.providers.subscription.configured_model", return_value="gpt-test")

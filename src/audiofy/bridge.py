@@ -995,7 +995,14 @@ def _cmd_models_list(force_refresh: bool = False) -> dict:
             )
             supported_voices = model.get("supported_voices") or []
             if supported_voices:
-                TTS_VOICE_CATALOGS[model_id] = dict.fromkeys(supported_voices, "")
+                # Preserva a descrição/idioma curados para vozes já conhecidas;
+                # só cai para "" nas vozes que a API retorna mas ainda não catalogamos.
+                # Sobrescrever tudo com dict.fromkeys(..., "") apagava o idioma que
+                # já tínhamos documentado (ex.: vozes pt-BR do MAI-Voice-2).
+                known_voices = TTS_VOICE_CATALOGS.get(model_id, {})
+                TTS_VOICE_CATALOGS[model_id] = {
+                    voice: known_voices.get(voice, "") for voice in supported_voices
+                }
     except Exception as exception:
         tts_models = [
             payload(model) for model in models if {"audio", "speech"} & set(model.output_modalities)
