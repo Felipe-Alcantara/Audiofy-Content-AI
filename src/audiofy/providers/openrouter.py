@@ -97,6 +97,208 @@ KOKORO_VOICES: dict[str, str] = {
     "bm_george": "madura (en-GB)",
 }
 
+# Vozes do Orpheus 3B (Canopy Labs) — finetune de produção, só inglês.
+# Fonte: https://github.com/canopyai/Orpheus-TTS
+ORPHEUS_VOICES: dict[str, str] = {
+    "tara": "voz recomendada, mais realista (en)",
+    "leah": "feminina (en)",
+    "jess": "feminina (en)",
+    "leo": "masculina (en)",
+    "dan": "masculina (en)",
+    "mia": "feminina (en)",
+    "zac": "masculina (en)",
+    "zoe": "feminina (en)",
+}
+
+# Vozes do Deepgram Aura-2 — catálogo oficial completo (9 idiomas, sem pt-BR).
+# Fonte: https://developers.deepgram.com/docs/tts-models
+DEEPGRAM_VOICES: dict[str, str] = {
+    "aura-2-thalia-en": "feminina, clara, confiante (en-us)",
+    "aura-2-andromeda-en": "feminina, casual, expressiva (en-us)",
+    "aura-2-helena-en": "feminina, carinhosa, natural (en-us)",
+    "aura-2-apollo-en": "masculina, confiante, confortável (en-us)",
+    "aura-2-arcas-en": "masculina, natural, suave (en-us)",
+    "aura-2-aries-en": "masculina, calorosa, enérgica (en-us)",
+    "aura-2-amalthea-en": "feminina, envolvente, natural (en-ph)",
+    "aura-2-asteria-en": "feminina, clara, confiante (en-us)",
+    "aura-2-athena-en": "feminina, calma, suave (en-us)",
+    "aura-2-atlas-en": "masculina, entusiasmada, confiante (en-us)",
+    "aura-2-aurora-en": "feminina, alegre, expressiva (en-us)",
+    "aura-2-callista-en": "feminina, clara, enérgica (en-us)",
+    "aura-2-cora-en": "feminina, suave, melódica (en-us)",
+    "aura-2-cordelia-en": "feminina, acessível, calorosa (en-us)",
+    "aura-2-delia-en": "feminina, casual, amigável (en-us)",
+    "aura-2-draco-en": "masculina, calorosa, barítono (en-gb)",
+    "aura-2-electra-en": "feminina, profissional, envolvente (en-us)",
+    "aura-2-harmonia-en": "feminina, empática, clara (en-us)",
+    "aura-2-hera-en": "feminina, suave, calorosa (en-us)",
+    "aura-2-hermes-en": "masculina, expressiva, envolvente (en-us)",
+    "aura-2-hyperion-en": "masculina, carinhosa, calorosa (en-au)",
+    "aura-2-iris-en": "feminina, alegre, positiva (en-us)",
+    "aura-2-janus-en": "feminina, sotaque sulista, suave (en-us)",
+    "aura-2-juno-en": "feminina, natural, envolvente (en-us)",
+    "aura-2-jupiter-en": "masculina, expressiva, barítono (en-us)",
+    "aura-2-luna-en": "feminina, amigável, natural (en-us)",
+    "aura-2-mars-en": "masculina, suave, barítono (en-us)",
+    "aura-2-minerva-en": "feminina, positiva, amigável (en-us)",
+    "aura-2-neptune-en": "masculina, profissional, paciente (en-us)",
+    "aura-2-odysseus-en": "masculina, calma, profissional (en-us)",
+    "aura-2-ophelia-en": "feminina, expressiva, entusiasmada (en-us)",
+    "aura-2-orion-en": "masculina, acessível, calma (en-us)",
+    "aura-2-orpheus-en": "masculina, profissional, confiante (en-us)",
+    "aura-2-pandora-en": "feminina, suave, calma (en-gb)",
+    "aura-2-phoebe-en": "feminina, enérgica, calorosa (en-us)",
+    "aura-2-pluto-en": "masculina, suave, barítono (en-us)",
+    "aura-2-saturn-en": "masculina, culta, barítono (en-us)",
+    "aura-2-selene-en": "feminina, expressiva, enérgica (en-us)",
+    "aura-2-theia-en": "feminina, expressiva, sincera (en-au)",
+    "aura-2-vesta-en": "feminina, natural, paciente (en-us)",
+    "aura-2-zeus-en": "masculina, profunda, confiável (en-us)",
+    "aura-2-sirio-es": "masculina, calma, barítono (es-mx)",
+    "aura-2-nestor-es": "masculina, calma, profissional (es-es)",
+    "aura-2-carina-es": "feminina, profissional, enérgica (es-es)",
+    "aura-2-celeste-es": "feminina, clara, enérgica (es-co)",
+    "aura-2-alvaro-es": "masculina, calma, culta (es-es)",
+    "aura-2-diana-es": "feminina, profissional, confiante (es-es)",
+    "aura-2-aquila-es": "masculina, expressiva, entusiasmada (es-419)",
+    "aura-2-selena-es": "feminina, acessível, casual (es-419)",
+    "aura-2-estrella-es": "feminina, acessível, natural (es-mx)",
+    "aura-2-javier-es": "masculina, acessível, profissional (es-mx)",
+    "aura-2-agustina-es": "feminina, calma, clara (es-es)",
+    "aura-2-antonia-es": "feminina, acessível, entusiasmada (es-ar)",
+    "aura-2-gloria-es": "feminina, casual, clara (es-co)",
+    "aura-2-luciano-es": "masculina, carismática, alegre (es-mx)",
+    "aura-2-olivia-es": "feminina, sussurrada, calma (es-mx)",
+    "aura-2-silvia-es": "feminina, carismática, clara (es-es)",
+    "aura-2-valerio-es": "masculina, profunda, culta (es-mx)",
+    "aura-2-beatrix-nl": "feminina, alegre, calorosa (nl-nl)",
+    "aura-2-daphne-nl": "feminina, calma, clara (nl-nl)",
+    "aura-2-cornelia-nl": "feminina, acessível, amigável (nl-nl)",
+    "aura-2-sander-nl": "masculina, calma, profunda (nl-nl)",
+    "aura-2-hestia-nl": "feminina, acessível, carinhosa (nl-nl)",
+    "aura-2-lars-nl": "masculina, sussurrada, casual (nl-nl)",
+    "aura-2-roman-nl": "masculina, calma, profunda (nl-nl)",
+    "aura-2-rhea-nl": "feminina, carinhosa, calorosa (nl-nl)",
+    "aura-2-leda-nl": "feminina, carinhosa, empática (nl-nl)",
+    "aura-2-agathe-fr": "feminina, carismática, alegre (fr-fr)",
+    "aura-2-hector-fr": "masculina, confiante, empática (fr-fr)",
+    "aura-2-elara-de": "feminina, calma, confiável (de-de)",
+    "aura-2-aurelia-de": "feminina, acessível, casual (de-de)",
+    "aura-2-lara-de": "feminina, carinhosa, alegre (de-de)",
+    "aura-2-julius-de": "masculina, casual, alegre (de-de)",
+    "aura-2-fabian-de": "masculina, confiante, culta (de-de)",
+    "aura-2-kara-de": "feminina, carinhosa, empática (de-de)",
+    "aura-2-viktoria-de": "feminina, carismática, alegre (de-de)",
+    "aura-2-melia-it": "feminina, clara, amigável (it-it)",
+    "aura-2-elio-it": "masculina, calma, profissional (it-it)",
+    "aura-2-flavio-it": "masculina, confiante, profunda (it-it)",
+    "aura-2-maia-it": "feminina, carinhosa, enérgica (it-it)",
+    "aura-2-cinzia-it": "feminina, acessível, calorosa (it-it)",
+    "aura-2-cesare-it": "masculina, clara, empática (it-it)",
+    "aura-2-livia-it": "feminina, acessível, alegre (it-it)",
+    "aura-2-perseo-it": "masculina, casual, clara (it-it)",
+    "aura-2-dionisio-it": "masculina, confiante, envolvente (it-it)",
+    "aura-2-demetra-it": "feminina, calma, paciente (it-it)",
+    "aura-2-uzume-ja": "feminina, acessível, clara (ja-jp)",
+    "aura-2-ebisu-ja": "masculina, calma, profunda (ja-jp)",
+    "aura-2-fujin-ja": "masculina, calma, confiante (ja-jp)",
+    "aura-2-izanami-ja": "feminina, acessível, clara (ja-jp)",
+    "aura-2-ama-ja": "feminina, casual, confiante (ja-jp)",
+}
+
+# Vozes do Microsoft MAI-Voice-2 — único catálogo com pt-BR nativo confirmado.
+# Fonte: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/mai-voices
+MAI_VOICE_VOICES: dict[str, str] = {
+    "en-US-Ethan:MAI-Voice-2": "masculina (en-US)",
+    "en-US-Harper:MAI-Voice-2": "feminina (en-US)",
+    "en-US-Grant:MAI-Voice-2": "masculina (en-US)",
+    "en-US-Iris:MAI-Voice-2": "feminina (en-US)",
+    "en-US-Jasper:MAI-Voice-2": "masculina (en-US)",
+    "en-US-Olivia:MAI-Voice-2": "feminina (en-US)",
+    "en-AU-Lisa:MAI-Voice-2": "feminina (en-AU)",
+    "pt-BR-Caio:MAI-Voice-2": "masculina (pt-BR)",
+    "pt-BR-Luana:MAI-Voice-2": "feminina (pt-BR)",
+    "pt-BR-Pedro:MAI-Voice-2": "masculina (pt-BR)",
+    "pt-BR-Rafael:MAI-Voice-2": "masculina (pt-BR)",
+    "pt-PT-Rui:MAI-Voice-2": "masculina (pt-PT)",
+    "es-ES-Marta:MAI-Voice-2": "feminina (es-ES)",
+    "es-MX-Alejo:MAI-Voice-2": "masculina (es-MX)",
+    "es-MX-Valeria:MAI-Voice-2": "feminina (es-MX)",
+    "fr-FR-Marc:MAI-Voice-2": "masculina (fr-FR)",
+    "fr-FR-Soleil:MAI-Voice-2": "feminina (fr-FR)",
+    "de-DE-Klaus:MAI-Voice-2": "masculina (de-DE)",
+    "de-DE-Mia:MAI-Voice-2": "feminina (de-DE)",
+    "it-IT-Luca:MAI-Voice-2": "masculina (it-IT)",
+    "it-IT-Rosa:MAI-Voice-2": "feminina (it-IT)",
+    "hi-IN-Arjun:MAI-Voice-2": "masculina (hi-IN)",
+    "hi-IN-Kavya:MAI-Voice-2": "feminina (hi-IN)",
+    "nl-NL-Fleur:MAI-Voice-2": "feminina (nl-NL)",
+    "nl-NL-Sander:MAI-Voice-2": "masculina (nl-NL)",
+    "ru-RU-Lev:MAI-Voice-2": "masculina (ru-RU)",
+    "ru-RU-Masha:MAI-Voice-2": "feminina (ru-RU)",
+    "zh-CN-Bo:MAI-Voice-2": "masculina (zh-CN)",
+    "zh-CN-Mei:MAI-Voice-2": "feminina (zh-CN)",
+    "ko-KR-Hana:MAI-Voice-2": "feminina (ko-KR)",
+    "ko-KR-Junho:MAI-Voice-2": "masculina (ko-KR)",
+    "tr-TR-Aydin:MAI-Voice-2": "masculina (tr-TR)",
+    "tr-TR-Elif:MAI-Voice-2": "feminina (tr-TR)",
+    "th-TH-Krit:MAI-Voice-2": "masculina (th-TH)",
+    "ro-RO-Andrei:MAI-Voice-2": "masculina (ro-RO)",
+    "hu-HU-Bence:MAI-Voice-2": "masculina (hu-HU)",
+}
+
+# Vozes do MiniMax Speech 2.8 (hd e turbo compartilham o mesmo catálogo,
+# só diferem em qualidade/latência). Subconjunto curado e confirmado via
+# documentação oficial; o catálogo completo tem 300+ vozes (inclusive uma
+# categoria "Portuguese" com ~70 vozes cujos nomes exatos não estão
+# publicados na doc — usar a "Get Voice API" do MiniMax para a lista viva).
+# Fonte: https://platform.minimax.io/docs/api-reference/speech-t2a-http
+MINIMAX_VOICES: dict[str, str] = {
+    "English_Graceful_Lady": "feminina (en)",
+    "English_Insightful_Speaker": "neutra (en)",
+    "English_radiant_girl": "feminina (en)",
+    "English_Persuasive_Man": "masculina (en)",
+    "Chinese (Mandarin)_Lyrical_Voice": "feminina (zh-CN)",
+    "Cantonese_GentleLady": "feminina (yue)",
+    "Japanese_Whisper_Belle": "feminina (ja)",
+    "Wise_Woman": "feminina, controlada por language_boost (multilíngue)",
+    "Deep_Voice_Man": "masculina, grave, controlada por language_boost (multilíngue)",
+    "Calm_Woman": "feminina, calma, controlada por language_boost (multilíngue)",
+    "Casual_Guy": "masculina, casual, controlada por language_boost (multilíngue)",
+}
+
+# Voxtral Mini TTS (Mistral) — 20 vozes preset confirmadas em 9 idiomas
+# (incl. português, variante BR/PT não especificada pela doc), mas os
+# nomes exatos das vozes não estão publicados de forma confiável; o uso
+# típico é voice cloning zero-shot por referência de áudio, não por nome
+# fixo. Deixado vazio de propósito — não inventar nomes de voz.
+# Fonte: https://mistral.ai/news/voxtral-tts/
+VOXTRAL_VOICES: dict[str, str] = {}
+
+# Grok Voice TTS (xAI) — 5 vozes built-in, detecção automática de idioma
+# entre 20+ idiomas (voz não é amarrada a um idioma fixo).
+# Fonte: https://docs.x.ai/developers/model-capabilities/audio/text-to-speech
+GROK_VOICES: dict[str, str] = {
+    "eve": "voz padrão (multilíngue, detecção automática)",
+    "ara": "tom alternativo (multilíngue, detecção automática)",
+    "rex": "tom alternativo (multilíngue, detecção automática)",
+    "sal": "tom alternativo (multilíngue, detecção automática)",
+    "leo": "tom alternativo (multilíngue, detecção automática)",
+}
+
+# CSM-1B (Sesame) — sem vozes fixas nomeadas: é um modelo de voice cloning
+# por contexto de áudio (usa amostras anteriores como "speaker"). Treinado
+# majoritariamente em inglês; sem suporte a português documentado.
+# Fonte: https://github.com/SesameAILabs/csm
+CSM_VOICES: dict[str, str] = {}
+
+# Zonos v0.1 (Zyphra, hybrid e transformer) — sem vozes preset nomeadas:
+# clonagem por speaker-embedding a partir de áudio de referência (10-30s).
+# Idiomas suportados: inglês, japonês, chinês, francês e alemão — sem
+# português.
+# Fonte: https://github.com/Zyphra/Zonos
+ZONOS_VOICES: dict[str, str] = {}
+
 
 class OpenRouterError(RuntimeError):
     """Falha controlada da integração, classificada para retry seguro."""

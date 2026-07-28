@@ -8,25 +8,37 @@ os importa e re-exporta via ``TTS_VOICE_CATALOGS``.
 
 from __future__ import annotations
 
-from .providers.openrouter import GEMINI_VOICES, KOKORO_VOICES
+from .providers.openrouter import (
+    CSM_VOICES,
+    DEEPGRAM_VOICES,
+    GEMINI_VOICES,
+    GROK_VOICES,
+    KOKORO_VOICES,
+    MAI_VOICE_VOICES,
+    MINIMAX_VOICES,
+    ORPHEUS_VOICES,
+    VOXTRAL_VOICES,
+    ZONOS_VOICES,
+)
 
 # ── Catálogo de vozes por modelo TTS ──────────────────────────────────────────
 # Modelos com catálogo conhecido → dict {nome_voz: descrição}.
-# Modelos sem catálogo → dict vazio (frontend mostra input de texto livre).
+# Modelos sem catálogo (voice cloning por referência de áudio, sem vozes
+# preset nomeadas) → dict vazio (frontend mostra input de texto livre).
 
 TTS_VOICE_CATALOGS: dict[str, dict[str, str]] = {
     "google/gemini-3.1-flash-tts-preview": GEMINI_VOICES,
     "hexgrad/kokoro-82m": KOKORO_VOICES,
-    "canopylabs/orpheus-3b-0.1-ft": {},
-    "deepgram/aura-2": {},
-    "microsoft/mai-voice-2": {},
-    "minimax/speech-2.8-hd": {},
-    "minimax/speech-2.8-turbo": {},
-    "mistralai/voxtral-mini-tts-2603": {},
-    "sesame/csm-1b": {},
-    "x-ai/grok-voice-tts-1.0": {},
-    "zyphra/zonos-v0.1-hybrid": {},
-    "zyphra/zonos-v0.1-transformer": {},
+    "canopylabs/orpheus-3b-0.1-ft": ORPHEUS_VOICES,
+    "deepgram/aura-2": DEEPGRAM_VOICES,
+    "microsoft/mai-voice-2": MAI_VOICE_VOICES,
+    "minimax/speech-2.8-hd": MINIMAX_VOICES,
+    "minimax/speech-2.8-turbo": MINIMAX_VOICES,
+    "mistralai/voxtral-mini-tts-2603": VOXTRAL_VOICES,
+    "sesame/csm-1b": CSM_VOICES,
+    "x-ai/grok-voice-tts-1.0": GROK_VOICES,
+    "zyphra/zonos-v0.1-hybrid": ZONOS_VOICES,
+    "zyphra/zonos-v0.1-transformer": ZONOS_VOICES,
 }
 
 # ── Tiers de custo/qualidade ──────────────────────────────────────────────────
