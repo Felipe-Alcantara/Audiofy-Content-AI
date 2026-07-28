@@ -28,7 +28,15 @@ def _save_json(path: Path, data: object) -> None:
 
 
 def _turns(directory: Path) -> tuple[str, list[dict]]:
-    for filename, mode in (("narration-script.json", "verbatim"), ("script.json", "adaptation")):
+    # A leitura reflexiva grava reflexive.json. Sem ele nesta lista, todo
+    # episódio reflexivo era reportado como "sem roteiro auditável": a
+    # verificação falhava e o reparo seletivo de segmentos ficava indisponível
+    # exatamente no modo em que ele é mais necessário.
+    for filename, mode in (
+        ("narration-script.json", "verbatim"),
+        ("reflexive.json", "reflexive"),
+        ("script.json", "adaptation"),
+    ):
         path = directory / filename
         if not path.is_file():
             continue

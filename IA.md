@@ -2363,6 +2363,77 @@ guiada pelo manifesto, não pela varredura do diretório. Episódios antigos que
 anteriores desta sessão, não foi possível validar com o app Electron em execução neste ambiente
 (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
 
+## 2026-07-28 — Episódio reflexivo era reportado como "sem roteiro auditável"
+
+**O que mudou:** o usuário mostrou o app dizendo "A execução anterior falhou na etapa
+inicialização. O episódio não tem roteiro auditável" — junto de um log em que o **mesmo episódio
+foi gerado com sucesso** (82/82 chunks, MP3 pronto, US$ 0,7809). Dois sinais contraditórios.
+
+A causa está em `_turns` (`episode_verification.py`), que procurava o roteiro em apenas dois
+arquivos: `narration-script.json` (verbatim) e `script.json` (adaptation). A **leitura reflexiva
+grava `reflexive.json`**, que não estava na lista — então todo episódio reflexivo caía no
+`FileNotFoundError`, por mais completo que estivesse.
+
+**O impacto era maior que a mensagem sugeria.** `_turns` tem três chamadores, e um deles é o
+`repair_episode` (`pipeline.py:192`). Ou seja: **o reparo seletivo de segmentos estava
+indisponível para o modo reflexivo** — justamente o que eu havia sugerido ao usuário na conversa
+anterior para tratar o chunk 30 com silêncio crítico. A sugestão teria falhado com este mesmo
+erro. `generation_mode` já aceitava `"reflexive"` em `generate_episode`; só a resolução do
+artefato estava incompleta.
+
+**Validação:** TDD, teste confirmado falhando antes. Cobre o reconhecimento do roteiro reflexivo e
+mantém o erro para episódios realmente sem roteiro. Verificação no episódio real do usuário:
+`_turns` agora devolve `("reflexive", 82 turnos)` — antes levantava exceção. Suítes completas:
+**496 testes Python** (eram 494) e 72 Electron (71 pass, 1 skip esperado), `ruff check` e
+`npm run check` limpos.
+
+**Risco que sobrou:** a lista de artefatos de roteiro continua sendo uma tabela fixa em
+`_turns` — um modo novo de geração precisará ser adicionado nos dois lugares (o que escreve e o
+que lê), e o sintoma de esquecer é exatamente este: geração bem-sucedida com verificação
+falhando. Um registro único de "modo → arquivo de roteiro" evitaria a divergência, mas é
+refatoração de escopo maior que esta correção.
+
+## 2026-07-28 — Geração "travava" na fala 30: tabela colapsada virava 7,5 minutos de áudio numa chamada
+
+**O que mudou:** o usuário relatou que a geração parecia travada na fala 30. Investigando o
+`reflexive.json` do episódio, a fala 30 é uma **tabela de ranking do artigo colapsada em texto
+corrido** — 1.590 caracteres do tipo `RankModeloScoreTierRubyLLM OKTempoCusto da
+rodada1Claude Opus 5 (Claude Code)*95A✅39m…`.
+
+**O diagnóstico só fechou com medição ao vivo, e contrariou minha hipótese inicial.** Eu supus
+mais um caso de áudio vazio. Não é: a API **responde com sucesso** — devolvendo **21,7 MB**, ou
+**7,5 minutos de áudio** para um único trecho, contra 2 a 5 segundos dos trechos normais (121×
+maior). O modelo soletra número a número o que na página era uma grade visual. Com `_TIMEOUT=300`
+por tentativa e até 5 tentativas, um trecho desses pode ocupar minutos de relógio sem nada mudar
+na tela — daí a impressão de travamento. Não havia erro para o retry classificar.
+
+**Por que passava batido:** o trecho tem 1.590 caracteres e `MAX_TTS_CHARS` é 2.400, então a
+divisão normal não o alcançava. O tamanho não era o problema; a **densidade** era.
+
+`looks_like_dense_table` (`narration.py`) usa a densidade de dígitos como sinal: a tabela real tem
+**26% de dígitos**, enquanto prosa com datas e números raramente passa de 5% (limiar em 12%, só
+para trechos ≥ 400 caracteres, para não colidir com o tratamento de `38m57s`). `_split_dense_tables`
+quebra o turno em pedaços de 300 caracteres antes da síntese, preservando o texto **caractere a
+caractere** — a concatenação dos pedaços é idêntica ao original, então a leitura segue integral.
+
+**Verificação no episódio real:** o detector marca **exatamente o turno 30** entre os 82 — nenhum
+falso positivo nos outros 81.
+
+**Validação:** TDD, todos confirmados falhando antes. Testes cobrem detecção da tabela, prosa longa
+com números **não** confundida, trecho curto fora do escopo, e — no pipeline — divisão em várias
+chamadas com a garantia de que a concatenação não perde texto. Suítes: **492 testes Python**
+(eram 487), `ruff check` limpo.
+
+**Erro meu no processo:** o primeiro exemplo de tabela do teste tinha 166 caracteres, abaixo do
+mínimo de 400, e falhava por motivo errado; troquei por uma amostra com a densidade real. Também
+adicionei o import no bloco errado numa primeira tentativa, quebrando 21 testes — a suíte pegou.
+
+**Risco que sobrou:** o limiar de 12% é heurístico. Uma tabela pouco numérica (só texto em
+colunas) não é detectada, e um trecho legítimo muito denso em números seria dividido sem
+necessidade — o que degrada a prosódia nas junções, mas não perde conteúdo. A causa raiz é a
+extração, que colapsa tabelas HTML em vez de preservar a estrutura; tratar isso na extração seria
+a correção definitiva e tem escopo maior.
+
 ## 2026-07-28 — Áudio vazio falha de imediato em vez de gastar 5 tentativas (e validação ao vivo do resgate)
 
 **O que mudou:** o usuário voltou com um log mostrando que a fala 19 falhava sempre, no mesmo

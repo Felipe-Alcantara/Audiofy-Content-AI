@@ -89,3 +89,44 @@ class EpisodeVerificationTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReflexiveScriptTest(unittest.TestCase):
+    """Leitura reflexiva grava reflexive.json, que a verificação ignorava.
+
+    `_turns` só procurava narration-script.json e script.json, então todo
+    episódio reflexivo era reportado como "sem roteiro auditável" — a
+    verificação falhava e o reparo seletivo ficava indisponível justamente
+    para o modo em que o usuário mais gera episódios.
+    """
+
+    def test_reconhece_o_roteiro_da_leitura_reflexiva(self):
+        from audiofy.episode_verification import _turns
+
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            (directory / "reflexive.json").write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "turns": [
+                            {"turn_id": "R00000", "speaker": "narrador", "text": "Abertura."},
+                            {"turn_id": "R00001", "speaker": "narrador", "text": "Trecho."},
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            mode, turns = _turns(directory)
+
+        self.assertEqual(mode, "reflexive")
+        self.assertEqual(len(turns), 2)
+        self.assertEqual(turns[0]["text"], "Abertura.")
+
+    def test_episodio_sem_nenhum_roteiro_continua_sinalizando(self):
+        from audiofy.episode_verification import _turns
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaisesRegex(FileNotFoundError, "roteiro auditável"):
+                _turns(Path(tmp))

@@ -38,6 +38,7 @@ from .narration import (
     fallback_direction,
     intro_direction,
     intro_text,
+    looks_like_dense_table,
     parse_prosody_plan,
     parse_reflexive_commentary,
     podcast_direction,
@@ -48,6 +49,7 @@ from .narration import (
     reflexive_prompt,
     reflexive_system,
     speakable_fallback,
+    split_dense_table,
     split_into_paragraphs,
     split_verbatim_text,
     tts_direction,
@@ -184,7 +186,7 @@ def repair_episode(
             return final
         raise FileNotFoundError("Nenhum segmento com problema e nenhum áudio final encontrado.")
 
-    # Carregar turnos do roteiro salvo (funciona para adaptation e verbatim).
+    # Carregar turnos do roteiro salvo (adaptation, verbatim ou reflexive).
     from .episode_verification import _turns
 
     _detected_mode, turns = _turns(directory)
@@ -1037,6 +1039,24 @@ def _synthesize_with_retry(
     raise AssertionError("A política de retry terminou sem resultado nem erro.")
 
 
+def _split_dense_tables(turns: list[dict]) -> list[dict]:
+    """Quebra turnos com densidade de tabela em pedaços curtos.
+
+    O texto é preservado caractere a caractere: a concatenação dos pedaços é
+    idêntica ao turno original, então a leitura continua integral.
+    """
+    result: list[dict] = []
+    for turn in turns:
+        text = turn.get("text") if isinstance(turn, dict) else None
+        if not isinstance(text, str) or not looks_like_dense_table(text):
+            result.append(turn)
+            continue
+        for piece in split_dense_table(text):
+            if piece:
+                result.append({**turn, "text": piece})
+    return result
+
+
 def _synthesize_turns(
     settings: Settings,
     directory: Path,
@@ -1049,6 +1069,12 @@ def _synthesize_turns(
 ) -> list[Path]:
     voices = {p.speaker: p for p in settings.presenters}
     default = settings.presenters[0]
+    # Tabelas que a extração colapsou em texto corrido cabem no limite de
+    # divisão, mas o TTS as soletra número a número: 1.590 caracteres viraram
+    # 21,7 MB (7,5 min) numa única chamada, com minutos de espera e a
+    # interface parada. Dividir em partes menores mantém cada chamada curta
+    # sem alterar uma vírgula do texto lido.
+    turns = _split_dense_tables(turns)
     segments_dir = directory / "segments"
     segments_dir.mkdir(exist_ok=True)
     extension = "wav" if settings.tts_format == "pcm" else settings.tts_format
