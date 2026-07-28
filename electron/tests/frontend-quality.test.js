@@ -64,9 +64,18 @@ test("vozes mostram nomes normalizados sem origem do catálogo", () => {
   assert.match(renderer, /inglês \(EUA\)/);
   assert.match(renderer, /kokoroLanguages =/);
   assert.match(renderer, /português — Brasil/);
-  assert.match(renderer, /function voiceToneLabel\(tone\)/);
+  assert.match(renderer, /function voiceToneLabel\(tone, voice\)/);
   assert.match(renderer, /character\.toUpperCase\(\)/);
   assert.doesNotMatch(renderer, /voz informada pelo OpenRouter/);
+});
+
+test("idioma da voz continua visível para provedores fora do Kokoro", () => {
+  const renderer = readRendererFile("renderer.js");
+
+  assert.match(renderer, /isKokoroVoice = typeof voice === "string" && \/\^\[a-z\]\[fm\]\[_-\]\/i\.test\(voice\)/);
+  assert.match(renderer, /if \(!isKokoroVoice\) return tone\.trim\(\);/);
+  assert.match(renderer, /voiceToneLabel\(style, voice\)/);
+  assert.match(renderer, /voiceToneLabel\(tone, name\)/);
 });
 
 test("trocar o TTS descarta voz que não pertence ao novo catálogo", () => {

@@ -1748,7 +1748,7 @@ function renderActiveConfig(info) {
     for (const [voice, style] of catalogEntries) {
       const option = document.createElement("option");
       option.value = voice;
-      const cleanStyle = style && voiceToneLabel(style);
+      const cleanStyle = style && voiceToneLabel(style, voice);
       option.textContent = cleanStyle
         ? `${voiceLabel(voice, info.tts_model)} · ${cleanStyle}`
         : voiceLabel(voice, info.tts_model);
@@ -2298,7 +2298,12 @@ function voiceLabel(voice, ttsModel) {
   return nativeLanguage ? `${label || voice} (${nativeLanguage})` : (label || voice);
 }
 
-function voiceToneLabel(tone) {
+function voiceToneLabel(tone, voice) {
+  // Só remove o idioma da descrição quando voiceLabel() já o exibe separado
+  // (convenção de prefixo do Kokoro, ex. "pf_dora"). Para os demais provedores,
+  // o idioma vem só na descrição e precisa continuar visível.
+  const isKokoroVoice = typeof voice === "string" && /^[a-z][fm][_-]/i.test(voice);
+  if (!isKokoroVoice) return tone.trim();
   return tone.replace(/\s*\((?:pt-br|en|en-gb)\)\s*$/i, "").trim();
 }
 
@@ -2319,7 +2324,7 @@ function addPresenterRow(speaker = "", voice = "Kore", style = "") {
     for (const [name, tone] of voices) {
       const option = document.createElement("option");
       option.value = name;
-      const cleanTone = tone && voiceToneLabel(tone);
+      const cleanTone = tone && voiceToneLabel(tone, name);
       option.textContent = cleanTone
         ? `${voiceLabel(name, ttsModel)} · ${cleanTone}`
         : voiceLabel(name, ttsModel);
