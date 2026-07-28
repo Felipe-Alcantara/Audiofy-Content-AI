@@ -820,3 +820,44 @@ class TurnCountStabilityTest(unittest.TestCase):
         )
         for path in paths:
             self.assertIn(f"de-{len(turns):03d}", path.name)
+
+
+class RescueRetryTest(unittest.TestCase):
+    """O texto resgatado merece novas tentativas: o vazio é intermitente.
+
+    Medido ao vivo com o Gemini TTS: o mesmo texto ("38 minutos e 57
+    segundos"), mesma chave e mesmo modelo, falhou 2 vezes e funcionou 2
+    vezes em 4 chamadas seguidas. Desistir na primeira resposta vazia do
+    resgate joga fora conteúdo que a tentativa seguinte traria.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.directory = Path(self._tmp.name)
+        self.tracker = GenerationTracker(self.directory, "episodio")
+        self.addCleanup(self._tmp.cleanup)
+
+    @patch("audiofy.pipeline._wait_for_retry")
+    @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_resgate_insiste_quando_a_resposta_vem_vazia(
+        self, text_to_speech, _cost, _wait
+    ):
+        vazio = OpenRouterError("TTS retornou resposta vazia ou curta demais.", retryable=True)
+        # Texto original vazio; o resgate falha uma vez e acerta na seguinte.
+        text_to_speech.side_effect = [
+            vazio,
+            vazio,
+            SpeechResult(b"\x00\x00" * 300, "gen-r"),
+        ]
+
+        paths = _synthesize_turns(
+            _settings(),
+            self.directory,
+            [{"speaker": "ana", "text": "38m57s"}],
+            self.tracker,
+        )
+
+        self.assertEqual(len(paths), 1, "o trecho não pode ser perdido por um vazio isolado")
+        enviados = [call[0][1] for call in text_to_speech.call_args_list]
+        self.assertEqual(enviados[-1], "38 minutos e 57 segundos")

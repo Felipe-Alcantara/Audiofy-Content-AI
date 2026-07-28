@@ -2363,6 +2363,39 @@ guiada pelo manifesto, não pela varredura do diretório. Episódios antigos que
 anteriores desta sessão, não foi possível validar com o app Electron em execução neste ambiente
 (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
 
+## 2026-07-28 — Resgate desistia na primeira resposta vazia, mas o vazio é intermitente
+
+**O que mudou:** o usuário relatou que o trecho `38m57s`, que antes era convertido corretamente,
+voltou a ser pulado — com o log mostrando o resgate sendo **tentado** e mesmo assim falhando:
+`↻ Fala 19 veio muda; tentando como '38 minutos e 57 segundos'` seguido de `⚠ Fala 19 pulada`.
+
+**Medição que derrubou minha premissa anterior.** Chamei a API 4 vezes seguidas com o **mesmo
+texto resgatado**, mesma chave e mesmo modelo (Gemini TTS / Zephyr): **falhou 2, funcionou 2**. O
+áudio vazio **não é determinístico** para trechos curtos — ao contrário do que a entrada
+"Áudio vazio falha de imediato" afirmou e usou como justificativa.
+
+A correção daquela entrada continua certa para o **texto original** (`38m57s` falhou em 100% das
+tentativas medidas), mas estava sendo aplicada também ao **texto já resgatado**, onde o vazio é
+intermitente. Resultado: bastava um vazio isolado no resgate para o trecho ser descartado.
+
+`_synthesize_with_retry` ganhou `retry_empty_audio`, ligado apenas na chamada do resgate. O texto
+original segue falhando rápido (sem gastar ~32s por trecho); o texto pronunciável recupera as
+tentativas com espera, que é o que a intermitência exige.
+
+**Sobre o log do usuário:** ele ainda mostrava `/87`, o que indica execução lançada **antes** da
+reversão da divisão de tabelas — o processo em memória tinha o código antigo. Confirmado que o
+disco já estava correto (`_split_dense_tables` ausente do pipeline). O pulo relatado, porém, era
+real e independente disso.
+
+**Validação:** TDD, teste confirmado falhando antes (resgate falha uma vez, acerta na seguinte, e
+o trecho não pode ser perdido). Suítes: **497 testes Python** (eram 496), `ruff check` limpo.
+Verificação ao vivo contra a API: **3 de 3 rodadas** do trecho `38m57s` geraram o segmento, sem
+nenhum pulo — antes o resultado variava com a sorte da primeira chamada.
+
+**Risco que sobrou:** se todas as tentativas do resgate caírem em vazio, o trecho ainda é pulado —
+agora com muito menos probabilidade, mas não zero. A intermitência é do provedor e não temos
+controle sobre ela; o que mudou foi parar de amplificá-la com uma decisão de desistir cedo demais.
+
 ## 2026-07-28 — Reverte a divisão de tabelas: ela invalidava o cache e regerava o episódio inteiro
 
 **O que mudou:** o usuário clicou em "reparar" um único segmento e a geração recomeçou do zero,

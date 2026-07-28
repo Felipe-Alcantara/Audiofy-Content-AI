@@ -948,6 +948,7 @@ def _synthesize_with_retry(
     segment_number: int,
     tracker: GenerationTracker,
     exhausted_keys: set[str] | None = None,
+    retry_empty_audio: bool = False,
 ) -> _SynthesisResult:
     policy = RetryPolicy(
         max_attempts=settings.tts_retry_attempts,
@@ -1005,13 +1006,18 @@ def _synthesize_with_retry(
                         flush=True,
                     )
                     break
-                # Áudio vazio é determinístico: o texto enviado é o mesmo a
-                # cada tentativa, então o modelo devolve o mesmo vazio. Repetir
-                # gastava 5 tentativas com espera exponencial (~32s por trecho)
-                # para chegar a uma conclusão já conhecida na primeira. Quem
-                # resolve esse caso é o resgate em _synthesize_turns, que troca
-                # o texto por uma forma pronunciável.
-                if _is_empty_audio_error(error):
+                # Áudio vazio no texto original é determinístico: o mesmo
+                # texto devolve o mesmo vazio, e repetir só gastava 5
+                # tentativas (~32s) para chegar à conclusão já conhecida na
+                # primeira. Quem resolve esse caso é o resgate, que troca o
+                # texto por uma forma pronunciável.
+                #
+                # No texto JÁ resgatado a decisão se inverte. Medido ao vivo
+                # com o Gemini TTS: o mesmo texto pronunciável, mesma chave e
+                # mesmo modelo, falhou 2 vezes e funcionou 2 vezes em 4
+                # chamadas seguidas. Ali o vazio é intermitente, e desistir na
+                # primeira jogaria fora conteúdo que a tentativa seguinte traz.
+                if _is_empty_audio_error(error) and not retry_empty_audio:
                     tracker.record_error(str(error))
                     raise
                 if not error.retryable or attempt == policy.max_attempts:
@@ -1198,6 +1204,7 @@ def _synthesize_turns(
                         index,
                         tracker,
                         exhausted_keys,
+                        retry_empty_audio=True,
                     )
                 except openrouter.OpenRouterError as rescue_error:
                     if not _is_empty_audio_error(rescue_error):
