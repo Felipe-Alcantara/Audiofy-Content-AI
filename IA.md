@@ -2444,3 +2444,41 @@ app de verdade neste ambiente terá que recriá-lo. O merge preserva vozes curad
 API ao vivo como lista de existência — se o OpenRouter parar de retornar `supported_voices` para
 algum desses modelos, o catálogo estático (estabelecido na entrada anterior) permanece intacto
 como já acontecia antes desta correção.
+
+## 2026-07-28 — Idioma ainda faltava em 6 modelos: catálogo incompleto, não só o bug de merge
+
+**O que mudou:** com o app rodando de verdade (mesmo driver Playwright/xvfb da correção anterior),
+varri todos os 15 modelos TTS do seletor `pf-tts-model` trocando o valor e lendo as opções reais
+de `.pf-voice`. Descobri que a lista ao vivo do OpenRouter inclui modelos e vozes que a entrada
+anterior não cobria: `sesame/csm-1b` e `zyphra/zonos-v0.1-{hybrid,transformer}` têm presets
+nomeados reais (`conversational_a`, `american_female` etc.) — a pesquisa anterior tinha concluído
+errado que esses modelos só faziam voice cloning sem preset; `mistralai/voxtral-mini-tts-2603`
+expõe 30 vozes reais (`en_paul_sad`, `gb_oliver_neutral`, `gb_jane_curious`, `fr_marie_happy` etc.)
+que eu tinha deixado vazio por falta de fonte; e três modelos nem apareciam no catálogo estático:
+`microsoft/mai-voice-2-flash` (mesmo esquema de IDs do `mai-voice-2`, só precisava do mapeamento)
+e os dois `qwen/qwen-audio-3.0-tts-{flash,plus}` (vozes `loongjohn`, `longanhuan_v3.6`,
+`longanlingxin`, `longanlufeng` da família CosyVoice/Qwen-TTS da Alibaba, confirmadas em
+`help.aliyun.com/zh/model-studio/qwen-audio-tts-voice-list`). `src/audiofy/providers/openrouter.py`
+ganhou `CSM_VOICES`, `ZONOS_VOICES` e `VOXTRAL_VOICES` populados (substituindo os dicts vazios) e
+os novos `QWEN_TTS_FLASH_VOICES`/`QWEN_TTS_PLUS_VOICES`; `src/audiofy/voices.py` mapeou os três
+modelos que faltavam.
+
+**Por que:** a correção anterior resolveu o bug de merge, mas o usuário reportou "ainda não mostra
+pra TODOS" — sinal de que havia mais de uma causa. Em vez de assumir que o merge bastava, rodei o
+app de novo e varri sistematicamente cada modelo do seletor em vez de testar só um. Achado
+importante: a lista de modelos TTS realmente disponíveis via API muda (o OpenRouter já oferece
+`microsoft/mai-voice-2-flash` e os dois modelos Qwen, que não estavam em nenhuma pesquisa
+anterior) — o catálogo estático precisa ser tratado como uma superfície que pode ficar desatualizada
+conforme o provedor evolui, não como uma lista fechada definida uma vez.
+
+**Validação:** suíte completa (458 Python, 60 Electron) e `ruff`/`npm run check` limpos.
+Verificação real no app: varredura de todos os 15 modelos de `pf-tts-model` confirmou que **todos**
+agora retornam pelo menos uma opção de voz com idioma visível no texto (ex.: `"Conversational A ·
+conversacional (en)"`, `"American Female · feminina (en-us)"`, `"En Paul Sad · masculina, triste
+(en-us)"`, `"Loongjohn · masculina (en)"`).
+
+**Risco que sobrou:** a lista de modelos TTS do OpenRouter pode continuar mudando — se um novo
+modelo aparecer com `supported_voices`, ele ainda vai cair em vozes sem descrição (`""`) até
+alguém catalogar manualmente, exatamente como o comportamento de fallback já documentado. `none`
+(CSM-1B) e `random` (Zonos) são opções especiais sem idioma fixo — descritas como tal em vez de
+receber um idioma inventado.
