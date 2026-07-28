@@ -103,6 +103,53 @@ class ResumableSynthesisTest(unittest.TestCase):
         self.assertEqual(manifest["segments"][paths[1].name]["cost_usd"], 0.012)
         self.assertEqual(status["cost_usd"], 0.012)
 
+    @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_trecho_mudo_e_reescrito_em_vez_de_pulado(self, text_to_speech, _generation_cost):
+        """Pular apaga conteúdo do texto original em silêncio.
+
+        Marcas de tempo como "38m57s" voltam sem áudio por mais que se repita.
+        Antes de desistir, o trecho é reescrito numa forma pronunciável — o
+        ouvinte recebe o conteúdo, não um buraco.
+        """
+        empty = OpenRouterError("TTS retornou resposta vazia ou curta demais.", retryable=True)
+        # Esgota as tentativas com o texto original e só então aceita o resgate.
+        text_to_speech.side_effect = [empty] * 3 + [SpeechResult(b"\x00\x00" * 300, "gen-r")]
+
+        paths = _synthesize_turns(
+            _settings(),
+            self.directory,
+            [{"speaker": "ana", "text": "38m57s"}],
+            self.tracker,
+        )
+
+        self.assertEqual(len(paths), 1, "o trecho não pode sumir do episódio")
+        self.assertTrue(paths[0].is_file())
+        # A última chamada usou o texto reescrito, não o original.
+        self.assertEqual(text_to_speech.call_args[0][1], "38 minutos e 57 segundos")
+        manifest = json.loads((self.directory / "segments.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["segments"][paths[0].name]["text"], "38m57s")
+
+    @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_trecho_sem_nada_a_pronunciar_continua_sendo_pulado(
+        self, text_to_speech, _generation_cost
+    ):
+        """Só pontuação não tem resgate possível: aí pular é o certo."""
+        empty = OpenRouterError("TTS retornou resposta vazia ou curta demais.", retryable=True)
+        # O primeiro trecho esgota as tentativas e não tem resgate possível;
+        # o segundo é sintetizado normalmente.
+        text_to_speech.side_effect = [empty] * 3 + [SpeechResult(b"\x00\x00" * 300, "gen-2")]
+
+        paths = _synthesize_turns(
+            _settings(),
+            self.directory,
+            [{"speaker": "ana", "text": "—— ***"}, {"speaker": "ana", "text": "conteúdo real"}],
+            self.tracker,
+        )
+
+        self.assertEqual(len(paths), 1)
+
     @patch("audiofy.pipeline.openrouter.generation_cost_usd")
     @patch("audiofy.pipeline.openrouter.text_to_speech")
     def test_limite_de_tentativas_preserva_o_ultimo_checkpoint(
@@ -645,3 +692,56 @@ class MediaDurationTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KeyRotationMemoryTest(unittest.TestCase):
+    """Uma chave esgotada não deve ser tentada de novo a cada fala.
+
+    A rotação recomeçava do início da lista em toda fala, então uma chave sem
+    saldo era reconsultada 1× por trecho — dezenas de chamadas perdidas num
+    episódio, cada uma com sua latência.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.directory = Path(self._tmp.name)
+        self.tracker = GenerationTracker(self.directory, "episodio")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    @patch("audiofy.pipeline.api_key_candidates")
+    @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_chave_esgotada_nao_e_reconsultada_nas_falas_seguintes(
+        self, text_to_speech, _generation_cost, candidates
+    ):
+        esgotada = _settings()
+        esgotada.api_key = "sk-or-esgotada"
+        boa = _settings()
+        boa.api_key = "sk-or-boa"
+        candidates.return_value = [("esgotada", esgotada), ("boa", boa)]
+
+        sem_saldo = OpenRouterError("Insufficient credits", status_code=402)
+        text_to_speech.side_effect = [
+            sem_saldo,  # fala 1 na chave esgotada
+            SpeechResult(b"\x00\x00" * 300, "gen-1"),  # fala 1 na chave boa
+            SpeechResult(b"\x00\x00" * 300, "gen-2"),  # fala 2 já direto na boa
+            SpeechResult(b"\x00\x00" * 300, "gen-3"),  # fala 3 idem
+        ]
+
+        _synthesize_turns(
+            _settings(),
+            self.directory,
+            [
+                {"speaker": "ana", "text": "primeira"},
+                {"speaker": "ana", "text": "segunda"},
+                {"speaker": "ana", "text": "terceira"},
+            ],
+            self.tracker,
+        )
+
+        # 4 chamadas: a esgotada só é tentada uma vez, na primeira fala.
+        self.assertEqual(text_to_speech.call_count, 4)
+        usadas = [call[0][0].api_key for call in text_to_speech.call_args_list]
+        self.assertEqual(usadas.count("sk-or-esgotada"), 1)

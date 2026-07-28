@@ -47,6 +47,7 @@ from .narration import (
     reflexive_batches,
     reflexive_prompt,
     reflexive_system,
+    speakable_fallback,
     split_into_paragraphs,
     split_verbatim_text,
     tts_direction,
@@ -946,6 +947,7 @@ def _synthesize_with_retry(
     instructions: str,
     segment_number: int,
     tracker: GenerationTracker,
+    exhausted_keys: set[str] | None = None,
 ) -> _SynthesisResult:
     policy = RetryPolicy(
         max_attempts=settings.tts_retry_attempts,
@@ -956,6 +958,18 @@ def _synthesize_with_retry(
     candidates = api_key_candidates(settings, current_label=current_label) or [
         (current_label, settings)
     ]
+    # Uma chave que já respondeu "sem saldo" nesta geração não volta a ser
+    # tentada: antes a rotação recomeçava do zero a cada fala, gastando uma
+    # chamada (e a latência dela) por trecho só para redescobrir o mesmo limite.
+    if exhausted_keys:
+        remaining = [
+            (label, candidate)
+            for label, candidate in candidates
+            if getattr(candidate, "api_key", "") not in exhausted_keys
+        ]
+        # Se todas estão esgotadas, segue com a lista completa: o erro real do
+        # provedor é mais útil que uma falha inventada aqui.
+        candidates = remaining or candidates
     last_error: openrouter.OpenRouterError | None = None
     for key_index, (key_label, candidate) in enumerate(candidates):
         # Publica a chave antes da chamada: o painel precisa mostrar qual limite
@@ -980,6 +994,8 @@ def _synthesize_with_retry(
                 return _SynthesisResult(speech, candidate, key_label)
             except openrouter.OpenRouterError as error:
                 last_error = error
+                if _is_key_exhaustion_error(error) and exhausted_keys is not None:
+                    exhausted_keys.add(getattr(candidate, "api_key", ""))
                 if _is_key_exhaustion_error(error) and key_index + 1 < len(candidates):
                     next_label = candidates[key_index + 1][0]
                     reason = _exhaustion_label(error)
@@ -1126,6 +1142,9 @@ def _synthesize_turns(
 
     paths = [plan["segment"] for plan in plans]
     skipped: list[int] = []
+    # Compartilhado por todas as falas: guarda as chaves que já responderam
+    # "sem saldo" para não reconsultá-las trecho a trecho.
+    exhausted_keys: set[str] = set()
     for plan in plans:
         tracker.checkpoint()
         index = plan["index"]
@@ -1143,14 +1162,38 @@ def _synthesize_turns(
                 plan["instructions"],
                 index,
                 tracker,
+                exhausted_keys,
             )
         except openrouter.OpenRouterError as error:
-            # Alguns trechos são impronunciáveis para o modelo (rodapés de
-            # diagramação, nomes de arquivo, marcas de página que sobram na
-            # extração). O erro é determinístico: já esgotou as tentativas, e
-            # abortar aqui jogaria fora todo o áudio pago até agora.
+            # Alguns trechos voltam mudos do modelo por mais que se repita:
+            # marcas de tempo, versões, códigos soltos. Pular apaga conteúdo do
+            # texto original em silêncio, então antes de desistir tentamos uma
+            # forma pronunciável do mesmo trecho ("38m57s" → "38 minutos e 57
+            # segundos"). O manifesto guarda o texto original, para a revisão
+            # continuar batendo com a fonte.
             if not _is_empty_audio_error(error):
                 raise
+            synthesis = None
+            rescue = speakable_fallback(plan["turn"]["text"])
+            if rescue:
+                print(
+                    f"\n   ↻ Fala {index} veio muda; tentando como {rescue!r}.",
+                    flush=True,
+                )
+                try:
+                    synthesis = _synthesize_with_retry(
+                        settings,
+                        rescue,
+                        presenter.voice,
+                        plan["instructions"],
+                        index,
+                        tracker,
+                        exhausted_keys,
+                    )
+                except openrouter.OpenRouterError as rescue_error:
+                    if not _is_empty_audio_error(rescue_error):
+                        raise
+        if synthesis is None:
             skipped.append(index)
             paths.remove(segment)
             entries.pop(segment.name, None)

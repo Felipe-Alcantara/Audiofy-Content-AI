@@ -2363,6 +2363,50 @@ guiada pelo manifesto, não pela varredura do diretório. Episódios antigos que
 anteriores desta sessão, não foi possível validar com o app Electron em execução neste ambiente
 (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
 
+## 2026-07-28 — Trecho mudo não é mais pulado, e chave esgotada não é reconsultada a cada fala
+
+**O que mudou:** dois defeitos relatados a partir do log de uma geração real.
+
+**1. Conteúdo perdido em silêncio.** Quando o TTS devolvia áudio vazio para um trecho, o pipeline
+pulava a fala e seguia (`⚠ Fala 19 pulada … '38m57s'`). O episódio saía **incompleto** sem falhar —
+inaceitável numa leitura que promete ser integral. O desenho original supunha que esses trechos
+fossem lixo de diagramação (rodapés, marcas de página), mas o caso real era uma **marca de tempo**:
+conteúdo legítimo do texto.
+
+`speakable_fallback` (`narration.py`) reescreve o trecho numa forma pronunciável antes de desistir:
+`38m57s` → `"38 minutos e 57 segundos"`, `12:34` → `"12 minutos e 34 segundos"`, `v2.1.0` →
+`"v2 ponto 1 ponto 0"`. O pulo continua existindo para o que realmente não tem o que falar (só
+pontuação/símbolo), com o manifesto guardando o **texto original**, para a revisão seguir batendo
+com a fonte.
+
+**2. Chave esgotada reconsultada trecho a trecho.** `_synthesize_with_retry` montava a lista de
+chaves do zero a cada fala, então uma chave sem saldo era tentada **1× por trecho** — no log do
+usuário, dezenas de `↪ … sem saldo; tentando …`, cada uma com sua latência. Agora um
+`exhausted_keys` compartilhado por toda a síntese remove da lista as chaves que já responderam
+"sem saldo". Se **todas** estiverem esgotadas, a lista completa é mantida de propósito: o erro real
+do provedor é mais útil que uma falha inventada localmente.
+
+**Diagnóstico que a imagem do usuário confirmou:** o `402` não significava conta sem saldo — a
+conta tinha US$ 7,29. Era o **limite mensal de US$ 1 de uma das chaves**, que o OpenRouter reporta
+como 402 para aquela chave. A mensagem "sem saldo na conta" é imprecisa nesse caso, mas foi
+mantida fora do escopo desta correção.
+
+**Validação:** TDD, todos os testes confirmados falhando antes. `test_narration.py` cobre as
+reescritas e os casos sem resgate; `test_pipeline_resume.py` cobre trecho mudo resgatado, trecho
+sem salvação ainda pulado, e a chave esgotada tentada **uma única vez** ao longo de três falas.
+Suítes completas: **486 testes Python** (eram 477) e 72 Electron (71 pass, 1 skip esperado),
+`ruff check` e `npm run check` limpos.
+
+**Erro meu no processo:** duas expectativas erradas nos testes — a contagem de tentativas do mock
+(a política é 3, não 5) e a leitura esperada de `v2.1.0`. Nos dois casos o teste estava errado, não
+o código; corrigi os testes. Registro porque um teste que falha pelo motivo errado não valida nada.
+
+**Risco que sobrou:** `speakable_fallback` cobre marcas de tempo, relógio e códigos sem espaço —
+outros padrões mudos continuarão sendo pulados até aparecerem em uso real. Não consegui reproduzir
+a falha ao vivo contra o provedor (chave sem crédito no momento), então a correção foi verificada
+por teste e leitura de código, não contra a API. O `ruff format --check` segue apontando
+`cost_analytics.py` e `sources/custom.py`, pré-existentes e não tocados aqui.
+
 ## 2026-07-28 — Aviso de variante do português e opção de forçar o idioma no TTS
 
 **O que mudou:** o usuário relatou que modelos multilíngues puxam a leitura para português de

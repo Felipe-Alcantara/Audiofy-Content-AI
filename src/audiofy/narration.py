@@ -347,6 +347,75 @@ _PODCAST_DIRECTION = {
 }
 
 
+# ── Resgate de trechos que o TTS devolve mudos ──────────────────────────────
+# Alguns trechos voltam sem áudio nenhum do modelo, por mais que se repita:
+# marcas de tempo ("38m57s"), versões ("v2.1.0"), códigos soltos. Pular esses
+# trechos apaga conteúdo do texto original em silêncio, o que é inaceitável
+# numa leitura que promete ser integral. Antes de desistir, reescrevemos o
+# trecho numa forma que o modelo consiga pronunciar.
+
+_TIME_MARK = re.compile(
+    r"^\s*(?:(\d{1,2})\s*h)?\s*(?:(\d{1,2})\s*m)?\s*(?:(\d{1,2})\s*s)\s*$", re.IGNORECASE
+)
+_CLOCK_MARK = re.compile(r"^\s*(\d{1,2}):([0-5]\d)(?::([0-5]\d))?\s*$")
+
+
+def _spoken_duration(hours: int, minutes: int, seconds: int) -> str:
+    parts: list[str] = []
+    if hours:
+        parts.append(f"{hours} hora" if hours == 1 else f"{hours} horas")
+    if minutes:
+        parts.append(f"{minutes} minuto" if minutes == 1 else f"{minutes} minutos")
+    if seconds:
+        parts.append(f"{seconds} segundo" if seconds == 1 else f"{seconds} segundos")
+    if not parts:
+        return ""
+    if len(parts) == 1:
+        return parts[0]
+    return f"{', '.join(parts[:-1])} e {parts[-1]}"
+
+
+def speakable_fallback(text: str) -> str | None:
+    """Reescreve um trecho mudo numa forma pronunciável, ou ``None`` se não há.
+
+    ``None`` significa que não vale a pena tentar de novo: ou o texto já é
+    pronunciável (e a falha tem outra causa), ou não há nada para pronunciar.
+    """
+    stripped = text.strip()
+    if not stripped:
+        return None
+    # Sem letra nem número não há palavra a falar: só pontuação e símbolos.
+    if not re.search(r"[0-9A-Za-zÀ-ÿ]", stripped):
+        return None
+
+    time_match = _TIME_MARK.match(stripped)
+    if time_match:
+        hours, minutes, seconds = (int(part or 0) for part in time_match.groups())
+        spoken = _spoken_duration(hours, minutes, seconds)
+        if spoken:
+            return spoken
+
+    clock_match = _CLOCK_MARK.match(stripped)
+    if clock_match:
+        first, second, third = clock_match.groups()
+        if third is None:
+            spoken = _spoken_duration(0, int(first), int(second))
+        else:
+            spoken = _spoken_duration(int(first), int(second), int(third))
+        if spoken:
+            return spoken
+
+    # Trecho curto sem espaço nenhum (versões, códigos, nomes de arquivo):
+    # separar os símbolos costuma bastar para o modelo achar o que falar.
+    if " " not in stripped and len(stripped) <= 40:
+        spelled = stripped.replace(".", " ponto ").replace("_", " ").replace("-", " ")
+        spelled = re.sub(r"\s+", " ", spelled).strip()
+        if spelled != stripped:
+            return spelled
+
+    return None
+
+
 def podcast_direction(presenter_style: str = "", language: str = DEFAULT_LANGUAGE) -> str:
     """Direção padrão de um turno de podcast, com o tom do apresentador quando houver."""
     style = f", tom {presenter_style}" if presenter_style else ""

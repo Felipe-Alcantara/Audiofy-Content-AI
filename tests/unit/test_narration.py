@@ -79,3 +79,51 @@ class ProsodyContractTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SpeakableFallbackTest(unittest.TestCase):
+    """Trechos que o TTS devolve mudos precisam de uma segunda chance.
+
+    Marcas de tempo, códigos e rodapés de diagramação costumam voltar sem
+    áudio. Pular significa perder conteúdo do texto original em silêncio —
+    inaceitável numa leitura que promete ser integral. Antes de desistir, o
+    trecho é reescrito para uma forma que o modelo consiga pronunciar.
+    """
+
+    def test_marca_de_tempo_vira_texto_falado(self):
+        from audiofy.narration import speakable_fallback
+
+        self.assertEqual(
+            speakable_fallback("38m57s"),
+            "38 minutos e 57 segundos",
+        )
+
+    def test_marca_de_tempo_com_horas(self):
+        from audiofy.narration import speakable_fallback
+
+        self.assertEqual(
+            speakable_fallback("1h02m03s"),
+            "1 hora, 2 minutos e 3 segundos",
+        )
+
+    def test_duracao_em_formato_de_relogio(self):
+        from audiofy.narration import speakable_fallback
+
+        self.assertEqual(speakable_fallback("12:34"), "12 minutos e 34 segundos")
+
+    def test_texto_normal_nao_e_alterado(self):
+        from audiofy.narration import speakable_fallback
+
+        original = "O modelo acertou a maior parte das questões."
+        self.assertIsNone(speakable_fallback(original))
+
+    def test_trecho_sem_letra_nem_numero_nao_tem_salvacao(self):
+        from audiofy.narration import speakable_fallback
+
+        # Só pontuação/símbolo: não há o que pronunciar, aí pular é correto.
+        self.assertIsNone(speakable_fallback("—— ***"))
+
+    def test_codigo_isolado_recebe_leitura_por_caractere(self):
+        from audiofy.narration import speakable_fallback
+
+        self.assertEqual(speakable_fallback("v2.1.0"), "v2 ponto 1 ponto 0")
