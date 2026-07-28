@@ -638,3 +638,72 @@ test("os dois seletores de voz usam a mesma ordem por idioma", () => {
   assert.match(renderer, /sortVoicesByLanguage\(Object\.entries\(catalog\)\)/);
   assert.match(renderer, /sortVoicesByLanguage\(Object\.entries\(activeCatalog\)\)/);
 });
+
+// Reproduz a troca de fonte do player fora do Electron: setPlayerSource decide
+// trocar (ou não) comparando dataset.source, então um player falso com esse
+// contrato basta para provar o comportamento.
+function makeFakePlayer(initialSource = "") {
+  return {
+    dataset: initialSource ? { source: initialSource } : {},
+    src: initialSource,
+    paused: true,
+    currentTime: 0,
+    loadCount: 0,
+    pause() {
+      this.paused = true;
+    },
+    load() {
+      this.loadCount += 1;
+    },
+  };
+}
+
+// Reproduz o handler de "ouvir" chunk lendo do renderer real se ele mantém
+// dataset.source em dia — assim o teste falha enquanto o bug existir.
+function playChunkLikeRenderer(player, url) {
+  const renderer = readRendererFile("renderer.js");
+  const handler = renderer.match(/play\.onclick = \(\) => \{[\s\S]*?\n {4}\};/);
+  player.src = url;
+  if (handler && /player\.dataset\.source = /.test(handler[0])) player.dataset.source = url;
+  player.load();
+}
+
+// Espelha a decisão de setPlayerSource: só troca quando a URL difere da que o
+// dataset.source registra.
+function applySetPlayerSource(player, url) {
+  if (player.dataset.source !== url) {
+    player.pause();
+    player.src = url;
+    player.dataset.source = url;
+    player.load();
+  }
+  return player;
+}
+
+test("ouvir um chunk e depois o episódio não deixa o player preso no chunk", () => {
+  const episodeUrl = "file:///ep/episodio.mp3";
+  const chunkUrl = "file:///ep/chunks/chunk-007.wav";
+  const player = makeFakePlayer();
+
+  applySetPlayerSource(player, episodeUrl);
+
+  // Tocar um chunk troca a fonte do player exatamente como o handler do botão
+  // "ouvir" faz: mexendo em src/load(). O que ele registra em dataset.source
+  // vem do renderer real, para o teste não presumir a correção.
+  playChunkLikeRenderer(player, chunkUrl);
+
+  applySetPlayerSource(player, episodeUrl);
+
+  assert.equal(player.src, episodeUrl, "o player deveria ter voltado ao episódio");
+});
+
+test("tocar um chunk atualiza dataset.source junto com src", () => {
+  const renderer = readRendererFile("renderer.js");
+
+  // O botão "ouvir" de cada chunk troca player.src direto; sem atualizar
+  // dataset.source no mesmo passo, a posição do chunk é gravada sob a chave
+  // do episódio e corrompe o "retomar de onde parou".
+  const chunkPlay = renderer.match(/play\.onclick = \(\) => \{[\s\S]*?\n {4}\};/);
+  assert.ok(chunkPlay, "não encontrei o handler de tocar chunk");
+  assert.match(chunkPlay[0], /player\.dataset\.source = /);
+});

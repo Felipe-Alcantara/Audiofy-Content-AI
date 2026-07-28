@@ -2363,6 +2363,50 @@ guiada pelo manifesto, não pela varredura do diretório. Episódios antigos que
 anteriores desta sessão, não foi possível validar com o app Electron em execução neste ambiente
 (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
 
+## 2026-07-28 — Player travava no último chunk e corrompia a posição salva do episódio
+
+**O que mudou:** o botão "ouvir" de cada chunk, em `openChunkReview`
+(`electron/renderer/renderer.js`), trocava `player.src` mas não atualizava `player.dataset.source`.
+Esse campo tem duas responsabilidades no renderer: é o que `setPlayerSource` compara para decidir
+se troca a fonte, e é a chave sob a qual `savePlaybackPosition` grava o progresso. Ficar
+desatualizado quebrava as duas.
+
+**Sintoma relatado pelo usuário:** "quando eu clico para ouvir um chunk eu não consigo mais ouvir
+o áudio inteiro, o player fica travado no último chunk".
+
+**Os dois defeitos, mesma causa:**
+
+- **Travamento.** Depois de tocar um chunk, `dataset.source` continuava apontando para o MP3 do
+  episódio. Ao pedir o episódio de novo, `setPlayerSource` via `dataset.source === url`, concluía
+  que já estava carregado e **não fazia nada** — o player seguia no chunk, sem erro visível.
+- **Corrupção silenciosa do resume.** O listener global de `timeupdate` gravava o `currentTime` do
+  chunk sob a chave do episódio. Ouvir o chunk 7 e voltar ao episódio retomava num ponto errado —
+  este nunca foi relatado, porque falha em silêncio.
+
+**Correção:** `dataset.source` passa a ser atualizado junto com `src`, no mesmo passo. O chunk
+grava posição sob a própria chave e nunca lê de volta (não chama `readSavedPlaybackPosition`),
+então continua tocando do início — correto para trechos curtos.
+
+**Por que não apareceu antes:** `playInApp` e `openTeleprompter` já mantinham o par `src` +
+`dataset.source` em dia; só o handler do chunk trocava `src` direto. Verifiquei os demais pontos
+que mexem em `player.src` e nenhum outro tem o mesmo problema.
+
+**Validação:** TDD, os dois testes confirmados falhando antes da correção. Um reproduz o fluxo do
+usuário (episódio → chunk → episódio) com um player falso que espelha o contrato de
+`setPlayerSource`; o outro exige que o handler mantenha `dataset.source`. O primeiro lê o handler
+real do renderer para decidir se atualiza o dataset, em vez de presumir a correção — sem isso ele
+passaria mesmo com o bug presente, que foi o comportamento observado na primeira escrita do teste.
+Suítes completas: 463 testes Python e **69 Electron** (68 pass, 1 skip esperado, eram 67),
+`ruff check` e `npm run check` limpos.
+
+**Risco que sobrou:** `dataset.source` continua acumulando as duas responsabilidades (identidade
+da fonte carregada e chave de persistência), então todo ponto novo que mexer em `player.src`
+precisa lembrar de atualizá-lo — foi exatamente o que falhou aqui. Separar as duas em campos
+distintos deixaria o erro impossível, mas é refatoração de escopo maior que esta correção. Como
+nas entradas anteriores, não foi possível validar com o app Electron em execução neste ambiente
+(`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro), então a reprodução do fluxo
+foi feita em teste com player falso, não na janela real.
+
 ## 2026-07-28 — Seletores de voz ordenados por idioma (pt-BR → pt-PT → inglês → espanhol → resto)
 
 **O que mudou:** com 245 vozes em 15 modelos, a ordem de inserção do catálogo deixou de servir —

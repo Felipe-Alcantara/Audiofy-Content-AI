@@ -212,7 +212,14 @@ async function openChunkReview(itemId, title, language) {
     const play = makeElement("button", "ghost", "▶️ ouvir");
     play.onclick = () => {
       const player = $("episode-player");
-      player.src = projectPathToFileUrl(chunk.path);
+      const chunkUrl = projectPathToFileUrl(chunk.path);
+      player.src = chunkUrl;
+      // dataset.source é o que setPlayerSource compara para decidir se troca a
+      // fonte, e a chave sob a qual a posição é salva. Sem atualizar aqui, o
+      // player ficava preso no último chunk (voltar ao episódio virava um
+      // no-op, porque o dataset ainda dizia que ele estava carregado) e a
+      // posição do chunk era gravada por cima da posição do episódio.
+      player.dataset.source = chunkUrl;
       player.load();
       const nowPlaying = `Tocando chunk ${chunkIndex} de ${chunkTotal} · ${chunk.file}`;
       $("chunk-now-playing").textContent = nowPlaying;
