@@ -993,16 +993,17 @@ def _cmd_models_list(force_refresh: bool = False) -> dict:
                     "price_line": (f"US$ {prompt:.2f}/M entrada · US$ {completion:.2f}/M saída"),
                 }
             )
+            # A API é a autoridade sobre quais vozes existem: oferecer uma voz
+            # que ela não aceita vira erro só na hora de gerar o áudio. Por isso
+            # o catálogo ao vivo substitui o estático mesmo quando vem vazio —
+            # aí o frontend cai no input de texto livre.
+            # As descrições curadas (idioma/tom) são preservadas por voz, já que
+            # a API só devolve nomes; vozes novas ficam com "" até catalogarmos.
             supported_voices = model.get("supported_voices") or []
-            if supported_voices:
-                # Preserva a descrição/idioma curados para vozes já conhecidas;
-                # só cai para "" nas vozes que a API retorna mas ainda não catalogamos.
-                # Sobrescrever tudo com dict.fromkeys(..., "") apagava o idioma que
-                # já tínhamos documentado (ex.: vozes pt-BR do MAI-Voice-2).
-                known_voices = TTS_VOICE_CATALOGS.get(model_id, {})
-                TTS_VOICE_CATALOGS[model_id] = {
-                    voice: known_voices.get(voice, "") for voice in supported_voices
-                }
+            known_voices = TTS_VOICE_CATALOGS.get(model_id, {})
+            TTS_VOICE_CATALOGS[model_id] = {
+                voice: known_voices.get(voice, "") for voice in supported_voices
+            }
     except Exception as exception:
         tts_models = [
             payload(model) for model in models if {"audio", "speech"} & set(model.output_modalities)

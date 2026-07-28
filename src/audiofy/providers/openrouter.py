@@ -66,9 +66,12 @@ GEMINI_VOICES: dict[str, str] = {
     "Sulafat": "calorosa (multilíngue)",
 }
 
-# Vozes do Kokoro 82M (modelo leve e ultra-econômico).
-# Subconjunto curado: PT-BR completo + EN americano; o modelo tem 54 vozes
-# no total, mas o catálogo aqui inclui as mais úteis para o projeto.
+# Vozes do Kokoro 82M (modelo leve e ultra-econômico) — catálogo completo:
+# as 54 vozes que o OpenRouter aceita, confirmadas pelo ``supported_voices``
+# de GET /models?output_modalities=speech.
+# O prefixo do ID codifica idioma e gênero: a/b = inglês americano/britânico,
+# e = espanhol, f = francês, h = hindi, i = italiano, j = japonês,
+# p = português, z = chinês; a 2ª letra é f (feminina) ou m (masculina).
 KOKORO_VOICES: dict[str, str] = {
     # PT-BR
     "pf_dora": "feminina (pt-BR)",
@@ -95,10 +98,45 @@ KOKORO_VOICES: dict[str, str] = {
     "am_michael": "neutra (en)",
     "am_onyx": "profunda (en)",
     "am_puck": "animada (en)",
+    "am_santa": "masculina festiva (en)",
     # EN — britânico
+    "bf_alice": "feminina (en-GB)",
     "bf_emma": "suave (en-GB)",
+    "bf_isabella": "feminina (en-GB)",
+    "bf_lily": "feminina, jovem (en-GB)",
     "bm_daniel": "clara (en-GB)",
+    "bm_fable": "masculina, narrativa (en-GB)",
     "bm_george": "madura (en-GB)",
+    "bm_lewis": "masculina (en-GB)",
+    # Espanhol
+    "ef_dora": "feminina (es)",
+    "em_alex": "masculina (es)",
+    "em_santa": "masculina festiva (es)",
+    # Francês
+    "ff_siwis": "feminina (fr-FR)",
+    # Hindi
+    "hf_alpha": "feminina (hi)",
+    "hf_beta": "feminina (hi)",
+    "hm_omega": "masculina (hi)",
+    "hm_psi": "masculina (hi)",
+    # Italiano
+    "if_sara": "feminina (it)",
+    "im_nicola": "masculina (it)",
+    # Japonês
+    "jf_alpha": "feminina (ja)",
+    "jf_gongitsune": "feminina, narrativa (ja)",
+    "jf_nezumi": "feminina, suave (ja)",
+    "jf_tebukuro": "feminina, narrativa (ja)",
+    "jm_kumo": "masculina (ja)",
+    # Chinês (mandarim)
+    "zf_xiaobei": "feminina (zh-CN)",
+    "zf_xiaoni": "feminina (zh-CN)",
+    "zf_xiaoxiao": "feminina (zh-CN)",
+    "zf_xiaoyi": "feminina (zh-CN)",
+    "zm_yunjian": "masculina (zh-CN)",
+    "zm_yunxi": "masculina (zh-CN)",
+    "zm_yunxia": "masculina (zh-CN)",
+    "zm_yunyang": "masculina (zh-CN)",
 }
 
 # Vozes do Orpheus 3B (Canopy Labs) — finetune de produção, só inglês.
@@ -111,7 +149,6 @@ ORPHEUS_VOICES: dict[str, str] = {
     "dan": "masculina (en)",
     "mia": "feminina (en)",
     "zac": "masculina (en)",
-    "zoe": "feminina (en)",
 }
 
 # Vozes do Deepgram Aura-2 — catálogo oficial completo (9 idiomas, sem pt-BR).
@@ -200,7 +237,6 @@ DEEPGRAM_VOICES: dict[str, str] = {
     "aura-2-cinzia-it": "feminina, acessível, calorosa (it-it)",
     "aura-2-cesare-it": "masculina, clara, empática (it-it)",
     "aura-2-livia-it": "feminina, acessível, alegre (it-it)",
-    "aura-2-perseo-it": "masculina, casual, clara (it-it)",
     "aura-2-dionisio-it": "masculina, confiante, envolvente (it-it)",
     "aura-2-demetra-it": "feminina, calma, paciente (it-it)",
     "aura-2-uzume-ja": "feminina, acessível, clara (ja-jp)",
@@ -210,66 +246,26 @@ DEEPGRAM_VOICES: dict[str, str] = {
     "aura-2-ama-ja": "feminina, casual, confiante (ja-jp)",
 }
 
-# Vozes do Microsoft MAI-Voice-2 — único catálogo com pt-BR nativo confirmado.
-# Fonte: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/mai-voices
+# Vozes do Microsoft MAI-Voice-2 (compartilhadas com a variante -flash).
+# Catálogo completo do que o OpenRouter aceita: apenas estas 4 vozes constam
+# do ``supported_voices`` da API. A doc da Microsoft lista dezenas de outras
+# (inclusive pt-BR), mas elas são do Azure Speech direto — pelo OpenRouter
+# retornam erro de voz inválida, então não podem ser oferecidas aqui.
+# Fonte: supported_voices de GET /models?output_modalities=speech
 MAI_VOICE_VOICES: dict[str, str] = {
-    "en-US-Ethan:MAI-Voice-2": "masculina (en-US)",
     "en-US-Harper:MAI-Voice-2": "feminina (en-US)",
-    "en-US-Grant:MAI-Voice-2": "masculina (en-US)",
-    "en-US-Iris:MAI-Voice-2": "feminina (en-US)",
-    "en-US-Jasper:MAI-Voice-2": "masculina (en-US)",
-    "en-US-Olivia:MAI-Voice-2": "feminina (en-US)",
-    "en-AU-Lisa:MAI-Voice-2": "feminina (en-AU)",
-    "pt-BR-Caio:MAI-Voice-2": "masculina (pt-BR)",
-    "pt-BR-Luana:MAI-Voice-2": "feminina (pt-BR)",
-    "pt-BR-Pedro:MAI-Voice-2": "masculina (pt-BR)",
-    "pt-BR-Rafael:MAI-Voice-2": "masculina (pt-BR)",
-    "pt-PT-Rui:MAI-Voice-2": "masculina (pt-PT)",
-    "es-ES-Marta:MAI-Voice-2": "feminina (es-ES)",
-    "es-MX-Alejo:MAI-Voice-2": "masculina (es-MX)",
     "es-MX-Valeria:MAI-Voice-2": "feminina (es-MX)",
-    "fr-FR-Marc:MAI-Voice-2": "masculina (fr-FR)",
     "fr-FR-Soleil:MAI-Voice-2": "feminina (fr-FR)",
     "de-DE-Klaus:MAI-Voice-2": "masculina (de-DE)",
-    "de-DE-Mia:MAI-Voice-2": "feminina (de-DE)",
-    "it-IT-Luca:MAI-Voice-2": "masculina (it-IT)",
-    "it-IT-Rosa:MAI-Voice-2": "feminina (it-IT)",
-    "hi-IN-Arjun:MAI-Voice-2": "masculina (hi-IN)",
-    "hi-IN-Kavya:MAI-Voice-2": "feminina (hi-IN)",
-    "nl-NL-Fleur:MAI-Voice-2": "feminina (nl-NL)",
-    "nl-NL-Sander:MAI-Voice-2": "masculina (nl-NL)",
-    "ru-RU-Lev:MAI-Voice-2": "masculina (ru-RU)",
-    "ru-RU-Masha:MAI-Voice-2": "feminina (ru-RU)",
-    "zh-CN-Bo:MAI-Voice-2": "masculina (zh-CN)",
-    "zh-CN-Mei:MAI-Voice-2": "feminina (zh-CN)",
-    "ko-KR-Hana:MAI-Voice-2": "feminina (ko-KR)",
-    "ko-KR-Junho:MAI-Voice-2": "masculina (ko-KR)",
-    "tr-TR-Aydin:MAI-Voice-2": "masculina (tr-TR)",
-    "tr-TR-Elif:MAI-Voice-2": "feminina (tr-TR)",
-    "th-TH-Krit:MAI-Voice-2": "masculina (th-TH)",
-    "ro-RO-Andrei:MAI-Voice-2": "masculina (ro-RO)",
-    "hu-HU-Bence:MAI-Voice-2": "masculina (hu-HU)",
 }
 
-# Vozes do MiniMax Speech 2.8 (hd e turbo compartilham o mesmo catálogo,
-# só diferem em qualidade/latência). Subconjunto curado e confirmado via
-# documentação oficial; o catálogo completo tem 300+ vozes (inclusive uma
-# categoria "Portuguese" com ~70 vozes cujos nomes exatos não estão
-# publicados na doc — usar a "Get Voice API" do MiniMax para a lista viva).
-# Fonte: https://platform.minimax.io/docs/api-reference/speech-t2a-http
-MINIMAX_VOICES: dict[str, str] = {
-    "English_Graceful_Lady": "feminina (en)",
-    "English_Insightful_Speaker": "neutra (en)",
-    "English_radiant_girl": "feminina (en)",
-    "English_Persuasive_Man": "masculina (en)",
-    "Chinese (Mandarin)_Lyrical_Voice": "feminina (zh-CN)",
-    "Cantonese_GentleLady": "feminina (yue)",
-    "Japanese_Whisper_Belle": "feminina (ja)",
-    "Wise_Woman": "feminina, controlada por language_boost (multilíngue)",
-    "Deep_Voice_Man": "masculina, grave, controlada por language_boost (multilíngue)",
-    "Calm_Woman": "feminina, calma, controlada por language_boost (multilíngue)",
-    "Casual_Guy": "masculina, casual, controlada por language_boost (multilíngue)",
-}
+# MiniMax Speech 2.8 (hd e turbo) — sem catálogo de vozes pelo OpenRouter:
+# ``supported_voices`` vem nulo na API. O MiniMax tem 300+ vozes no serviço
+# próprio dele, mas os IDs não são expostos aqui e não são adivinháveis, então
+# o catálogo fica vazio de propósito e o frontend cai no input de texto livre
+# (quem souber um voice_id válido do MiniMax pode digitá-lo).
+# Fonte: supported_voices de GET /models?output_modalities=speech
+MINIMAX_VOICES: dict[str, str] = {}
 
 # Voxtral Mini TTS (Mistral) — vozes reais confirmadas ao vivo pela API do
 # OpenRouter (4 locutores × variações de emoção, sem português apesar da

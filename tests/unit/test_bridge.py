@@ -348,16 +348,45 @@ class CatalogContractTest(unittest.TestCase):
                 "name": "MAI Voice 2",
                 "prompt_price": "0.000001",
                 "completion_price": "0.000002",
-                "supported_voices": ["pt-BR-Caio:MAI-Voice-2", "pt-BR-Nova:MAI-Voice-2"],
+                "supported_voices": ["en-US-Harper:MAI-Voice-2", "pt-BR-Nova:MAI-Voice-2"],
             }
         ]
 
         result = bridge._cmd_models_list()
         catalog = result["voice_catalogs"][model_id]
 
-        self.assertEqual(catalog["pt-BR-Caio:MAI-Voice-2"], "masculina (pt-BR)")
+        self.assertEqual(catalog["en-US-Harper:MAI-Voice-2"], "feminina (en-US)")
         # Voz nova retornada pela API ao vivo, ainda sem descrição curada.
         self.assertEqual(catalog["pt-BR-Nova:MAI-Voice-2"], "")
+
+    @patch("audiofy.providers.openrouter.list_tts_models")
+    @patch("audiofy.catalog.load_models")
+    def test_modelo_sem_vozes_na_api_nao_mantem_catalogo_estatico(
+        self, load_models, list_tts_models
+    ):
+        # Se a API deixa de expor vozes de um modelo, manter o catálogo antigo
+        # oferece opções que falham ao gerar áudio. O catálogo deve zerar para
+        # o frontend cair no input de texto livre.
+        from audiofy.voices import TTS_VOICE_CATALOGS
+
+        model_id = "microsoft/mai-voice-2"
+        original_catalog = dict(TTS_VOICE_CATALOGS[model_id])
+        self.addCleanup(TTS_VOICE_CATALOGS.__setitem__, model_id, original_catalog)
+
+        load_models.return_value = []
+        list_tts_models.return_value = [
+            {
+                "id": model_id,
+                "name": "MAI Voice 2",
+                "prompt_price": "0.000001",
+                "completion_price": "0.000002",
+                "supported_voices": [],
+            }
+        ]
+
+        result = bridge._cmd_models_list()
+
+        self.assertEqual(result["voice_catalogs"][model_id], {})
 
 
 class SettingsInfoTest(unittest.TestCase):
