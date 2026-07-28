@@ -2482,3 +2482,25 @@ modelo aparecer com `supported_voices`, ele ainda vai cair em vozes sem descriç
 alguém catalogar manualmente, exatamente como o comportamento de fallback já documentado. `none`
 (CSM-1B) e `random` (Zonos) são opções especiais sem idioma fixo — descritas como tal em vez de
 receber um idioma inventado.
+
+## 2026-07-28 — Gemini TTS também sem indicação de idioma: faltava tag "multilíngue"
+
+**O que mudou:** `GEMINI_VOICES` em `src/audiofy/providers/openrouter.py` tinha só o tom de cada
+voz (ex.: `"Zephyr": "brilhante"`), sem nenhuma indicação de idioma — cada uma das 30 entradas
+ganhou o sufixo `" (multilíngue)"`.
+
+**Por que:** o usuário apontou que o Gemini continuava sem mostrar idioma depois das duas rodadas
+anteriores. Diferente dos outros provedores, o Gemini TTS não tem uma voz por idioma: a mesma voz
+fala qualquer um dos 24+ idiomas suportados pelo modelo, detectado a partir do texto de entrada
+(documentado em `ai.google.dev/gemini-api/docs/speech-generation`) — não existe um código de
+idioma fixo do tipo `(pt-BR)` para associar a cada voz, como fizemos para Kokoro/Deepgram/MAI. A
+tag `(multilíngue)` comunica isso explicitamente em vez de deixar o campo vazio (que parecia
+"esquecido") ou inventar um idioma que não é real para aquela voz.
+
+**Validação:** suíte completa (458 Python) e `ruff` limpos — nenhum teste depende do texto exato
+de `GEMINI_VOICES`. Verificação real no app (mesmo driver Playwright/xvfb): perfil editado, modelo
+trocado para `google/gemini-3.1-flash-tts-preview`, opções do campo Apresentadores confirmadas
+como `"Zephyr · brilhante (multilíngue)"`, `"Puck · animada (multilíngue)"` etc.
+
+**Risco que sobrou:** nenhum novo — mesma superfície de risco das entradas anteriores (catálogo
+estático pode ficar desatualizado se o provedor mudar a lista de vozes ou idiomas suportados).
