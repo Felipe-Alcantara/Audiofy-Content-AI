@@ -1743,6 +1743,7 @@ function renderActiveConfig(info) {
   voiceSelect.replaceChildren();
   const activeCatalog = (info.voice_catalogs && info.voice_catalogs[info.tts_model]) || {};
   const catalogEntries = Object.entries(activeCatalog);
+  const profileVoice = info.presenters.length === 1 ? info.presenters[0].voice : "";
   if (catalogEntries.length) {
     for (const [voice, style] of catalogEntries) {
       const option = document.createElement("option");
@@ -1753,6 +1754,14 @@ function renderActiveConfig(info) {
         : voiceLabel(voice, info.tts_model);
       voiceSelect.appendChild(option);
     }
+  } else if (profileVoice) {
+    // Modelos sem catálogo (ex.: Orpheus) aceitam qualquer nome de voz na API.
+    // Sem entrada aqui, a voz do apresentador do perfil fica sem opção correspondente
+    // no select e o campo cai vazio, disparando "Escolha a voz do narrador." à toa.
+    const option = document.createElement("option");
+    option.value = profileVoice;
+    option.textContent = voiceLabel(profileVoice, info.tts_model);
+    voiceSelect.appendChild(option);
   } else {
     const placeholder = document.createElement("option");
     placeholder.value = "";
@@ -1760,9 +1769,9 @@ function renderActiveConfig(info) {
     placeholder.disabled = true;
     voiceSelect.appendChild(placeholder);
   }
-  voiceSelect.dataset.catalogUnavailable = catalogEntries.length ? "false" : "true";
-  voiceSelect.disabled = !catalogEntries.length;
-  const profileVoice = info.presenters.length === 1 ? info.presenters[0].voice : "";
+  const hasUsableOption = catalogEntries.length > 0 || !!profileVoice;
+  voiceSelect.dataset.catalogUnavailable = hasUsableOption ? "false" : "true";
+  voiceSelect.disabled = !hasUsableOption;
   // Só uma escolha deliberada do usuário sobrepõe a voz do perfil. Sem isso, um
   // valor mudado sem querer (roda do mouse sobre o combo) virava o "preferido" e
   // se perpetuava a cada refresh, gerando o episódio com outra voz em silêncio.
