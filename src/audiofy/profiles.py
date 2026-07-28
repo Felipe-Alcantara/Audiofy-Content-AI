@@ -35,6 +35,10 @@ class Profile:
     # mantém o que a própria CLI tem configurado. Ignorado quando o provedor é
     # o OpenRouter, que usa text_model/audit_model.
     subscription_model: str = ""
+    # Envia o idioma explicitamente ao TTS em vez de deixar o modelo detectá-lo
+    # pelo texto. Só tem efeito nos modelos que aceitam o parâmetro (ver
+    # LANGUAGE_FORCING_MODELS); nos demais o campo é ignorado.
+    force_language: bool = False
 
 
 _TTS = "google/gemini-3.1-flash-tts-preview"
@@ -574,6 +578,7 @@ def profile_from_payload(payload: dict[str, Any]) -> Profile:
         description=description,
         text_provider=provider,
         language=language,
+        force_language=bool(payload.get("force_language", False)),
         subscription_model=subscription_model,
     )
 

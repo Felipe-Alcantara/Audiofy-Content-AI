@@ -111,3 +111,12 @@ class DotenvEnvironmentTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ForceLanguageSettingsWiringTest(unittest.TestCase):
+    def test_settings_recebe_a_escolha_do_perfil(self):
+        """Sem isso, marcar a caixa no perfil não teria efeito na síntese."""
+        from audiofy.config import Settings
+
+        self.assertFalse(Settings().force_language)
+        self.assertTrue(Settings(force_language=True).force_language)

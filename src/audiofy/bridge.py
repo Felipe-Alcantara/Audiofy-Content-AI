@@ -830,7 +830,12 @@ def _cmd_settings_info() -> dict:
     from .languages import LANGUAGES
     from .providers.openrouter import GEMINI_VOICES
     from .providers.subscription import SUBSCRIPTION_CLIS, configured_model
-    from .voices import TTS_TIERS, TTS_VOICE_CATALOGS
+    from .voices import (
+        LANGUAGE_AMBIGUOUS_MODELS,
+        LANGUAGE_FORCING_MODELS,
+        TTS_TIERS,
+        TTS_VOICE_CATALOGS,
+    )
 
     settings = Settings()
     overrides = [
@@ -862,6 +867,10 @@ def _cmd_settings_info() -> dict:
         "gemini_voices": GEMINI_VOICES,
         "voice_catalogs": TTS_VOICE_CATALOGS,
         "tts_tiers": TTS_TIERS,
+        # Avisam o frontend sobre a variante do português: quais modelos podem
+        # variar entre pt-BR e pt-PT, e em quais dá para forçar o idioma.
+        "language_ambiguous_models": sorted(LANGUAGE_AMBIGUOUS_MODELS),
+        "language_forcing_models": sorted(LANGUAGE_FORCING_MODELS),
         "language": settings.language,
         # Registro único de idiomas: a interface pode montar o seletor a partir daqui
         # em vez de manter os <option> fixos no HTML.
@@ -962,7 +971,12 @@ def _cmd_models_list(force_refresh: bool = False) -> dict:
     """Modelos de texto e de TTS com preços, para os seletores da interface."""
     from .catalog import load_models
     from .providers.openrouter import GEMINI_VOICES, list_tts_models
-    from .voices import TTS_TIERS, TTS_VOICE_CATALOGS
+    from .voices import (
+        LANGUAGE_AMBIGUOUS_MODELS,
+        LANGUAGE_FORCING_MODELS,
+        TTS_TIERS,
+        TTS_VOICE_CATALOGS,
+    )
 
     try:
         models = load_models(Settings(), force_refresh)
@@ -1016,6 +1030,10 @@ def _cmd_models_list(force_refresh: bool = False) -> dict:
         "gemini_voices": GEMINI_VOICES,
         "voice_catalogs": TTS_VOICE_CATALOGS,
         "tts_tiers": TTS_TIERS,
+        # Avisam o frontend sobre a variante do português: quais modelos podem
+        # variar entre pt-BR e pt-PT, e em quais dá para forçar o idioma.
+        "language_ambiguous_models": sorted(LANGUAGE_AMBIGUOUS_MODELS),
+        "language_forcing_models": sorted(LANGUAGE_FORCING_MODELS),
         "catalog_error": " | ".join(dict.fromkeys(errors)) if errors else None,
     }
 
@@ -1045,7 +1063,12 @@ def _cmd_playback_position_save(source: str, seconds: float) -> dict:
 
 def _cmd_tts_catalog() -> dict:
     from .providers.openrouter import GEMINI_VOICES, list_tts_models
-    from .voices import TTS_TIERS, TTS_VOICE_CATALOGS
+    from .voices import (
+        LANGUAGE_AMBIGUOUS_MODELS,
+        LANGUAGE_FORCING_MODELS,
+        TTS_TIERS,
+        TTS_VOICE_CATALOGS,
+    )
 
     try:
         models = list_tts_models(Settings())
@@ -1058,6 +1081,10 @@ def _cmd_tts_catalog() -> dict:
         "gemini_voices": GEMINI_VOICES,
         "voice_catalogs": TTS_VOICE_CATALOGS,
         "tts_tiers": TTS_TIERS,
+        # Avisam o frontend sobre a variante do português: quais modelos podem
+        # variar entre pt-BR e pt-PT, e em quais dá para forçar o idioma.
+        "language_ambiguous_models": sorted(LANGUAGE_AMBIGUOUS_MODELS),
+        "language_forcing_models": sorted(LANGUAGE_FORCING_MODELS),
         "catalog_error": error,
     }
 

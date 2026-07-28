@@ -868,6 +868,12 @@ def _segment_fingerprint(settings: Settings, text: str, voice: str, instructions
         "instructions": instructions,
         "format": settings.tts_format,
         "sample_rate": settings.tts_sample_rate,
+        # Nos modelos que aceitam forçar o idioma, ele muda o áudio sintetizado;
+        # sem entrar aqui, ligar/desligar a opção ou trocar o idioma
+        # reaproveitaria em silêncio o áudio gerado na configuração anterior.
+        "language": (
+            getattr(settings, "language", "") if getattr(settings, "force_language", False) else ""
+        ),
     }
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
@@ -963,6 +969,13 @@ def _synthesize_with_retry(
                     text,
                     voice,
                     instructions=instructions,
+                    # Opt-in: sem a opção marcada no perfil, o comportamento
+                    # anterior (modelo detecta o idioma) é preservado.
+                    language=(
+                        getattr(candidate, "language", "")
+                        if getattr(candidate, "force_language", False)
+                        else ""
+                    ),
                 )
                 return _SynthesisResult(speech, candidate, key_label)
             except openrouter.OpenRouterError as error:

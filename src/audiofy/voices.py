@@ -120,6 +120,74 @@ TTS_TIERS: dict[str, dict[str, object]] = {
     },
 }
 
+# ── Ambiguidade de idioma ─────────────────────────────────────────────────────
+# Modelos cujas vozes não são amarradas a um idioma: eles detectam o idioma
+# pelo texto de entrada. Para o português isso é um problema prático — a
+# detecção trata "português" como uma coisa só e tende ao europeu, chegando a
+# alternar de variante no meio da leitura. Quem escolhe a voz precisa saber
+# disso antes de gerar o áudio (e pagar por ele).
+#
+# Modelos com voz por idioma (Kokoro, Deepgram, MAI-Voice-2…) não entram aqui:
+# neles ``pf_dora`` é pt-BR e nada mais.
+
+LANGUAGE_AMBIGUOUS_MODELS: frozenset[str] = frozenset(
+    {
+        "x-ai/grok-voice-tts-1.0",
+        "google/gemini-3.1-flash-tts-preview",
+        "minimax/speech-2.8-hd",
+        "minimax/speech-2.8-turbo",
+        "qwen/qwen-audio-3.0-tts-flash",
+        "qwen/qwen-audio-3.0-tts-plus",
+    }
+)
+
+# Modelos que aceitam forçar o idioma no payload, em vez de deixar o modelo
+# adivinhar. Só entram aqui os casos em que o efeito foi confirmado ao vivo:
+# enviar valores diferentes de ``language_boost`` produz áudios diferentes.
+#
+# O Grok ficou de fora de propósito. O parâmetro é aceito sem erro, mas o
+# modelo não é determinístico nem com ``seed`` fixo, então não foi possível
+# distinguir o efeito do parâmetro da variação natural entre execuções —
+# oferecer a opção prometeria uma garantia que não temos.
+#
+# Atenção: o provedor não valida o valor. Um ``language_boost`` desconhecido
+# é aceito com HTTP 200 e tratado como automático, falhando em silêncio; por
+# isso o valor enviado vem sempre da tabela abaixo, nunca do texto do usuário.
+
+LANGUAGE_FORCING_MODELS: frozenset[str] = frozenset(
+    {
+        "minimax/speech-2.8-hd",
+        "minimax/speech-2.8-turbo",
+    }
+)
+
+# Nome do idioma como o provedor espera receber em ``language_boost``.
+_LANGUAGE_BOOST_NAMES: dict[str, str] = {
+    "pt-BR": "Portuguese",
+    "pt-PT": "Portuguese",
+    "en": "English",
+    "en-US": "English",
+    "es": "Spanish",
+}
+
+
+def supports_language_forcing(tts_model_id: str) -> bool:
+    """Indica se o modelo aceita forçar o idioma em vez de detectá-lo."""
+    return tts_model_id in LANGUAGE_FORCING_MODELS
+
+
+def is_language_ambiguous(tts_model_id: str) -> bool:
+    """Indica se o modelo detecta o idioma e pode variar a variante regional."""
+    return tts_model_id in LANGUAGE_AMBIGUOUS_MODELS
+
+
+def language_boost_value(tts_model_id: str, language: str) -> str | None:
+    """Valor de ``language_boost`` para o modelo, ou ``None`` se não se aplica."""
+    if tts_model_id not in LANGUAGE_FORCING_MODELS:
+        return None
+    return _LANGUAGE_BOOST_NAMES.get(language)
+
+
 # ── Mapa agregado para busca rápida ──────────────────────────────────────────
 
 ALL_KNOWN_VOICES: dict[str, str] = {}

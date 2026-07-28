@@ -129,6 +129,39 @@ class OpenRouterSpeechAccountingTest(unittest.TestCase):
         self.assertEqual(result, SpeechResult(audio=b"x" * 600, generation_id="gen-123"))
 
     @patch("audiofy.providers.openrouter._request")
+    def test_forcar_idioma_vai_no_payload_do_modelo_que_suporta(self, request):
+        request.return_value = Mock(
+            content=b"x" * 600, text="", headers={"Content-Type": "audio/pcm"}
+        )
+        settings = SimpleNamespace(
+            require_api_key=lambda: "chave-de-teste",
+            tts_model="minimax/speech-2.8-turbo",
+            tts_format="mp3",
+        )
+
+        text_to_speech(settings, "olá", "Wise_Woman", language="pt-BR")
+
+        payload = request.call_args[0][3]
+        self.assertEqual(payload["language_boost"], "Portuguese")
+
+    @patch("audiofy.providers.openrouter._request")
+    def test_modelo_sem_suporte_nao_recebe_parametro_de_idioma(self, request):
+        request.return_value = Mock(
+            content=b"x" * 600, text="", headers={"Content-Type": "audio/pcm"}
+        )
+        # O provedor aceita parâmetro desconhecido com HTTP 200 e o ignora em
+        # silêncio, então mandar onde não há suporte só criaria falsa confiança.
+        settings = SimpleNamespace(
+            require_api_key=lambda: "chave-de-teste",
+            tts_model="hexgrad/kokoro-82m",
+            tts_format="mp3",
+        )
+
+        text_to_speech(settings, "olá", "pf_dora", language="pt-BR")
+
+        self.assertNotIn("language_boost", request.call_args[0][3])
+
+    @patch("audiofy.providers.openrouter._request")
     def test_custo_da_geracao_vem_do_total_cost(self, request):
         request.return_value.json.return_value = {"data": {"total_cost": 0.012345}}
 
@@ -141,6 +174,66 @@ class OpenRouterSpeechAccountingTest(unittest.TestCase):
 
         with self.assertRaisesRegex(OpenRouterError, "custo inválido"):
             generation_cost_usd(self.settings, "gen-123")
+
+
+class SegmentFingerprintLanguageTest(unittest.TestCase):
+    def test_trocar_idioma_invalida_o_audio_em_cache(self):
+        """O idioma forçado muda o áudio, então precisa entrar no fingerprint.
+
+        Sem isso, trocar o idioma reaproveitaria segmentos sintetizados com o
+        idioma anterior — o episódio sairia com o áudio errado, em silêncio.
+        """
+        from audiofy.pipeline import _segment_fingerprint
+
+        base = {
+            "tts_model": "minimax/speech-2.8-turbo",
+            "tts_format": "mp3",
+            "tts_sample_rate": 24000,
+            "force_language": True,
+        }
+        pt = SimpleNamespace(**base, language="pt-BR")
+        en = SimpleNamespace(**base, language="en")
+
+        self.assertNotEqual(
+            _segment_fingerprint(pt, "olá", "Wise_Woman", "direção"),
+            _segment_fingerprint(en, "olá", "Wise_Woman", "direção"),
+        )
+
+    def test_ligar_a_opcao_invalida_o_audio_gerado_sem_ela(self):
+        """Marcar a caixa muda o áudio, então não pode reusar o anterior."""
+        from audiofy.pipeline import _segment_fingerprint
+
+        base = {
+            "tts_model": "minimax/speech-2.8-turbo",
+            "tts_format": "mp3",
+            "tts_sample_rate": 24000,
+            "language": "pt-BR",
+        }
+        desligado = SimpleNamespace(**base, force_language=False)
+        ligado = SimpleNamespace(**base, force_language=True)
+
+        self.assertNotEqual(
+            _segment_fingerprint(desligado, "olá", "Wise_Woman", "direção"),
+            _segment_fingerprint(ligado, "olá", "Wise_Woman", "direção"),
+        )
+
+
+class ForceLanguageSettingsTest(unittest.TestCase):
+    @patch("audiofy.providers.openrouter._request")
+    def test_idioma_so_vai_no_payload_quando_o_perfil_pede(self, request):
+        """A opção é opt-in: sem ela, o comportamento atual é preservado."""
+        request.return_value = Mock(
+            content=b"x" * 600, text="", headers={"Content-Type": "audio/pcm"}
+        )
+        settings = SimpleNamespace(
+            require_api_key=lambda: "chave-de-teste",
+            tts_model="minimax/speech-2.8-turbo",
+            tts_format="mp3",
+        )
+
+        text_to_speech(settings, "olá", "Wise_Woman", language="")
+
+        self.assertNotIn("language_boost", request.call_args[0][3])
 
 
 if __name__ == "__main__":

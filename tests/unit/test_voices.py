@@ -80,5 +80,51 @@ class VoiceCatalogContractTest(unittest.TestCase):
         self.assertEqual(undescribed, {}, "vozes sem descrição de idioma/tom")
 
 
+class LanguageAmbiguityTest(unittest.TestCase):
+    """Modelos multilíngues não garantem a variante regional do português.
+
+    Vozes com detecção automática de idioma tratam "português" como uma coisa
+    só e tendem ao europeu, alternando de variante no meio da leitura. Quem
+    escolhe a voz precisa saber disso antes de gerar o áudio.
+    """
+
+    def test_modelos_multilingues_estao_marcados_como_ambiguos(self):
+        from audiofy.voices import LANGUAGE_AMBIGUOUS_MODELS
+
+        self.assertIn("x-ai/grok-voice-tts-1.0", LANGUAGE_AMBIGUOUS_MODELS)
+        self.assertIn("google/gemini-3.1-flash-tts-preview", LANGUAGE_AMBIGUOUS_MODELS)
+
+    def test_modelo_com_voz_por_idioma_nao_e_ambiguo(self):
+        from audiofy.voices import LANGUAGE_AMBIGUOUS_MODELS
+
+        # Kokoro e Deepgram amarram cada voz a um idioma: pf_dora é pt-BR e
+        # nada mais, então não há ambiguidade a avisar.
+        self.assertNotIn("hexgrad/kokoro-82m", LANGUAGE_AMBIGUOUS_MODELS)
+        self.assertNotIn("deepgram/aura-2", LANGUAGE_AMBIGUOUS_MODELS)
+
+    def test_minimax_aceita_forcar_idioma(self):
+        from audiofy.voices import LANGUAGE_FORCING_MODELS
+
+        # Confirmado ao vivo: language_boost muda o áudio de verdade no
+        # MiniMax (valores diferentes geram saídas diferentes).
+        self.assertIn("minimax/speech-2.8-hd", LANGUAGE_FORCING_MODELS)
+        self.assertIn("minimax/speech-2.8-turbo", LANGUAGE_FORCING_MODELS)
+
+    def test_modelo_sem_suporte_confirmado_nao_oferece_forcar(self):
+        from audiofy.voices import LANGUAGE_FORCING_MODELS
+
+        # No Grok o efeito não pôde ser confirmado: ele não é determinístico
+        # nem com seed fixo, então oferecer a opção prometeria algo incerto.
+        self.assertNotIn("x-ai/grok-voice-tts-1.0", LANGUAGE_FORCING_MODELS)
+        self.assertNotIn("hexgrad/kokoro-82m", LANGUAGE_FORCING_MODELS)
+
+    def test_valor_de_forcar_idioma_para_portugues(self):
+        from audiofy.voices import language_boost_value
+
+        self.assertEqual(language_boost_value("minimax/speech-2.8-hd", "pt-BR"), "Portuguese")
+        self.assertIsNone(language_boost_value("hexgrad/kokoro-82m", "pt-BR"))
+        self.assertIsNone(language_boost_value("minimax/speech-2.8-hd", "xx-YY"))
+
+
 if __name__ == "__main__":
     unittest.main()

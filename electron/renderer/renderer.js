@@ -2470,6 +2470,36 @@ function renderTtsTierInfo() {
   el.className = `pf-tier-badge tier-${tier.tier}`;
 }
 
+// Modelos multilíngues não amarram voz a idioma: eles decidem pelo texto de
+// entrada. Em português isso é um problema concreto — a detecção trata o idioma
+// como um só e tende ao europeu, chegando a variar no meio da leitura. Onde o
+// provedor aceita forçar o idioma, oferecemos a opção; onde não aceita, resta
+// avisar, porque o usuário só descobriria ouvindo o áudio já pago.
+function renderLanguageAmbiguityInfo() {
+  const warning = $("pf-language-warning");
+  const row = $("pf-force-language-row");
+  if (!warning || !row) return;
+  const ttsModel = $("pf-tts-model") && $("pf-tts-model").value;
+  const ambiguous = (modelsCatalog && modelsCatalog.language_ambiguous_models) || [];
+  const forcing = (modelsCatalog && modelsCatalog.language_forcing_models) || [];
+  const isAmbiguous = ambiguous.includes(ttsModel);
+  const canForce = forcing.includes(ttsModel);
+
+  warning.classList.toggle("hidden", !isAmbiguous);
+  if (isAmbiguous) {
+    warning.textContent = canForce
+      ? "⚠️ Este modelo detecta o idioma pelo texto e pode puxar para o " +
+        "português de Portugal. Marque a opção abaixo para forçar o português do Brasil."
+      : "⚠️ Este modelo detecta o idioma pelo texto e pode puxar para o " +
+        "português de Portugal, até alternando de sotaque no meio da leitura. " +
+        "Para português do Brasil garantido, use um modelo com voz por idioma.";
+  }
+
+  row.classList.toggle("hidden", !canForce);
+  const text = $("pf-force-language-text");
+  if (canForce && text) text.textContent = "Forçar o idioma configurado no perfil";
+}
+
 function presentersFromSpec(spec) {
   return spec.split(",").map((chunk) => {
     const [speaker = "", voice = "Kore", style = ""] = chunk.trim().split(":");
@@ -2580,8 +2610,11 @@ async function openProfileForm(profile = null, tabCategory = null) {
   $("pf-tts-model").onchange = () => {
     refreshPresenterVoices();
     renderTtsTierInfo();
+    renderLanguageAmbiguityInfo();
   };
   renderTtsTierInfo();
+  $("pf-force-language").checked = Boolean(profile && profile.force_language);
+  renderLanguageAmbiguityInfo();
 
   $("pf-presenters").replaceChildren();
   const presenters = profile
@@ -2624,6 +2657,7 @@ $("profile-form").onsubmit = async (event) => {
       ? "" : $("pf-subscription-model").value.trim(),
     tts_model: $("pf-tts-model").value,
     presenters_spec: spec,
+    force_language: $("pf-force-language").checked,
     activate: true,
   };
   if (!payload.name || !spec) {

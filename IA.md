@@ -2363,6 +2363,61 @@ guiada pelo manifesto, não pela varredura do diretório. Episódios antigos que
 anteriores desta sessão, não foi possível validar com o app Electron em execução neste ambiente
 (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
 
+## 2026-07-28 — Aviso de variante do português e opção de forçar o idioma no TTS
+
+**O que mudou:** o usuário relatou que modelos multilíngues puxam a leitura para português de
+Portugal, alternando de sotaque no meio do episódio. A investigação mostrou que o payload de
+`text_to_speech` não enviava **nenhum** sinal de idioma — todas as instruções já dizem "português
+brasileiro", mas elas vão no campo `instructions`, que é opcional e cada modelo respeita ou ignora
+à vontade. Modelos com detecção automática decidem pelo texto e tratam "português" como um só.
+
+Três camadas novas:
+
+- **Metadados por modelo** (`src/audiofy/voices.py`): `LANGUAGE_AMBIGUOUS_MODELS` (Grok, Gemini,
+  MiniMax, dois Qwen — detectam idioma) e `LANGUAGE_FORCING_MODELS` (só os dois MiniMax).
+- **Envio do parâmetro** (`providers/openrouter.py`): `language_boost` no payload, apenas para os
+  modelos da segunda lista, e apenas quando o perfil pede.
+- **Interface**: aviso abaixo do seletor de TTS quando o modelo é ambíguo, e caixa "Forçar o
+  idioma configurado no perfil" quando ele aceita o parâmetro. A escolha é persistida no perfil
+  (`Profile.force_language` → `Settings.force_language`).
+
+**Verificação ao vivo, não documentação:** `supported_parameters` da API **não lista**
+`language_boost` em nenhum modelo, então testei na prática. No MiniMax, valores diferentes
+(`Portuguese`, `Japanese`, `Chinese`) produzem áudios de tamanhos bem distintos — o parâmetro
+funciona de verdade. No Grok o teste foi **inconclusivo**: o modelo não é determinístico nem com
+`seed` fixo, então não dá para separar o efeito do parâmetro da variação natural entre execuções.
+Por isso o Grok ficou fora de `LANGUAGE_FORCING_MODELS` — ele só recebe o aviso.
+
+**Armadilha encontrada:** o provedor aceita `language_boost` com valor inválido (`XYZ_invalido`)
+respondendo **HTTP 200**, tratando como automático. Não há validação nem erro. Por isso o valor
+enviado vem sempre de uma tabela interna, nunca de texto do usuário: um valor errado falharia em
+silêncio, parecendo resolvido sem estar.
+
+**Por que opt-in:** sem a caixa marcada, o comportamento anterior é preservado byte a byte. Forçar
+para todo mundo mudaria o áudio de perfis existentes sem aviso.
+
+**Validação:** TDD em todas as camadas, com os testes confirmados falhando antes. Suítes completas:
+**477 testes Python** (eram 471) e **72 Electron** (71 pass, 1 skip esperado, eram 69),
+`ruff check` e `npm run check` limpos. Verificação real pela bridge: 6 modelos marcados como
+ambíguos, 2 como forçáveis, `language_boost_value` devolvendo `Portuguese` no MiniMax e `None` no
+Grok.
+
+**Regressão que eu mesmo causei e corrigi:** a primeira versão acessava `candidate.force_language`
+direto e quebrou 18 testes que usam `SimpleNamespace` sem esse campo; passou a usar `getattr` com
+padrão, como as linhas vizinhas já faziam. Registro porque o padrão do projeto é rodar a suíte
+inteira antes de dar algo por pronto — foi ela que pegou.
+
+**Cuidado com o cache:** `language` e `force_language` entraram no `_segment_fingerprint`. Sem
+isso, ligar a opção reaproveitaria em silêncio o áudio sintetizado sem ela, e o usuário concluiria
+que o parâmetro não funciona.
+
+**Risco que sobrou:** o efeito real do `language_boost` na variante do português (pt-BR vs. pt-PT)
+não foi confirmado por escuta — confirmei que o parâmetro **muda** o áudio, não que ele **resolve**
+o sotaque brasileiro; isso só se sabe ouvindo. O MiniMax custa 4 a 6× o Grok e não expõe vozes pelo
+OpenRouter, então usá-lo exige descobrir um `voice_id` válido pelo campo de texto livre. Para
+português garantido sem ambiguidade, o caminho continua sendo voz com idioma fixo (Kokoro). Como
+nas entradas anteriores, não foi possível validar com o app Electron em execução neste ambiente.
+
 ## 2026-07-28 — Player travava no último chunk e corrompia a posição salva do episódio
 
 **O que mudou:** o botão "ouvir" de cada chunk, em `openChunkReview`

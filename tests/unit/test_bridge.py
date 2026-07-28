@@ -970,3 +970,50 @@ class EmissaoJsonTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LanguageAmbiguityBridgeTest(unittest.TestCase):
+    @patch("audiofy.providers.openrouter.list_tts_models")
+    @patch("audiofy.catalog.load_models")
+    def test_catalogo_informa_ambiguidade_e_suporte_a_forcar_idioma(
+        self, load_models, list_tts_models
+    ):
+        # O frontend precisa saber, por modelo, se avisa sobre variante do
+        # português e se oferece a opção de forçar o idioma.
+        load_models.return_value = []
+        list_tts_models.return_value = []
+
+        result = bridge._cmd_models_list()
+
+        self.assertIn("x-ai/grok-voice-tts-1.0", result["language_ambiguous_models"])
+        self.assertIn("minimax/speech-2.8-turbo", result["language_forcing_models"])
+        self.assertNotIn("hexgrad/kokoro-82m", result["language_ambiguous_models"])
+
+
+class ForceLanguageProfileTest(unittest.TestCase):
+    def test_perfil_guarda_a_escolha_de_forcar_idioma(self):
+        profile = profile_from_payload(
+            {
+                "name": "forca",
+                "text_model": "vendor/text",
+                "audit_model": "vendor/audit",
+                "tts_model": "minimax/speech-2.8-turbo",
+                "presenters_spec": "ana:Wise_Woman",
+                "force_language": True,
+            }
+        )
+
+        self.assertTrue(profile.force_language)
+
+    def test_forcar_idioma_e_desligado_por_padrao(self):
+        profile = profile_from_payload(
+            {
+                "name": "padrao",
+                "text_model": "vendor/text",
+                "audit_model": "vendor/audit",
+                "tts_model": "vendor/tts",
+                "presenters_spec": "ana:Kore",
+            }
+        )
+
+        self.assertFalse(profile.force_language)

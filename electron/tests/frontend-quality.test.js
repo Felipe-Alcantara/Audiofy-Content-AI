@@ -707,3 +707,35 @@ test("tocar um chunk atualiza dataset.source junto com src", () => {
   assert.ok(chunkPlay, "não encontrei o handler de tocar chunk");
   assert.match(chunkPlay[0], /player\.dataset\.source = /);
 });
+
+test("modelo que detecta idioma avisa sobre a variante do português", () => {
+  const html = readRendererFile("index.html");
+  const renderer = readRendererFile("renderer.js");
+
+  // Vozes multilíngues escolhem o idioma pelo texto e, em português, tendem ao
+  // europeu — chegando a alternar de variante no meio da leitura. O aviso
+  // precisa aparecer antes de gerar (e pagar por) o áudio.
+  assert.match(html, /id="pf-language-warning"/);
+  assert.match(renderer, /language_ambiguous_models/);
+  assert.match(renderer, /português de Portugal/);
+});
+
+test("opção de forçar o idioma só aparece nos modelos que a suportam", () => {
+  const html = readRendererFile("index.html");
+  const renderer = readRendererFile("renderer.js");
+
+  // O provedor aceita o parâmetro sem erro mesmo onde ele não faz nada, então
+  // oferecer a opção fora dessa lista prometeria uma garantia inexistente.
+  assert.match(html, /id="pf-force-language"/);
+  assert.match(renderer, /language_forcing_models/);
+  assert.match(renderer, /pf-force-language-row.*classList\.toggle\("hidden"/s);
+});
+
+test("a escolha de forçar o idioma é salva e recarregada com o perfil", () => {
+  const renderer = readRendererFile("renderer.js");
+
+  // Sem persistir, a caixa voltaria desmarcada a cada abertura do formulário e
+  // a síntese continuaria deixando o modelo adivinhar o idioma.
+  assert.match(renderer, /force_language: \$\("pf-force-language"\)\.checked/);
+  assert.match(renderer, /\$\("pf-force-language"\)\.checked = Boolean\(profile && profile\.force_language\)/);
+});

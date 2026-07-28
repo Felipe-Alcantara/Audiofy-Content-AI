@@ -197,6 +197,7 @@ def _default_settings() -> dict:
             os.environ.get("AUDIOFY_PRESENTERS") or profile.presenters_spec
         ),
         "language": _resolved("AUDIOFY_LANGUAGE", profile.language),
+        "force_language": profile.force_language,
     }
 
 
@@ -210,6 +211,9 @@ class Settings:
     audit_model: str = ""
     tts_model: str = ""
     language: str = "pt-BR"
+    # Manda o idioma explícito ao TTS em vez de deixar o modelo detectá-lo pelo
+    # texto. Só surte efeito nos modelos que aceitam o parâmetro.
+    force_language: bool = False
     presenters: list[Presenter] = field(default_factory=list)
     # O Gemini TTS via OpenRouter só aceita "pcm" (cru, 16-bit mono); o pipeline
     # embrulha em WAV. Modelos que suportem "mp3"/"wav" podem trocar via env.

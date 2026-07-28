@@ -475,7 +475,11 @@ def chat_json(settings: Settings, model: str, system: str, user: str) -> ChatRes
 
 
 def text_to_speech(
-    settings: Settings, text: str, voice: str, instructions: str = ""
+    settings: Settings,
+    text: str,
+    voice: str,
+    instructions: str = "",
+    language: str = "",
 ) -> SpeechResult:
     """Sintetiza uma fala e preserva o ID necessário para auditar seu custo."""
     payload: dict[str, Any] = {
@@ -486,6 +490,16 @@ def text_to_speech(
     }
     if instructions:
         payload["instructions"] = instructions
+    # Modelos multilíngues decidem o idioma pelo texto e, em português, tendem
+    # ao europeu. Onde o provedor aceita forçar o idioma, mandamos explícito;
+    # nos demais o parâmetro é omitido, porque um campo desconhecido volta com
+    # HTTP 200 e é ignorado em silêncio — pareceria resolvido sem estar.
+    if language:
+        from ..voices import language_boost_value
+
+        boost = language_boost_value(settings.tts_model, language)
+        if boost:
+            payload["language_boost"] = boost
     response = _request(settings, "POST", "/audio/speech", payload)
     content_type = response.headers.get("Content-Type", "")
     if "json" in content_type:
