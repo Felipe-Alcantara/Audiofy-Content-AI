@@ -2362,3 +2362,45 @@ guiada pelo manifesto, não pela varredura do diretório. Episódios antigos que
 órfãos de execuções anteriores só serão limpos quando forem regerados. E, como nas mudanças
 anteriores desta sessão, não foi possível validar com o app Electron em execução neste ambiente
 (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
+
+## 2026-07-28 — Idioma da voz aparecia só para o Kokoro; demais provedores TTS ficavam sem catálogo
+
+**O que mudou:** `src/audiofy/providers/openrouter.py` ganhou catálogos reais de vozes (nome →
+descrição de tom + idioma) para `canopylabs/orpheus-3b-0.1-ft`, `deepgram/aura-2`,
+`microsoft/mai-voice-2`, `minimax/speech-2.8-{hd,turbo}` e `x-ai/grok-voice-tts-1.0`, importados
+em `src/audiofy/voices.py`. `mistralai/voxtral-mini-tts-2603`, `sesame/csm-1b` e
+`zyphra/zonos-v0.1-{hybrid,transformer}` continuam com catálogo vazio de propósito: são modelos
+de voice cloning por referência de áudio, sem vozes preset nomeadas confirmadas em fonte oficial.
+
+**Por que:** só o Kokoro (`hexgrad/kokoro-82m`) tinha vozes cadastradas; os outros 10 modelos
+caíam no modo "input de texto livre" sem nenhuma informação de idioma visível na UI — o usuário
+não conseguia saber, por exemplo, se uma voz falava português antes de gastar créditos gerando
+áudio. Cada catálogo veio de documentação oficial do provedor (URLs citadas nos comentários do
+código); onde não havia lista de vozes confirmável, o catálogo ficou vazio em vez de inventar
+nomes (regra de anti-alucinação do guia de qualidade). Achado relevante: só o MAI-Voice-2 tem
+pt-BR nativo confirmado (Caio, Luana, Pedro, Rafael) — Deepgram Aura-2 e Zonos documentam listas
+de idiomas que não incluem português.
+
+Isso expôs um bug latente em `electron/renderer/renderer.js`: `voiceToneLabel(tone)` removia
+qualquer sufixo `(pt-br)`/`(en)`/`(en-gb)` da descrição da voz, assumindo que só o Kokoro precisava
+disso (porque `voiceLabel()` já decodifica o idioma dele a partir do prefixo do nome, ex.
+`pf_dora`). Com as vozes pt-BR do MAI-Voice-2 usando a mesma convenção de sufixo, o idioma
+desaparecia da UI sem nenhuma voz decodificando de volta. Corrigido: `voiceToneLabel(tone, voice)`
+só remove o sufixo quando `voice` segue o padrão de prefixo do Kokoro (`/^[a-z][fm][_-]/i`); para
+os demais provedores, a descrição com idioma permanece visível.
+
+**Validação:** `tests/frontend-quality.test.js` foi atualizado (assinatura nova de
+`voiceToneLabel`) e ganhou um teste cobrindo o comportamento condicional por provedor. Suítes
+completas: 457 testes Python (`pytest`) e 60 Electron (59 pass, 1 skip esperado), `ruff check` +
+`ruff format --check` e `npm run check` (`eslint --max-warnings=0` + `node --check` + testes)
+limpos. Verificação real: `TTS_VOICE_CATALOGS` carregado via Python confirma contagem de vozes por
+modelo (Deepgram 91, MAI-Voice-2 36, Orpheus 8, Minimax 11, Grok 5); `node --check` confirma que o
+renderer carrega sem erro de sintaxe.
+
+**Risco que sobrou:** os catálogos de Deepgram, MAI-Voice-2, Orpheus e Grok são íntegros (fonte
+oficial completa), mas Minimax é um subconjunto curado — o catálogo real tem 300+ vozes,
+incluindo ~70 rotuladas "Portuguese" cujos nomes exatos não estão publicados na doc consultada;
+quem precisar delas deve puxar a lista viva pela "Get Voice API" do MiniMax. Voxtral Mini TTS
+suporta português entre seus 9 idiomas mas não tem catálogo de nomes de voz confiável — hoje cai
+no modo de texto livre. Como nas entradas anteriores, não foi possível validar com o app Electron
+em execução neste ambiente (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
