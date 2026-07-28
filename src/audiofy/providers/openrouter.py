@@ -267,13 +267,42 @@ MINIMAX_VOICES: dict[str, str] = {
     "Casual_Guy": "masculina, casual, controlada por language_boost (multilíngue)",
 }
 
-# Voxtral Mini TTS (Mistral) — 20 vozes preset confirmadas em 9 idiomas
-# (incl. português, variante BR/PT não especificada pela doc), mas os
-# nomes exatos das vozes não estão publicados de forma confiável; o uso
-# típico é voice cloning zero-shot por referência de áudio, não por nome
-# fixo. Deixado vazio de propósito — não inventar nomes de voz.
-# Fonte: https://mistral.ai/news/voxtral-tts/
-VOXTRAL_VOICES: dict[str, str] = {}
+# Voxtral Mini TTS (Mistral) — vozes reais confirmadas ao vivo pela API do
+# OpenRouter (4 locutores × variações de emoção, sem português apesar da
+# doc de marketing citar 9 idiomas suportados no modelo).
+# Fonte: supported_voices retornado por GET /models?output_modalities=speech
+VOXTRAL_VOICES: dict[str, str] = {
+    "en_paul_sad": "masculina, triste (en-us)",
+    "en_paul_neutral": "masculina, neutra (en-us)",
+    "en_paul_happy": "masculina, feliz (en-us)",
+    "en_paul_frustrated": "masculina, frustrada (en-us)",
+    "en_paul_excited": "masculina, animada (en-us)",
+    "en_paul_confident": "masculina, confiante (en-us)",
+    "en_paul_cheerful": "masculina, alegre (en-us)",
+    "en_paul_angry": "masculina, irritada (en-us)",
+    "gb_oliver_neutral": "masculina, neutra (en-gb)",
+    "gb_oliver_sad": "masculina, triste (en-gb)",
+    "gb_oliver_excited": "masculina, animada (en-gb)",
+    "gb_oliver_curious": "masculina, curiosa (en-gb)",
+    "gb_oliver_confident": "masculina, confiante (en-gb)",
+    "gb_oliver_cheerful": "masculina, alegre (en-gb)",
+    "gb_oliver_angry": "masculina, irritada (en-gb)",
+    "gb_jane_sarcasm": "feminina, sarcástica (en-gb)",
+    "gb_jane_confused": "feminina, confusa (en-gb)",
+    "gb_jane_shameful": "feminina, envergonhada (en-gb)",
+    "gb_jane_sad": "feminina, triste (en-gb)",
+    "gb_jane_neutral": "feminina, neutra (en-gb)",
+    "gb_jane_jealousy": "feminina, ciumenta (en-gb)",
+    "gb_jane_frustrated": "feminina, frustrada (en-gb)",
+    "gb_jane_curious": "feminina, curiosa (en-gb)",
+    "gb_jane_confident": "feminina, confiante (en-gb)",
+    "fr_marie_sad": "feminina, triste (fr-fr)",
+    "fr_marie_neutral": "feminina, neutra (fr-fr)",
+    "fr_marie_happy": "feminina, feliz (fr-fr)",
+    "fr_marie_excited": "feminina, animada (fr-fr)",
+    "fr_marie_curious": "feminina, curiosa (fr-fr)",
+    "fr_marie_angry": "feminina, irritada (fr-fr)",
+}
 
 # Grok Voice TTS (xAI) — 5 vozes built-in, detecção automática de idioma
 # entre 20+ idiomas (voz não é amarrada a um idioma fixo).
@@ -286,18 +315,48 @@ GROK_VOICES: dict[str, str] = {
     "leo": "tom alternativo (multilíngue, detecção automática)",
 }
 
-# CSM-1B (Sesame) — sem vozes fixas nomeadas: é um modelo de voice cloning
-# por contexto de áudio (usa amostras anteriores como "speaker"). Treinado
+# CSM-1B (Sesame) — vozes preset reais confirmadas ao vivo pela API do
+# OpenRouter (o modelo aberto em si só faz voice cloning por contexto de
+# áudio, mas o provedor expõe estes presets fixos). Treinado
 # majoritariamente em inglês; sem suporte a português documentado.
-# Fonte: https://github.com/SesameAILabs/csm
-CSM_VOICES: dict[str, str] = {}
+# Fonte: supported_voices retornado por GET /models?output_modalities=speech
+CSM_VOICES: dict[str, str] = {
+    "conversational_a": "conversacional (en)",
+    "conversational_b": "conversacional (en)",
+    "read_speech_a": "leitura (en)",
+    "read_speech_b": "leitura (en)",
+    "read_speech_c": "leitura (en)",
+    "read_speech_d": "leitura (en)",
+    "none": "sem preset — usa a voz padrão do modelo",
+}
 
-# Zonos v0.1 (Zyphra, hybrid e transformer) — sem vozes preset nomeadas:
-# clonagem por speaker-embedding a partir de áudio de referência (10-30s).
-# Idiomas suportados: inglês, japonês, chinês, francês e alemão — sem
-# português.
-# Fonte: https://github.com/Zyphra/Zonos
-ZONOS_VOICES: dict[str, str] = {}
+# Zonos v0.1 (Zyphra, hybrid e transformer) — vozes preset reais confirmadas
+# ao vivo pela API do OpenRouter (o modelo aberto em si faz clonagem por
+# speaker-embedding, mas o provedor expõe estes presets fixos).
+# Fonte: supported_voices retornado por GET /models?output_modalities=speech
+ZONOS_VOICES: dict[str, str] = {
+    "american_female": "feminina (en-us)",
+    "american_male": "masculina (en-us)",
+    "british_female": "feminina (en-gb)",
+    "british_male": "masculina (en-gb)",
+    "random": "sorteada a cada geração (idioma variável)",
+}
+
+# Qwen-Audio-TTS Flash (Alibaba Cloud Model Studio) — vozes bilíngues
+# mandarim/inglês, exceto loongjohn (só inglês).
+# Fonte: https://help.aliyun.com/zh/model-studio/qwen-audio-tts-voice-list
+QWEN_TTS_FLASH_VOICES: dict[str, str] = {
+    "loongjohn": "masculina (en)",
+    "longanhuan_v3.6": "feminina (zh+en)",
+}
+
+# Qwen-Audio-TTS Plus (Alibaba Cloud Model Studio) — vozes bilíngues
+# mandarim/inglês.
+# Fonte: https://help.aliyun.com/zh/model-studio/qwen-audio-tts-voice-list
+QWEN_TTS_PLUS_VOICES: dict[str, str] = {
+    "longanlingxin": "feminina (zh+en)",
+    "longanlufeng": "masculina (zh+en)",
+}
 
 
 class OpenRouterError(RuntimeError):

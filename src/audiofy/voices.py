@@ -17,6 +17,8 @@ from .providers.openrouter import (
     MAI_VOICE_VOICES,
     MINIMAX_VOICES,
     ORPHEUS_VOICES,
+    QWEN_TTS_FLASH_VOICES,
+    QWEN_TTS_PLUS_VOICES,
     VOXTRAL_VOICES,
     ZONOS_VOICES,
 )
@@ -32,6 +34,7 @@ TTS_VOICE_CATALOGS: dict[str, dict[str, str]] = {
     "canopylabs/orpheus-3b-0.1-ft": ORPHEUS_VOICES,
     "deepgram/aura-2": DEEPGRAM_VOICES,
     "microsoft/mai-voice-2": MAI_VOICE_VOICES,
+    "microsoft/mai-voice-2-flash": MAI_VOICE_VOICES,
     "minimax/speech-2.8-hd": MINIMAX_VOICES,
     "minimax/speech-2.8-turbo": MINIMAX_VOICES,
     "mistralai/voxtral-mini-tts-2603": VOXTRAL_VOICES,
@@ -39,6 +42,8 @@ TTS_VOICE_CATALOGS: dict[str, dict[str, str]] = {
     "x-ai/grok-voice-tts-1.0": GROK_VOICES,
     "zyphra/zonos-v0.1-hybrid": ZONOS_VOICES,
     "zyphra/zonos-v0.1-transformer": ZONOS_VOICES,
+    "qwen/qwen-audio-3.0-tts-flash": QWEN_TTS_FLASH_VOICES,
+    "qwen/qwen-audio-3.0-tts-plus": QWEN_TTS_PLUS_VOICES,
 }
 
 # ── Tiers de custo/qualidade ──────────────────────────────────────────────────
