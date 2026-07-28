@@ -2363,6 +2363,52 @@ guiada pelo manifesto, não pela varredura do diretório. Episódios antigos que
 anteriores desta sessão, não foi possível validar com o app Electron em execução neste ambiente
 (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
 
+## 2026-07-28 — Áudio vazio falha de imediato em vez de gastar 5 tentativas (e validação ao vivo do resgate)
+
+**O que mudou:** o usuário voltou com um log mostrando que a fala 19 falhava sempre, no mesmo
+trecho, mesmo depois da correção anterior. Investigando o episódio real
+(`reflexive.json`), a fala 19 é `'38m57s'` isolado — item de uma lista de métricas do artigo,
+conteúdo legítimo.
+
+`_is_empty_audio_error` já classificava o caso, mas o erro nasce com `retryable=True` em
+`openrouter.py`, então a política de retry gastava **5 tentativas com espera exponencial**
+(2,3s + 4,7s + 8,7s + 16s ≈ 32s por trecho) antes de desistir — para chegar a uma conclusão que o
+próprio comentário do código já reconhecia como determinística: o texto enviado é o mesmo a cada
+tentativa, o modelo devolve o mesmo vazio. Agora esse caso falha na primeira ocorrência e o
+resgate (`speakable_fallback`) entra em seguida.
+
+**Validação ao vivo, contra a API real** — o que faltava na entrada anterior. Com uma das chaves
+ilimitadas do cofre:
+
+- `'38m57s'` → **falha** com "resposta vazia ou curta demais" (defeito reproduzido);
+- `'38 minutos e 57 segundos'` → **OK**, 180.480 bytes (resgate válido);
+- `'201 turnos'` (fala 20, vizinha) → OK, confirmando que o problema é específico do formato.
+
+Cenário completo do log do usuário (falas 18-20, incluindo a que falhava): **3/3 segmentos
+gerados em 34,1s**, com `↻ Fala 2 veio muda; tentando como '38 minutos e 57 segundos'` no meio.
+Antes eram 2/3, com a fala 19 perdida.
+
+**Fallback de chaves — verificado, funciona.** O usuário perguntou explicitamente. Teste ao vivo:
+a chave ativa devolveu 402, a rotação passou para a seguinte e a síntese retornou 147.840 bytes
+reais. Descobertas do diagnóstico: o cofre tem **3** chaves (não 2 como o painel do OpenRouter
+sugere) e **duas são ilimitadas**; a chave ativa ("Chave Audio Teste") tem teto de US$ 6 e estava
+com **US$ 0,07**, o que explica o 402 constante — não é a conta sem saldo (há US$ 7,29).
+
+**Validação:** TDD. Teste novo exige que áudio vazio não repita e que `_wait_for_retry` nem seja
+chamado. Três testes existentes precisaram de ajuste porque alimentavam 3 respostas vazias
+simulando o esgotamento de tentativas que não acontece mais — expectativa desatualizada, não
+regressão de comportamento. Suítes: **487 testes Python** (eram 486), `ruff check` limpo.
+
+**Sobre o processo:** persegui uma hipótese errada de escopo de variável do `except` antes de
+instrumentar o código e descobrir que `synthesis` **não** era `None` — o resgate já funcionava, e
+o "pulada" que eu via vinha de execuções anteriores do meu próprio teste exploratório. Registro
+porque medir teria sido mais rápido que teorizar.
+
+**Risco que sobrou:** ganho de tempo real por trecho mudo é de ~32s para ~0s mais o resgate, mas
+`speakable_fallback` segue cobrindo só marcas de tempo, relógio e códigos sem espaço; outros
+formatos mudos continuarão pulados até aparecerem em uso. A mensagem "sem saldo na conta" é
+imprecisa quando a causa é o teto da chave, e ficou fora do escopo.
+
 ## 2026-07-28 — Trecho mudo não é mais pulado, e chave esgotada não é reconsultada a cada fala
 
 **O que mudou:** dois defeitos relatados a partir do log de uma geração real.

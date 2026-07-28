@@ -114,7 +114,7 @@ class ResumableSynthesisTest(unittest.TestCase):
         """
         empty = OpenRouterError("TTS retornou resposta vazia ou curta demais.", retryable=True)
         # Esgota as tentativas com o texto original e só então aceita o resgate.
-        text_to_speech.side_effect = [empty] * 3 + [SpeechResult(b"\x00\x00" * 300, "gen-r")]
+        text_to_speech.side_effect = [empty, SpeechResult(b"\x00\x00" * 300, "gen-r")]
 
         paths = _synthesize_turns(
             _settings(),
@@ -139,7 +139,7 @@ class ResumableSynthesisTest(unittest.TestCase):
         empty = OpenRouterError("TTS retornou resposta vazia ou curta demais.", retryable=True)
         # O primeiro trecho esgota as tentativas e não tem resgate possível;
         # o segundo é sintetizado normalmente.
-        text_to_speech.side_effect = [empty] * 3 + [SpeechResult(b"\x00\x00" * 300, "gen-2")]
+        text_to_speech.side_effect = [empty, SpeechResult(b"\x00\x00" * 300, "gen-2")]
 
         paths = _synthesize_turns(
             _settings(),
@@ -554,7 +554,7 @@ class TrechoSemAudioTest(unittest.TestCase):
         vazio = OpenRouterError("TTS retornou resposta vazia ou curta demais.", retryable=True)
         text_to_speech.side_effect = [
             SpeechResult(b"\x00\x00" * 300, "gen-1"),
-            *[vazio] * 3,  # esgota as tentativas do trecho 2
+            vazio,  # áudio vazio falha de imediato: repetir não muda o resultado
             SpeechResult(b"\x00\x00" * 300, "gen-3"),
         ]
 
@@ -745,3 +745,41 @@ class KeyRotationMemoryTest(unittest.TestCase):
         self.assertEqual(text_to_speech.call_count, 4)
         usadas = [call[0][0].api_key for call in text_to_speech.call_args_list]
         self.assertEqual(usadas.count("sk-or-esgotada"), 1)
+
+
+class EmptyAudioFastFailTest(unittest.TestCase):
+    """Áudio vazio é determinístico: repetir só gasta tempo.
+
+    O trecho continua o mesmo a cada tentativa, então o modelo devolve o
+    mesmo vazio. Antes o pipeline gastava 5 tentativas com espera
+    exponencial (~32s por trecho) para chegar à conclusão já conhecida.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.directory = Path(self._tmp.name)
+        self.tracker = GenerationTracker(self.directory, "episodio")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    @patch("audiofy.pipeline._wait_for_retry")
+    @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_audio_vazio_nao_gasta_tentativas_repetidas(
+        self, text_to_speech, _generation_cost, wait
+    ):
+        empty = OpenRouterError("TTS retornou resposta vazia ou curta demais.", retryable=True)
+        # 1 tentativa com o texto original + 1 com o texto resgatado.
+        text_to_speech.side_effect = [empty, SpeechResult(b"\x00\x00" * 300, "gen-r")]
+
+        paths = _synthesize_turns(
+            _settings(),
+            self.directory,
+            [{"speaker": "ana", "text": "38m57s"}],
+            self.tracker,
+        )
+
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(text_to_speech.call_count, 2, "não deve repetir o mesmo texto vazio")
+        wait.assert_not_called()

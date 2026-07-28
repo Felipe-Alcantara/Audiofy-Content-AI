@@ -1005,6 +1005,15 @@ def _synthesize_with_retry(
                         flush=True,
                     )
                     break
+                # Áudio vazio é determinístico: o texto enviado é o mesmo a
+                # cada tentativa, então o modelo devolve o mesmo vazio. Repetir
+                # gastava 5 tentativas com espera exponencial (~32s por trecho)
+                # para chegar a uma conclusão já conhecida na primeira. Quem
+                # resolve esse caso é o resgate em _synthesize_turns, que troca
+                # o texto por uma forma pronunciável.
+                if _is_empty_audio_error(error):
+                    tracker.record_error(str(error))
+                    raise
                 if not error.retryable or attempt == policy.max_attempts:
                     tracker.record_error(str(error))
                     raise
