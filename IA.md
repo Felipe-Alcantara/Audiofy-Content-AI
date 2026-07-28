@@ -2363,6 +2363,141 @@ guiada pelo manifesto, não pela varredura do diretório. Episódios antigos que
 anteriores desta sessão, não foi possível validar com o app Electron em execução neste ambiente
 (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
 
+## 2026-07-28 — Seletores de voz ordenados por idioma (pt-BR → pt-PT → inglês → espanhol → resto)
+
+**O que mudou:** com 245 vozes em 15 modelos, a ordem de inserção do catálogo deixou de servir —
+achar as 3 vozes pt-BR do Kokoro exigia rolar uma lista de 54. `electron/renderer/renderer.js`
+ganhou `sortVoicesByLanguage`, aplicada aos **dois** seletores que listam vozes: o do perfil
+(`addPresenterRow`) e o da leitura fiel (`narration-voice`) — ordenar só um deixaria as listas
+divergentes, o que virou teste.
+
+A detecção de idioma (`voiceLanguageCode`) cobre as três convenções em uso no catálogo, porque
+nenhuma sozinha dá conta: prefixo do Kokoro (`pf_dora`), locale no início do ID
+(`pt-PT-Rui:MAI-Voice-2`) e código no fim da descrição (`feminina, clara (en-us)`, do Deepgram e
+afins). pt-BR e pt-PT são grupos **distintos** de propósito — a pronúncia difere o bastante para
+não misturar. Variantes como `en-us`/`en-gb`/`es-mx` caem no grupo do idioma base. Vozes
+multilíngues (Gemini, Grok) e sem idioma detectável (preset `None` do CSM) vão para o fim.
+
+Dentro de cada grupo a ordem curada do catálogo é preservada, apoiando-se na estabilidade de
+`Array.prototype.sort`.
+
+**Por que:** o app é usado para produzir conteúdo em português; o idioma mais provável precisa
+estar no topo. A ordem anterior era um acidente da ordem de escrita do catálogo, não uma decisão.
+
+**Validação:** TDD, os 4 testes confirmados falhando antes da implementação. Testes novos em
+`frontend-quality.test.js`: ordem entre grupos misturando as três convenções de ID, estabilidade
+dentro do grupo, multilíngues/sem idioma no fim, e paridade entre os dois seletores. Uma
+expectativa minha estava errada no primeiro teste (esperava `ff_siwis` antes de `zm_yunxi` dentro
+do "resto", onde a ordenação estável preserva a ordem de entrada) — o teste foi corrigido, não o
+código. Suítes completas: **463 testes Python** e **67 Electron** (66 pass, 1 skip esperado, eram
+63), `ruff check` e `npm run check` limpos. Verificação real com o catálogo ao vivo: no Kokoro os
+grupos saem exatamente como pt-BR → inglês (EUA) → inglês (Reino Unido) → espanhol → francês →
+hindi → italiano → japonês → chinês; no MAI-Voice-2, inglês antes de espanhol.
+
+**Ponto de atenção do `scripts/check_quality.py`:** o script reprova em "Formatação Python"
+(`cost_analytics.py`, `sources/custom.py`) e "Dependências Electron" (5 vulnerabilidades high,
+via `brace-expansion`/`minimatch` sob o eslint). Confirmei com `git stash` que **as duas
+reprovações são idênticas sem as minhas mudanças** — são pré-existentes e ficaram fora do escopo
+desta tarefa. O `npm audit fix --force` exigiria subir para eslint@10.8.0, que é breaking change;
+é decisão do Felipe, não efeito colateral desta mudança.
+
+**Risco que sobrou:** `VOICE_LANGUAGE_ORDER` é uma prioridade fixa; mudar o público-alvo do app
+exigiria editá-la no código. A constante é declarada depois do uso em `narration-voice`
+(linha ~1745 usa o que é definido na ~2352), o que é seguro porque a chamada acontece em runtime
+e não durante a carga do módulo — verificado explicitamente contra o TDZ de `const`. Como nas
+entradas anteriores, não foi possível validar com o app Electron em execução neste ambiente
+(`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro), então a ordem foi conferida
+executando as funções do renderer contra o catálogo real da API.
+
+## 2026-07-28 — Idioma de todas as 245 vozes visível no app (duplicação no Kokoro e ID cru do MAI-Voice-2)
+
+**O que mudou:** com o catálogo já alinhado à API (entrada anterior), faltava o app *mostrar* o
+idioma corretamente para as vozes novas. Dois defeitos em `electron/renderer/renderer.js`:
+
+- **Idioma duplicado no Kokoro.** `voiceToneLabel` removia da descrição só os códigos
+  `pt-br|en|en-gb`, uma lista fixa da época em que o catálogo tinha 25 vozes de 2 idiomas. Com as
+  54 vozes (9 idiomas), as novas mostravam o idioma duas vezes: `Siwis (francês) · feminina
+  (fr-FR)`. O código removido agora é genérico (`xx` ou `xx-YY`).
+- **ID cru no MAI-Voice-2.** As vozes se chamam `en-US-Harper:MAI-Voice-2` e o seletor exibia
+  `En US Harper:MAI Voice 2 · feminina (en-US)` — ilegível, com o modelo repetido e o idioma só em
+  código. `voiceLabel` passou a reconhecer o padrão `locale-Nome:Modelo` e renderiza
+  `Harper (inglês — EUA) · feminina`.
+
+A condição de limpeza da descrição deixou de ser "é voz do Kokoro?" e virou "o ID já codifica o
+idioma?" (`hasLanguageInId`), cobrindo as duas convenções. Deepgram, Voxtral, CSM, Grok, Zonos e
+Qwen não codificam idioma no ID, então a descrição continua sendo a única fonte e permanece
+intacta — comportamento preservado por teste.
+
+**Por que:** o seletor de voz é onde o usuário escolhe o idioma da narração na prática. Idioma
+duplicado ou em código cru transforma a escolha em adivinhação, ainda mais agora que o catálogo
+saltou de 2 para 9 idiomas no Kokoro.
+
+**Validação:** TDD, os três testes confirmados falhando antes da correção. `frontend-quality.test.js`
+ganhou testes **comportamentais** (executam `voiceLabel`/`voiceToneLabel` de verdade via
+`loadVoiceHelpers`, em vez de casar regex contra o código-fonte, como faziam os testes anteriores
+desta área): idioma uma única vez nos 8 idiomas do Kokoro, nome limpo + idioma por extenso no
+MAI-Voice-2, e idioma preservado nos provedores sem locale no ID. Um teste antigo por regex foi
+atualizado porque casava o nome da variável renomeada — quebra de acoplamento ao texto-fonte, não
+de comportamento. Suítes completas: 463 testes Python e **63 Electron** (62 pass, 1 skip esperado,
+eram 60), `ruff check` e `npm run check` limpos. Verificação real: renderizei os rótulos das 245
+vozes dos 15 modelos com o catálogo ao vivo — todas indicam idioma, com uma única exceção
+correta (`None` do CSM, preset sem idioma fixo).
+
+**Risco que sobrou:** `voiceLabel` traduz locales por uma tabela fixa; um locale novo que o
+OpenRouter passe a servir (ex.: `sv-SE`) cai no fallback e aparece como código cru em vez de nome
+por extenso — degrada legível, não quebra. O `ruff format --check` segue apontando
+`cost_analytics.py` e `sources/custom.py`, pré-existentes e não tocados aqui. Como nas entradas
+anteriores, não foi possível validar com o app Electron em execução neste ambiente
+(`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro), então a conferência dos
+rótulos foi feita executando as funções do renderer fora da janela.
+
+## 2026-07-28 — Catálogo de vozes alinhado ao que o OpenRouter realmente aceita (32 vozes inventadas removidas, 29 reais adicionadas)
+
+**O que mudou:** o catálogo estático em `src/audiofy/providers/openrouter.py` foi confrontado com
+o `supported_voices` ao vivo de `GET /models?output_modalities=speech` — a autoridade sobre quais
+vozes existem. O resultado contradiz o que as entradas anteriores desta sessão registraram:
+
+- **MAI-Voice-2 (e -flash):** o catálogo listava 36 vozes; a API aceita **4**
+  (`en-US-Harper`, `es-MX-Valeria`, `fr-FR-Soleil`, `de-DE-Klaus`). As outras 32 — incluindo
+  **todas as 4 pt-BR** (`Caio`, `Luana`, `Pedro`, `Rafael`) e a pt-PT `Rui` — vinham da doc do
+  Azure Speech, não do OpenRouter, e retornariam erro de voz inválida na hora de gerar o áudio.
+- **MiniMax Speech 2.8 (hd/turbo):** `supported_voices` vem **nulo**. Não era "subconjunto curado
+  de 300+" como registrado na entrada anterior: pelo OpenRouter o modelo não expõe voz nomeada
+  nenhuma. Catálogo agora é `{}` de propósito, e o frontend cai no input de texto livre.
+- **Kokoro 82M:** o catálogo tinha 25 vozes com o comentário "o modelo tem 54". As 29 que faltavam
+  foram adicionadas com descrição de idioma/gênero — es, fr, hi, it, ja, zh e o restante de en-GB.
+- **Orpheus:** `zoe` não existe na API. **Deepgram:** `aura-2-perseo-it` não existe.
+
+Também em `src/audiofy/bridge.py`, `_cmd_models_list` só sobrescrevia o catálogo estático quando a
+API devolvia vozes (`if supported_voices:`). Era esse guard que mantinha as 32 vozes fantasma do
+MAI-Voice-2 vivas no seletor mesmo com a API contradizendo. Agora a resposta ao vivo substitui o
+estático sempre, inclusive vazia; as descrições curadas continuam preservadas voz a voz, porque a
+API devolve só nomes.
+
+**Por que:** o catálogo alimenta os seletores da interface. Uma voz listada que a API recusa vira
+erro no meio da síntese, depois de o usuário já ter escolhido e disparado a geração — o pior
+momento para descobrir. O catálogo não pode ser mais permissivo que a API.
+
+**Validação:** TDD. `tests/unit/test_voices.py` é novo e trava o contrato contra a fixture
+`tests/fixtures/openrouter_supported_voices.json` (snapshot real do `supported_voices`): nenhuma
+voz catalogada fora da API, nenhuma voz da API fora do catálogo, MiniMax vazio e toda voz com
+descrição não vazia. Mais um teste novo em `test_bridge.py` exige que catálogo estático não
+sobreviva a uma resposta vazia da API. Os 4 testes de contrato e o do bridge foram confirmados
+falhando antes da correção. Suítes completas: **463 testes Python** (eram 457) e 60 Electron
+(59 pass, 1 skip esperado), `ruff check` e `npm run check` limpos. Verificação real pela bridge
+com a API ao vivo: 245 vozes em 15 modelos, `catalog_error` nulo, MiniMax em 0 (texto livre),
+Kokoro em 54, MAI-Voice-2 em 4.
+
+**Risco que sobrou:** a fixture é um snapshot de 2026-07-28 — se o OpenRouter mudar o
+`supported_voices` de algum modelo, o teste de contrato falha e a fixture precisa ser regravada
+(é o comportamento desejado: falha ruidosa em vez de catálogo silenciosamente errado). O
+`ruff format --check` aponta `cost_analytics.py` e `sources/custom.py`, ambos pré-existentes e
+não tocados aqui. Perdemos pt-BR nativo no MAI-Voice-2 — hoje o único pt-BR real é o do Kokoro
+(`pf_dora`, `pm_alex`, `pm_santa`); quem precisa de pt-BR premium deve testar o `language_boost`
+do MiniMax via input de texto livre. Como nas entradas anteriores, não foi possível validar com o
+app Electron em execução neste ambiente (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como
+Node puro).
+
 ## 2026-07-28 — Idioma da voz aparecia só para o Kokoro; demais provedores TTS ficavam sem catálogo
 
 **O que mudou:** `src/audiofy/providers/openrouter.py` ganhou catálogos reais de vozes (nome →
