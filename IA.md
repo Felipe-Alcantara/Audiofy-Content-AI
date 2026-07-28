@@ -2404,3 +2404,43 @@ quem precisar delas deve puxar a lista viva pela "Get Voice API" do MiniMax. Vox
 suporta português entre seus 9 idiomas mas não tem catálogo de nomes de voz confiável — hoje cai
 no modo de texto livre. Como nas entradas anteriores, não foi possível validar com o app Electron
 em execução neste ambiente (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
+
+## 2026-07-28 — Correção: `_cmd_models_list` apagava o idioma recém-catalogado ao atualizar vozes ao vivo
+
+**O que mudou:** em `src/audiofy/bridge.py`, `_cmd_models_list` fazia
+`TTS_VOICE_CATALOGS[model_id] = dict.fromkeys(supported_voices, "")` sempre que a API ao vivo do
+OpenRouter retornava `supported_voices` para um modelo. Isso **sobrescrevia por completo** o
+catálogo curado (nome → tom/idioma) adicionado na entrada anterior, substituindo toda descrição
+por string vazia. Agora o código mescla: usa a lista de vozes da API ao vivo como fonte da
+verdade de quais vozes existem, mas preserva a descrição já catalogada para cada uma
+(`known_voices.get(voice, "")`), só caindo para `""` em vozes que a API retorna e ainda não
+documentamos.
+
+**Por que:** o usuário reportou que a aba Apresentadores continuava sem mostrar idioma mesmo
+depois da mudança anterior. A hipótese inicial (cache do app) foi descartada ao investigar: a
+ponte Python roda um processo novo por comando, sem cache entre chamadas — então o bug tinha que
+estar no próprio bridge. Rodei o app de verdade (Electron sob `xvfb` via driver Playwright
+descartável, contornando a suposição registrada antes de que isso não seria possível neste
+ambiente — o bloqueio real era só `ELECTRON_RUN_AS_NODE=1`, que não estava setado desta vez) e
+reproduzi o sintoma: trocar o modelo TTS do perfil para `microsoft/mai-voice-2` mostrava
+`En US Harper:MAI Voice 2` sem nenhum tom/idioma, quando o catálogo estático tinha
+`"masculina (pt-BR)"` etc. para essas vozes. A causa: `_cmd_models_list` é chamado toda vez que a
+tela de Configurações carrega a lista de modelos, e a atualização ao vivo pisava no catálogo
+estático a cada carregamento.
+
+**Validação:** TDD — `tests/unit/test_bridge.py::test_atualizacao_dinamica_preserva_descricao_de_voz_ja_catalogada`
+foi escrito e confirmado falhando antes da correção (`AssertionError: '' != 'masculina (pt-BR)'`
+via `git stash` do fix), depois passando com o fix aplicado. Suíte completa: 458 testes Python,
+`ruff check` + `ruff format --check` limpos. Validação end-to-end real no app: Electron lançado
+via Playwright (`_electron.launch`) sob `xvfb-run --no-sandbox`, aba Configurações aberta, perfil
+editado, modelo TTS trocado para `microsoft/mai-voice-2`, `deepgram/aura-2` e de volta para
+`hexgrad/kokoro-82m` — as opções de voz do campo Apresentadores mostraram
+`"En US Harper:MAI Voice 2 · feminina (en-US)"`, `"Thalia (inglês) · feminina, clara, confiante
+(en-us)"` e `"Alloy (inglês — EUA) · neutra"` respectivamente, todas com idioma visível.
+
+**Risco que sobrou:** o driver Playwright usado para validar foi descartável (não virou skill do
+projeto, porque só serviu para depurar este bug pontual); uma futura sessão que precise rodar o
+app de verdade neste ambiente terá que recriá-lo. O merge preserva vozes curadas mas ainda usa a
+API ao vivo como lista de existência — se o OpenRouter parar de retornar `supported_voices` para
+algum desses modelos, o catálogo estático (estabelecido na entrada anterior) permanece intacto
+como já acontecia antes desta correção.
