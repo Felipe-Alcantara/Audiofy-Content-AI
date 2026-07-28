@@ -2363,6 +2363,39 @@ guiada pelo manifesto, não pela varredura do diretório. Episódios antigos que
 anteriores desta sessão, não foi possível validar com o app Electron em execução neste ambiente
 (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
 
+## 2026-07-28 — Reverte a divisão de tabelas: ela invalidava o cache e regerava o episódio inteiro
+
+**O que mudou:** o usuário clicou em "reparar" um único segmento e a geração recomeçou do zero,
+consumindo créditos de novo. **Regressão minha**, introduzida junto da entrada anterior.
+
+**Causa:** o total de trechos faz parte do nome de cada arquivo de segmento
+(`chunk-026-de-082`). `_split_dense_tables` quebrava o turno da tabela em pedaços, transformando
+**82 turnos em 87** — o que mudava o sufixo `de-082` para `de-087` em **todos** os nomes.
+Nenhum segmento em cache era reconhecido, e o pipeline ressintetizava as 87 falas. Medido no
+episódio real: 0 de 82 nomes batiam; depois da reversão, **82 de 82**.
+
+**Por que reverter em vez de corrigir o nome:** a divisão nunca resolveu o problema que motivou.
+Testes ao vivo mostraram que o modelo **se recusa a ler tabela crua em qualquer fatia** — fatia
+da tabela falha, a mesma fatia sem emojis também falha, e só a versão narrada
+("Décimo quinto: Nex N2 Pro, nota 83.") funciona. A divisão reduzia o tempo (7,5 min → ~3 min)
+mas continuava perdendo pedaços, e agora se provou capaz de causar dano ativo. Consertar a
+nomenclatura manteria uma solução que não soluciona.
+
+O detector (`looks_like_dense_table`) e o divisor (`split_dense_table`) **permanecem em
+`narration.py`, com seus testes**: a análise que os produziu é válida e serve à correção
+definitiva, que depende de decisão do usuário (narrar a tabela via IA × anunciar e pular).
+
+**Validação:** TDD. Teste novo (`TurnCountStabilityTest`) trava a invariante que faltava: um turno
+de entrada vira exatamente um segmento, e o total no nome do arquivo corresponde ao número de
+turnos. Confirmado falhando antes da reversão (4 turnos viravam 6). Suítes: **496 testes Python**,
+`ruff check` limpo. Verificação no episódio real do usuário: 82 de 82 nomes voltaram a bater com
+o `segments.json` existente.
+
+**Lição registrada:** eu havia validado a divisão só pela síntese isolada do trecho, sem exercitar
+o caminho de retomada/reparo — que é onde o nome do arquivo importa. Uma mudança que altera a
+contagem de turnos toca a identidade de todos os artefatos do episódio, e isso não aparece num
+teste que sintetiza um turno só.
+
 ## 2026-07-28 — Episódio reflexivo era reportado como "sem roteiro auditável"
 
 **O que mudou:** o usuário mostrou o app dizendo "A execução anterior falhou na etapa

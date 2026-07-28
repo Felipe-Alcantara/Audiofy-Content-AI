@@ -347,6 +347,71 @@ _PODCAST_DIRECTION = {
 }
 
 
+# ── Tabelas que a extração colapsou em texto corrido ────────────────────────
+# Uma tabela HTML vira uma linha só, sem separadores: "RankModeloScoreTier…
+# 1Claude Opus 5…95A✅39m…". O trecho fica abaixo de MAX_TTS_CHARS, então
+# segue inteiro para o TTS — e o modelo soletra número a número o que na
+# página era uma grade visual.
+#
+# Medido ao vivo com o trecho real que travou a geração do usuário: 1.590
+# caracteres devolveram 21,7 MB, ou 7,5 minutos de áudio num único trecho,
+# contra 2 a 5 segundos dos trechos normais. Cada tentativa dessas ocupa
+# minutos de relógio e a interface parece congelada.
+#
+# O sinal que separa esse caso de prosa comum é a densidade de dígitos: uma
+# tabela de resultados é ~26% dígitos, enquanto prosa com datas e números
+# raramente passa de 5%.
+_DENSE_TABLE_MIN_CHARS = 400
+_DENSE_TABLE_MIN_DIGIT_RATIO = 0.12
+
+
+def looks_like_dense_table(text: str) -> bool:
+    """Indica um trecho longo com densidade de dígitos típica de tabela."""
+    if not isinstance(text, str):
+        return False
+    stripped = text.strip()
+    # Trechos curtos com números têm outro tratamento (speakable_fallback).
+    if len(stripped) < _DENSE_TABLE_MIN_CHARS:
+        return False
+    digits = sum(character.isdigit() for character in stripped)
+    return digits / len(stripped) >= _DENSE_TABLE_MIN_DIGIT_RATIO
+
+
+DENSE_TABLE_PIECE_CHARS = 300
+
+
+def split_dense_table(text: str, max_chars: int = DENSE_TABLE_PIECE_CHARS) -> list[str]:
+    """Divide a tabela em pedaços curtos sem partir números ao meio.
+
+    Cortar a cada N caracteres exatos separava valores como "~$0,34" em dois
+    pedaços, e o TTS devolvia áudio vazio para as metades sem sentido — a
+    correção do travamento acabava perdendo conteúdo. O corte agora recua até
+    uma fronteira segura (espaço, ou a divisa entre um dígito e uma letra).
+    O texto é preservado caractere a caractere.
+    """
+    pieces: list[str] = []
+    start = 0
+    while start < len(text):
+        end = min(start + max_chars, len(text))
+        if end < len(text):
+            # Recua até um ponto onde o corte não separa dígitos vizinhos nem
+            # quebra a "palavra" colada que veio da célula da tabela.
+            limit = max(start + 1, end - max_chars // 2)
+            cut = end
+            while cut > limit:
+                previous, current = text[cut - 1], text[cut]
+                if previous.isspace() or current.isspace():
+                    break
+                if previous.isdigit() != current.isdigit():
+                    break
+                cut -= 1
+            if cut > limit:
+                end = cut
+        pieces.append(text[start:end])
+        start = end
+    return pieces
+
+
 # ── Resgate de trechos que o TTS devolve mudos ──────────────────────────────
 # Alguns trechos voltam sem áudio nenhum do modelo, por mais que se repita:
 # marcas de tempo ("38m57s"), versões ("v2.1.0"), códigos soltos. Pular esses

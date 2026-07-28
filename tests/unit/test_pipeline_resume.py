@@ -783,3 +783,40 @@ class EmptyAudioFastFailTest(unittest.TestCase):
         self.assertEqual(len(paths), 1)
         self.assertEqual(text_to_speech.call_count, 2, "não deve repetir o mesmo texto vazio")
         wait.assert_not_called()
+
+
+class TurnCountStabilityTest(unittest.TestCase):
+    """O número de turnos não pode mudar entre gerações do mesmo roteiro.
+
+    O total faz parte do nome de cada arquivo de segmento
+    ("chunk-026-de-082"). Se o pipeline transformar 82 turnos em 87, todos os
+    nomes mudam, nenhum segmento em cache é reconhecido e o episódio inteiro
+    é ressintetizado — pagando tudo de novo. Foi o que aconteceu ao dividir
+    trechos densos antes da síntese: o usuário clicou em "reparar" um único
+    segmento e a geração recomeçou do zero.
+    """
+
+    def test_sintese_nao_altera_a_quantidade_de_turnos(self):
+        from audiofy.pipeline import _synthesize_turns
+
+        turns = [{"speaker": "ana", "text": "trecho comum."} for _ in range(3)]
+        # Uma tabela colapsada, o caso que motivava a divisão.
+        linha = "1Claude Opus 5 (Claude Code)*95A39massinatura (16,02 equiv. API)"
+        turns.insert(1, {"speaker": "ana", "text": "RankModeloScoreTier" + linha * 12})
+
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            tracker = GenerationTracker(directory, "episodio")
+            with patch("audiofy.pipeline.openrouter.text_to_speech") as tts, patch(
+                "audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01
+            ):
+                tts.side_effect = [
+                    SpeechResult(b"\x00\x00" * 300, f"gen-{n}") for n in range(50)
+                ]
+                paths = _synthesize_turns(_settings(), directory, turns, tracker)
+
+        self.assertEqual(
+            len(paths), len(turns), "um turno de entrada deve virar um segmento"
+        )
+        for path in paths:
+            self.assertIn(f"de-{len(turns):03d}", path.name)
