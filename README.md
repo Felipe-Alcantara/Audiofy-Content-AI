@@ -10,7 +10,7 @@
 
 **Transforme qualquer conteúdo em podcasts auditáveis ou leituras fiéis com IA — pipeline verificável, voz natural e custo em tempo real.**
 
-[🧰 Ferramentas](#-ferramentas-disponíveis) • [🚀 Como usar](#-como-usar) • [📖 Plano técnico](docs/PLANO-TECNICO.md) • [⚠️ Limites](#-limites-atuais)
+[🧰 Ferramentas](#-ferramentas-disponíveis) • [🚀 Como usar](#-como-usar) • [📖 Plano técnico](docs/PLANO-TECNICO.md) • [🌿 Superfícies](docs/ESTRATEGIA-DE-BRANCHES.md) • [⚠️ Limites](#-limites-atuais)
 
 </div>
 
@@ -99,6 +99,17 @@ Audiofy-Content-AI/
 ├── IA.md                        # Linha do tempo de decisões
 └── README.md                    # Este arquivo
 ```
+
+## 🌿 Superfícies de uso
+
+O núcleo comum fica no `main`; as três branches descrevem adaptações diferentes:
+
+- [Uso interno](docs/USO-INTERNO.md) — operação privada da Vitis Souls.
+- [Uso público](docs/USO-PUBLICO.md) — produto para pessoas usuárias externas.
+- [Uso por API](docs/USO-API.md) — integração HTTP para consumidores como o Meu-Ecoo-Prisma.
+
+Leia também a [estratégia de branches](docs/ESTRATEGIA-DE-BRANCHES.md) antes de mover
+uma regra para uma superfície específica.
 
 ## 🧰 Ferramentas disponíveis
 

@@ -3094,3 +3094,10 @@ inspecionado e hoje só possui documentação/mockups de “Áudio-revisão”, 
 ficou explicitamente pendente de validação do consumidor. Validação: `git diff --check` e
 `python3 scripts/check_quality.py --quick` executados; a régua confirmou lint e testes, mas
 mantém avisos de formatação pré-existentes em quatro arquivos não tocados.
+
+## 2026-07-29 — Guias de uso das três superfícies
+
+**Audiofy Content AI - Criar a separação de branches (uso interno, uso público e uso por API)**
+adicionou `docs/USO-INTERNO.md`, `docs/USO-PUBLICO.md` e `docs/USO-API.md`, além de links no
+README. Os guias delimitam público, responsabilidades, limites e relação com o núcleo, sem
+duplicar a implementação. Validação: links locais conferidos pela régua de qualidade.
