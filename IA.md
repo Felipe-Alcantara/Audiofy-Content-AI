@@ -20,6 +20,14 @@ CLI/Electron, seguindo [docs/PLANO-TECNICO.md](docs/PLANO-TECNICO.md).
 - Testes com `unittest` e coverage.py; JavaScript com Node test runner; régua em
   `scripts/check_quality.py`.
 
+## Estado atual (resumo vivo)
+
+Última atualização: [2026-07-29]
+- Fase: MVP funcional; estratégia de separação em três superfícies documentada.
+- Estado: branches `feat/uso-interno`, `feat/uso-publico` e `feat/uso-api` criadas a partir de `main`.
+- Próximo passo: implementar e testar as bordas de cada frente sem duplicar o núcleo.
+- Risco aberto: o Meu-Ecoo-Prisma ainda não possui integração executável; o contrato da API precisa ser validado com o consumidor antes de estabilizar a versão pública.
+
 ---
 
 ## 2026-07-16 — MVP inicial (listagem + geração via OpenRouter)
@@ -3076,3 +3084,13 @@ como `"Zephyr · brilhante (multilíngue)"`, `"Puck · animada (multilíngue)"` 
 
 **Risco que sobrou:** nenhum novo — mesma superfície de risco das entradas anteriores (catálogo
 estático pode ficar desatualizado se o provedor mudar a lista de vozes ou idiomas suportados).
+
+## 2026-07-29 — Separação de superfícies por branches
+
+**Audiofy Content AI - Criar a separação de branches (uso interno, uso público e uso por API)**
+documentou `docs/ESTRATEGIA-DE-BRANCHES.md` e criou `feat/uso-interno`, `feat/uso-publico` e
+`feat/uso-api` a partir de `main`. O núcleo permanece canônico no `main`; o Meu-Ecoo-Prisma foi
+inspecionado e hoje só possui documentação/mockups de “Áudio-revisão”, então o contrato da API
+ficou explicitamente pendente de validação do consumidor. Validação: `git diff --check` e
+`python3 scripts/check_quality.py --quick` executados; a régua confirmou lint e testes, mas
+mantém avisos de formatação pré-existentes em quatro arquivos não tocados.
