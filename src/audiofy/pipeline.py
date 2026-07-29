@@ -12,9 +12,11 @@ import contextlib
 import hashlib
 import json
 import sys
+import threading
 import time
 import wave
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
@@ -948,6 +950,7 @@ def _synthesize_with_retry(
     segment_number: int,
     tracker: GenerationTracker,
     exhausted_keys: set[str] | None = None,
+    exhausted_keys_lock: threading.Lock | None = None,
     retry_empty_audio: bool = False,
 ) -> _SynthesisResult:
     policy = RetryPolicy(
@@ -962,12 +965,15 @@ def _synthesize_with_retry(
     # Uma chave que já respondeu "sem saldo" nesta geração não volta a ser
     # tentada: antes a rotação recomeçava do zero a cada fala, gastando uma
     # chamada (e a latência dela) por trecho só para redescobrir o mesmo limite.
+    # Na síntese paralela, várias falas podem checar/marcar isto ao mesmo
+    # tempo; a trava evita que a leitura e a escrita do set corram juntas.
     if exhausted_keys:
-        remaining = [
-            (label, candidate)
-            for label, candidate in candidates
-            if getattr(candidate, "api_key", "") not in exhausted_keys
-        ]
+        with exhausted_keys_lock or contextlib.nullcontext():
+            remaining = [
+                (label, candidate)
+                for label, candidate in candidates
+                if getattr(candidate, "api_key", "") not in exhausted_keys
+            ]
         # Se todas estão esgotadas, segue com a lista completa: o erro real do
         # provedor é mais útil que uma falha inventada aqui.
         candidates = remaining or candidates
@@ -996,7 +1002,8 @@ def _synthesize_with_retry(
             except openrouter.OpenRouterError as error:
                 last_error = error
                 if _is_key_exhaustion_error(error) and exhausted_keys is not None:
-                    exhausted_keys.add(getattr(candidate, "api_key", ""))
+                    with exhausted_keys_lock or contextlib.nullcontext():
+                        exhausted_keys.add(getattr(candidate, "api_key", ""))
                 if _is_key_exhaustion_error(error) and key_index + 1 < len(candidates):
                     next_label = candidates[key_index + 1][0]
                     reason = _exhaustion_label(error)
@@ -1041,6 +1048,144 @@ def _synthesize_with_retry(
         tracker.record_error(str(last_error))
         raise last_error
     raise AssertionError("A política de retry terminou sem resultado nem erro.")
+
+
+@dataclass(frozen=True)
+class _TurnOutcome:
+    """Resultado de uma fala processada por um worker da síntese paralela.
+
+    Carrega tudo que a thread coordenadora precisa para atualizar o manifesto
+    e o tracker — o worker não toca `entries`/`paths`/`skipped` diretamente,
+    só devolve o resultado (arquivo já escrito no disco, quando bem-sucedido).
+    """
+
+    index: int
+    segment: Path
+    skipped: bool
+    manifest_entry: dict | None = None
+    cost_usd: float = 0.0
+    cost_exact: bool = True
+
+
+def _synthesize_one_turn(
+    settings: Settings,
+    plan: dict,
+    tracker: GenerationTracker,
+    exhausted_keys: set[str],
+    exhausted_keys_lock: threading.Lock,
+) -> _TurnOutcome:
+    """Sintetiza uma fala (com retry, resgate de áudio mudo e escrita atômica).
+
+    Roda dentro de uma worker thread da síntese paralela. Só toca estado que é
+    seu (o arquivo `segment` tem nome único por fala) ou que já é thread-safe
+    (`tracker`, e `exhausted_keys` sob `exhausted_keys_lock`) — não mexe no
+    manifesto nem nas listas de progresso, que ficam só na thread coordenadora.
+    """
+    index = plan["index"]
+    segment = plan["segment"]
+    presenter = plan["presenter"]
+    try:
+        synthesis = _synthesize_with_retry(
+            settings,
+            plan["turn"]["text"],
+            presenter.voice,
+            plan["instructions"],
+            index,
+            tracker,
+            exhausted_keys,
+            exhausted_keys_lock,
+        )
+    except openrouter.OpenRouterError as error:
+        # Alguns trechos voltam mudos do modelo por mais que se repita: marcas
+        # de tempo, versões, códigos soltos. Pular apaga conteúdo do texto
+        # original em silêncio, então antes de desistir tentamos uma forma
+        # pronunciável do mesmo trecho ("38m57s" → "38 minutos e 57
+        # segundos"). O manifesto guarda o texto original, para a revisão
+        # continuar batendo com a fonte.
+        if not _is_empty_audio_error(error):
+            raise
+        synthesis = None
+        rescue = speakable_fallback(plan["turn"]["text"])
+        if rescue:
+            print(
+                f"\n   ↻ Fala {index} veio muda; tentando como {rescue!r}.",
+                flush=True,
+            )
+            try:
+                synthesis = _synthesize_with_retry(
+                    settings,
+                    rescue,
+                    presenter.voice,
+                    plan["instructions"],
+                    index,
+                    tracker,
+                    exhausted_keys,
+                    exhausted_keys_lock,
+                    retry_empty_audio=True,
+                )
+            except openrouter.OpenRouterError as rescue_error:
+                if not _is_empty_audio_error(rescue_error):
+                    raise
+
+    if synthesis is None:
+        print(
+            f"\n   ⚠ Fala {index} pulada: o TTS não gerou áudio para este trecho "
+            f"({plan['turn']['text'].strip()[:60]!r}).",
+            flush=True,
+        )
+        return _TurnOutcome(index=index, segment=segment, skipped=True)
+
+    speech = synthesis.speech
+    speech_settings = synthesis.settings
+    temporary = segment.with_suffix(segment.suffix + ".tmp")
+    temporary.unlink(missing_ok=True)
+    try:
+        if settings.tts_format == "pcm":
+            _wrap_pcm_as_wav(speech.audio, temporary, settings.tts_sample_rate)
+        else:
+            temporary.write_bytes(speech.audio)
+        if not _valid_segment(temporary):
+            raise ValueError(f"O áudio da fala {index} ficou vazio ou inválido.")
+        temporary.replace(segment)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+    duration_seconds = media_duration_seconds(segment)
+    cost_exact = False
+    segment_cost = 0.0
+    if speech.generation_id:
+        try:
+            segment_cost = openrouter.generation_cost_usd(speech_settings, speech.generation_id)
+            cost_exact = True
+        except (openrouter.OpenRouterError, RuntimeError, ValueError):
+            pass
+    if not cost_exact:
+        segment_cost = estimate_tts_cost(
+            settings, plan["turn"]["text"], plan["instructions"], duration_seconds
+        )
+    manifest_entry = {
+        "fingerprint": plan["fingerprint"],
+        "bytes": segment.stat().st_size,
+        "kind": "chunk",
+        "chunk_index": index,
+        "chunk_total": plan["total"],
+        "speaker": presenter.speaker,
+        "voice": presenter.voice,
+        "style": presenter.style,
+        "text": plan["turn"]["text"],
+        "generation_id": speech.generation_id,
+        "key_label": synthesis.key_label,
+        "cost_usd": round(segment_cost, 8),
+        "cost_exact": cost_exact,
+    }
+    return _TurnOutcome(
+        index=index,
+        segment=segment,
+        skipped=False,
+        manifest_entry=manifest_entry,
+        cost_usd=segment_cost,
+        cost_exact=cost_exact,
+    )
 
 
 def _synthesize_turns(
@@ -1148,6 +1293,7 @@ def _synthesize_turns(
                 "instructions": instructions,
                 "fingerprint": fingerprint,
                 "reusable": reusable,
+                "total": len(turns),
             }
         )
 
@@ -1158,116 +1304,57 @@ def _synthesize_turns(
     paths = [plan["segment"] for plan in plans]
     skipped: list[int] = []
     # Compartilhado por todas as falas: guarda as chaves que já responderam
-    # "sem saldo" para não reconsultá-las trecho a trecho.
+    # "sem saldo" para não reconsultá-las trecho a trecho. A trava protege o
+    # set porque, na síntese paralela, várias falas podem lê-lo/escrevê-lo ao
+    # mesmo tempo (ver _synthesize_with_retry).
     exhausted_keys: set[str] = set()
-    for plan in plans:
-        tracker.checkpoint()
-        index = plan["index"]
-        segment = plan["segment"]
-        if plan["reusable"]:
-            continue
-        presenter = plan["presenter"]
-        cost_label = f"US$ {tracker.cost_usd:.3f}"
-        _progress_bar(index, len(turns), f"{presenter.speaker} ({presenter.voice}) {cost_label}")
+    exhausted_keys_lock = threading.Lock()
+    pending = [plan for plan in plans if not plan["reusable"]]
+
+    if pending:
+        # A síntese (rede) roda livre em várias threads; só a thread principal
+        # mexe no manifesto, em `paths`/`skipped` e no progresso — por isso
+        # nenhuma trava extra é necessária para esse estado.
+        executor = ThreadPoolExecutor(max_workers=settings.tts_max_concurrency)
         try:
-            synthesis = _synthesize_with_retry(
-                settings,
-                plan["turn"]["text"],
-                presenter.voice,
-                plan["instructions"],
-                index,
-                tracker,
-                exhausted_keys,
-            )
-        except openrouter.OpenRouterError as error:
-            # Alguns trechos voltam mudos do modelo por mais que se repita:
-            # marcas de tempo, versões, códigos soltos. Pular apaga conteúdo do
-            # texto original em silêncio, então antes de desistir tentamos uma
-            # forma pronunciável do mesmo trecho ("38m57s" → "38 minutos e 57
-            # segundos"). O manifesto guarda o texto original, para a revisão
-            # continuar batendo com a fonte.
-            if not _is_empty_audio_error(error):
-                raise
-            synthesis = None
-            rescue = speakable_fallback(plan["turn"]["text"])
-            if rescue:
-                print(
-                    f"\n   ↻ Fala {index} veio muda; tentando como {rescue!r}.",
-                    flush=True,
+            futures = {
+                executor.submit(
+                    _synthesize_one_turn,
+                    settings,
+                    plan,
+                    tracker,
+                    exhausted_keys,
+                    exhausted_keys_lock,
+                ): plan
+                for plan in pending
+            }
+            for future in as_completed(futures):
+                outcome = future.result()
+                if outcome.skipped:
+                    skipped.append(outcome.index)
+                    paths.remove(outcome.segment)
+                    entries.pop(outcome.segment.name, None)
+                else:
+                    entries[outcome.segment.name] = outcome.manifest_entry
+                    tracker.add_cost(outcome.cost_usd, exact=outcome.cost_exact)
+                    _save_json(manifest_path, manifest)
+                completed += 1
+                tracker.advance(completed)
+                presenter = futures[future]["presenter"]
+                cost_label = f"US$ {tracker.cost_usd:.3f}"
+                _progress_bar(
+                    completed,
+                    len(turns),
+                    f"{presenter.speaker} ({presenter.voice}) {cost_label}",
                 )
-                try:
-                    synthesis = _synthesize_with_retry(
-                        settings,
-                        rescue,
-                        presenter.voice,
-                        plan["instructions"],
-                        index,
-                        tracker,
-                        exhausted_keys,
-                        retry_empty_audio=True,
-                    )
-                except openrouter.OpenRouterError as rescue_error:
-                    if not _is_empty_audio_error(rescue_error):
-                        raise
-        if synthesis is None:
-            skipped.append(index)
-            paths.remove(segment)
-            entries.pop(segment.name, None)
-            print(
-                f"\n   ⚠ Fala {index} pulada: o TTS não gerou áudio para este trecho "
-                f"({plan['turn']['text'].strip()[:60]!r}).",
-                flush=True,
-            )
-            completed += 1
-            tracker.advance(completed)
-            continue
-        speech = synthesis.speech
-        speech_settings = synthesis.settings
-        temporary = segment.with_suffix(segment.suffix + ".tmp")
-        temporary.unlink(missing_ok=True)
-        try:
-            if settings.tts_format == "pcm":
-                _wrap_pcm_as_wav(speech.audio, temporary, settings.tts_sample_rate)
-            else:
-                temporary.write_bytes(speech.audio)
-            if not _valid_segment(temporary):
-                raise ValueError(f"O áudio da fala {index} ficou vazio ou inválido.")
-            temporary.replace(segment)
-        except Exception:
-            temporary.unlink(missing_ok=True)
+        except BaseException:
+            # Não espera as falas ainda em voo: quem já começou pode terminar
+            # em segundo plano (e ser cobrado), mas a geração já sabe que vai
+            # falhar e não deve ficar presa esperando o resto do lote.
+            executor.shutdown(wait=False, cancel_futures=True)
             raise
-        duration_seconds = media_duration_seconds(segment)
-        cost_exact = False
-        segment_cost = 0.0
-        if speech.generation_id:
-            try:
-                segment_cost = openrouter.generation_cost_usd(speech_settings, speech.generation_id)
-                cost_exact = True
-            except (openrouter.OpenRouterError, RuntimeError, ValueError):
-                pass
-        if not cost_exact:
-            segment_cost = estimate_tts_cost(
-                settings, plan["turn"]["text"], plan["instructions"], duration_seconds
-            )
-        tracker.add_cost(segment_cost, exact=cost_exact)
-        entries[segment.name] = {
-            "fingerprint": plan["fingerprint"],
-            "bytes": segment.stat().st_size,
-            "kind": "chunk",
-            "chunk_index": index,
-            "chunk_total": len(turns),
-            "speaker": presenter.speaker,
-            "voice": presenter.voice,
-            "style": presenter.style,
-            "text": plan["turn"]["text"],
-            "generation_id": speech.generation_id,
-            "key_label": synthesis.key_label,
-            "cost_usd": round(segment_cost, 8),
-            "cost_exact": cost_exact,
-        }
-        _save_json(manifest_path, manifest)
-        completed += 1
-        tracker.advance(completed)
+        else:
+            executor.shutdown(wait=True)
     if skipped:
         _save_json(manifest_path, manifest)
         print(

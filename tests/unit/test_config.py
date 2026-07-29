@@ -120,3 +120,40 @@ class ForceLanguageSettingsWiringTest(unittest.TestCase):
 
         self.assertFalse(Settings().force_language)
         self.assertTrue(Settings(force_language=True).force_language)
+
+
+class TtsMaxConcurrencySettingsTest(unittest.TestCase):
+    """AUDIOFY_TTS_MAX_CONCURRENCY controla quantos trechos são sintetizados em
+    paralelo; sem isso, a síntese paralela não teria como ser ajustada/desligada
+    por quem usa uma chave de tier baixo no OpenRouter."""
+
+    def setUp(self):
+        self._original = os.environ.pop("AUDIOFY_TTS_MAX_CONCURRENCY", None)
+
+    def tearDown(self):
+        if self._original is None:
+            os.environ.pop("AUDIOFY_TTS_MAX_CONCURRENCY", None)
+        else:
+            os.environ["AUDIOFY_TTS_MAX_CONCURRENCY"] = self._original
+
+    def test_padrao_sem_variavel_de_ambiente(self):
+        from audiofy.config import Settings
+
+        self.assertEqual(Settings().tts_max_concurrency, 4)
+
+    def test_variavel_de_ambiente_sobrepoe_o_padrao(self):
+        from audiofy.config import Settings
+
+        os.environ["AUDIOFY_TTS_MAX_CONCURRENCY"] = "8"
+        self.assertEqual(Settings().tts_max_concurrency, 8)
+
+    def test_fora_do_intervalo_permitido_levanta_erro(self):
+        from audiofy.config import Settings
+
+        os.environ["AUDIOFY_TTS_MAX_CONCURRENCY"] = "0"
+        with self.assertRaises(ValueError):
+            Settings()
+
+        os.environ["AUDIOFY_TTS_MAX_CONCURRENCY"] = "17"
+        with self.assertRaises(ValueError):
+            Settings()

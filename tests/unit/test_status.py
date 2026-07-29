@@ -307,5 +307,125 @@ class ReconcileTest(unittest.TestCase):
         self.assertIsNone(GenerationTracker.reconcile(self.directory))
 
 
+class GenerationTrackerConcurrencyTest(unittest.TestCase):
+    """Cobre a síntese paralela: várias threads de worker chamam o tracker ao
+    mesmo tempo (checkpoint/using_key/retrying/record_error/add_cost/advance),
+    então cada mutação de ``self._data`` precisa ser atômica por chamada."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.directory = Path(self._tmp.name)
+        self.tracker = GenerationTracker(self.directory, episode_id="ep-teste")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_custos_concorrentes_nao_se_perdem(self):
+        import threading
+
+        # Um read-modify-write comum (self._data["cost_usd"] += usd) raramente é
+        # interrompido no meio pelo GIL com poucas threads e trabalho trivial — o
+        # troço de bytecode inteiro roda numa única fatia na maioria das vezes.
+        # Reduzir o intervalo de troca de contexto e largar todas as threads ao
+        # mesmo tempo com uma Barrier torna a corrida praticamente garantida,
+        # em vez de um teste "flaky" que só falha às vezes.
+        original_interval = sys.getswitchinterval()
+        sys.setswitchinterval(1e-6)
+        try:
+            total_threads = 300
+            valor = 0.01
+            barrier = threading.Barrier(total_threads)
+
+            def worker():
+                barrier.wait()
+                self.tracker.add_cost(valor)
+
+            threads = [threading.Thread(target=worker) for _ in range(total_threads)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+        finally:
+            sys.setswitchinterval(original_interval)
+
+        self.assertAlmostEqual(self.tracker.cost_usd, total_threads * valor, places=6)
+
+    def test_using_key_concorrente_nao_corrompe_status_json(self):
+        # No fluxo paralelo, cada worker de trecho chama tracker.using_key(...) e
+        # tracker.checkpoint() por conta própria dentro de _synthesize_with_retry
+        # (advance/add_cost continuam só na thread coordenadora) — este é o
+        # cenário real de concorrência sobre o tracker que a trava precisa cobrir.
+        import threading
+
+        self.tracker.stage("tts", total=300)
+        erros: list[BaseException] = []
+
+        original_interval = sys.getswitchinterval()
+        sys.setswitchinterval(1e-6)
+        try:
+            total_threads = 300
+            barrier = threading.Barrier(total_threads)
+
+            def worker(indice):
+                barrier.wait()
+                try:
+                    self.tracker.using_key(f"chave-{indice % 5}")
+                    self.tracker.checkpoint()
+                except BaseException as error:  # pragma: no cover - só sob corrupção
+                    erros.append(error)
+
+            threads = [
+                threading.Thread(target=worker, args=(indice,)) for indice in range(total_threads)
+            ]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+        finally:
+            sys.setswitchinterval(original_interval)
+
+        self.assertEqual(erros, [])
+        data = GenerationTracker.load(self.directory)
+        self.assertIn(data["key_source"], [f"chave-{i}" for i in range(5)])
+
+    def test_leitura_e_escrita_concorrentes_nao_corrompem_status_json(self):
+        import threading
+
+        self.tracker.stage("tts", total=200)
+        erros: list[Exception] = []
+
+        def writer(indice):
+            try:
+                self.tracker.advance(indice)
+                self.tracker.add_cost(0.001)
+                self.tracker.using_key(f"chave-{indice % 3}")
+            except Exception as error:  # pragma: no cover - só falha sob corrupção
+                erros.append(error)
+
+        original_interval = sys.getswitchinterval()
+        sys.setswitchinterval(1e-6)
+        try:
+            total_threads = 200
+            barrier = threading.Barrier(total_threads)
+
+            def worker(indice):
+                barrier.wait()
+                writer(indice)
+
+            threads = [
+                threading.Thread(target=worker, args=(i,)) for i in range(1, total_threads + 1)
+            ]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+        finally:
+            sys.setswitchinterval(original_interval)
+
+        self.assertEqual(erros, [])
+        data = GenerationTracker.load(self.directory)
+        self.assertAlmostEqual(data["cost_usd"], 0.2, places=6)
+
+
 if __name__ == "__main__":
     unittest.main()

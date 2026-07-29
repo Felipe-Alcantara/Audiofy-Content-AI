@@ -27,7 +27,11 @@ from audiofy.providers.openrouter import OpenRouterError, SpeechResult  # noqa: 
 from audiofy.runtime.status import GenerationAborted, GenerationTracker  # noqa: E402
 
 
-def _settings(max_attempts: int = 3) -> SimpleNamespace:
+def _settings(max_attempts: int = 3, tts_max_concurrency: int = 1) -> SimpleNamespace:
+    # concorrência 1 por padrão: os testes deste arquivo assumem consumo
+    # determinístico e em ordem da lista `side_effect` do mock, o que só vale
+    # com um único worker. Testes de concorrência real ficam em
+    # test_pipeline_parallel_synthesis.py.
     return SimpleNamespace(
         presenters=[Presenter("ana", "Kore", "natural")],
         tts_model="vendor/tts",
@@ -37,6 +41,7 @@ def _settings(max_attempts: int = 3) -> SimpleNamespace:
         tts_retry_base_seconds=0,
         tts_retry_max_seconds=0,
         language="pt-BR",
+        tts_max_concurrency=tts_max_concurrency,
     )
 
 
@@ -270,6 +275,7 @@ class ResumableSynthesisTest(unittest.TestCase):
             tts_retry_base_seconds=0,
             tts_retry_max_seconds=0,
             language="pt-BR",
+            tts_max_concurrency=1,
         )
 
         paths = _synthesize_turns(

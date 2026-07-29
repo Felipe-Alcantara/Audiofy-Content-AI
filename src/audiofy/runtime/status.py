@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -40,6 +41,12 @@ class GenerationTracker:
     ) -> None:
         self.directory = directory
         self.directory.mkdir(parents=True, exist_ok=True)
+        # A síntese paralela chama using_key/checkpoint/retrying/record_error de
+        # várias threads de worker ao mesmo tempo; sem trava, o read-modify-write
+        # em self._data perde incrementos (ex.: add_cost somando de threads
+        # diferentes). RLock porque checkpoint() chama self.finish() por dentro,
+        # na mesma thread.
+        self._lock = threading.RLock()
         launch_status = self.load(directory) or {}
         previous = launch_status if resume else {}
         now = time.time()
@@ -191,17 +198,19 @@ class GenerationTracker:
         """Entra em uma nova etapa; `total` > 0 habilita progresso granular."""
         if current < 0 or current > total:
             raise ValueError("O progresso atual precisa ficar entre zero e o total.")
-        self._data["stage"] = name
-        self._data["progress"] = {"current": current, "total": total}
-        self._data["retry"] = None
-        self._data["last_error"] = None
-        self._flush()
+        with self._lock:
+            self._data["stage"] = name
+            self._data["progress"] = {"current": current, "total": total}
+            self._data["retry"] = None
+            self._data["last_error"] = None
+            self._flush()
 
     def advance(self, current: int) -> None:
-        self._data["progress"]["current"] = current
-        self._data["retry"] = None
-        self._data["last_error"] = None
-        self._flush()
+        with self._lock:
+            self._data["progress"]["current"] = current
+            self._data["retry"] = None
+            self._data["last_error"] = None
+            self._flush()
 
     def retrying(
         self,
@@ -213,54 +222,60 @@ class GenerationTracker:
         error: str,
     ) -> None:
         """Expõe uma espera de retry sem registrar o conteúdo enviado ao provedor."""
-        self._data["retry"] = {
-            "segment": segment,
-            "attempt": next_attempt,
-            "max_attempts": max_attempts,
-            "retry_at": time.time() + delay_seconds,
-        }
-        self._data["last_error"] = str(error)[:300]
-        self._flush()
+        with self._lock:
+            self._data["retry"] = {
+                "segment": segment,
+                "attempt": next_attempt,
+                "max_attempts": max_attempts,
+                "retry_at": time.time() + delay_seconds,
+            }
+            self._data["last_error"] = str(error)[:300]
+            self._flush()
 
     def record_error(self, error: str) -> None:
-        self._data["retry"] = None
-        self._data["last_error"] = str(error)[:300]
-        self._flush()
+        with self._lock:
+            self._data["retry"] = None
+            self._data["last_error"] = str(error)[:300]
+            self._flush()
 
     def add_cost(self, usd: float, *, exact: bool = True) -> None:
-        changed = False
-        if usd:
-            self._data["cost_usd"] = round(self._data["cost_usd"] + usd, 6)
-            changed = True
-        if not exact and self._data["cost_exact"]:
-            self._data["cost_exact"] = False
-            changed = True
-        if changed:
-            self._flush()
+        with self._lock:
+            changed = False
+            if usd:
+                self._data["cost_usd"] = round(self._data["cost_usd"] + usd, 6)
+                changed = True
+            if not exact and self._data["cost_exact"]:
+                self._data["cost_exact"] = False
+                changed = True
+            if changed:
+                self._flush()
 
     def using_key(self, source: str) -> None:
         """Registra somente o rótulo seguro da chave efetiva, nunca seu valor."""
-        if source and self._data.get("key_source") != source:
-            self._data["key_source"] = str(source)[:80]
-            self._flush()
+        with self._lock:
+            if source and self._data.get("key_source") != source:
+                self._data["key_source"] = str(source)[:80]
+                self._flush()
 
     def finish(self, state: str, error: str | None = None) -> None:
         """Estado final: 'concluido', 'abortado' ou 'falhou'."""
-        self._data["state"] = state
-        self._data["retry"] = None
-        self._data["abort_requested_at"] = None
-        if error:
-            self._data["last_error"] = str(error)[:300]
-        self._flush()
+        with self._lock:
+            self._data["state"] = state
+            self._data["retry"] = None
+            self._data["abort_requested_at"] = None
+            if error:
+                self._data["last_error"] = str(error)[:300]
+            self._flush()
 
     # ── Abort cooperativo ────────────────────────────────────────────────
 
     def checkpoint(self) -> None:
         """Chamado entre unidades de trabalho; honra pedidos de abort."""
-        if (self.directory / self.ABORT_FILE).is_file():
-            (self.directory / self.ABORT_FILE).unlink(missing_ok=True)
-            self.finish("abortado")
-            raise GenerationAborted("Geração abortada a pedido do usuário.")
+        with self._lock:
+            if (self.directory / self.ABORT_FILE).is_file():
+                (self.directory / self.ABORT_FILE).unlink(missing_ok=True)
+                self.finish("abortado")
+                raise GenerationAborted("Geração abortada a pedido do usuário.")
 
     @staticmethod
     def request_abort(directory: Path) -> None:

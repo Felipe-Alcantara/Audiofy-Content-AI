@@ -230,6 +230,12 @@ class Settings:
     tts_retry_max_seconds: float = field(
         default_factory=lambda: _env_float("AUDIOFY_TTS_RETRY_MAX_SECONDS", 30, 0, 900)
     )
+    # Quantos trechos são sintetizados em paralelo ao OpenRouter. O provedor não
+    # documenta limite de concorrência por chave, então o padrão fica conservador;
+    # quem usa uma chave de tier baixo pode reduzir via env.
+    tts_max_concurrency: int = field(
+        default_factory=lambda: _env_int("AUDIOFY_TTS_MAX_CONCURRENCY", 4, 1, 16)
+    )
 
     def __post_init__(self) -> None:
         if not 1 <= self.tts_retry_attempts <= 20:

@@ -2363,6 +2363,82 @@ guiada pelo manifesto, não pela varredura do diretório. Episódios antigos que
 anteriores desta sessão, não foi possível validar com o app Electron em execução neste ambiente
 (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
 
+## 2026-07-29 — Síntese de TTS em paralelo (chamadas ao OpenRouter deixam de ser uma por vez)
+
+**O que mudou:** `_synthesize_turns` (`src/audiofy/pipeline.py`) sintetizava um trecho por vez,
+esperando a resposta do OpenRouter antes de mandar o próximo — o maior gargalo de tempo numa
+geração longa, porque a maior parte da espera é rede, não processamento. A fase de síntese agora
+roda em paralelo com `concurrent.futures.ThreadPoolExecutor`, com o teto configurável em
+`Settings.tts_max_concurrency` (env `AUDIOFY_TTS_MAX_CONCURRENCY`, padrão 4, intervalo 1-16,
+seguindo o mesmo padrão de `tts_retry_attempts`).
+
+Desenho: a chamada de rede (`_synthesize_one_turn`, nova função extraída do corpo do loop antigo)
+roda livre em threads de worker; só a thread coordenadora toca o manifesto (`segments.json`),
+`paths`/`skipped` e o progresso, consumindo os resultados via `as_completed` — isso evita
+precisar de trava em quase tudo. Só dois pontos realmente compartilhados entre threads
+precisaram de trava:
+
+- `GenerationTracker` (`src/audiofy/runtime/status.py`) ganhou um `threading.RLock` interno,
+  porque `checkpoint()`/`using_key()`/`retrying()`/`record_error()` são chamados de dentro de
+  cada worker (via `_synthesize_with_retry`) e faziam read-modify-write sem proteção — sob
+  concorrência de verdade isso perdia incrementos de custo.
+- `exhausted_keys` (o set de chaves que já responderam "sem saldo" nesta geração, para não
+  reconsultá-las trecho a trecho) ganhou um `threading.Lock` próprio, porque agora várias falas
+  podem descobrir/marcar isso ao mesmo tempo.
+
+A ordem final dos segmentos **não precisou de nenhum ajuste**: `paths` já era montado a partir de
+`plans` (ordem original dos turnos) antes de qualquer síntese, só sofrendo remoções em caso de
+skip — nunca *append* em ordem de conclusão — então a montagem final (`_assemble`, que concatena
+por ordem de lista) continua correta mesmo com trechos terminando fora de ordem.
+
+**Por que:** anotado pelo usuário como task simples de otimização de tempo; o programa atual
+divide o roteiro em parágrafos/frases e manda um de cada vez para o OpenRouter, e a ideia
+(registrada primeiro como task no Notion, com o design detalhado) é disparar vários ao mesmo
+tempo e o próprio programa remontar a ordem certa depois.
+
+**Validação:** TDD em cada camada, testes escritos e confirmados falhando antes da mudança de
+produção:
+
+- `tests/unit/test_status.py` — 3 testes novos de concorrência no `GenerationTracker`, usando
+  `sys.setswitchinterval(1e-6)` + `threading.Barrier` para tornar a corrida determinística (sem
+  isso, poucas threads com trabalho trivial raramente cruzam no meio do GIL). Falhavam de forma
+  reprodutível (ex.: `2.9 != 3.0`) antes do `RLock`; passam de forma estável depois (rodado 3×).
+- `tests/unit/test_pipeline_parallel_synthesis.py` (novo arquivo, separado de
+  `test_pipeline_resume.py` por responsabilidade) — 7 testes cobrindo: paridade com
+  `tts_max_concurrency=1`; ordem final 1..N preservada quando o trecho 3 é forçado (via
+  `threading.Event`) a terminar antes do trecho 1 com concorrência 3; cache-hit nunca entra no
+  executor; erro real propaga sem travar a geração; `GenerationAborted` disparado dentro de uma
+  worker thread encerra tudo; trecho mudo ainda vira skip sob concorrência; duas falas
+  descobrindo a mesma chave esgotada ao mesmo tempo (via `threading.Barrier`) não corrompem o
+  set nem duplicam chamada. 2 dos 7 falhavam contra o pipeline sequencial antigo (os que exigem
+  conclusão fora de ordem de verdade); os outros 5 já valiam sequencialmente, o que é esperado.
+- Suíte completa: **510 testes Python** (eram 497; 13 novos) e **72 Electron** (71 pass, 1 skip
+  esperado), `ruff check` limpo, cobertura 73% (mínimo 70%).
+- **Geração real** contra a API do OpenRouter (modelo `hexgrad/kokoro-82m`, perfil "reset de
+  leitura ultraeconomico"), com autorização explícita do usuário para gastar crédito: 8 trechos
+  reais sintetizados com `tts_max_concurrency=4` em 66,2s, ordem `chunk-001` a `chunk-008`
+  confirmada nos nomes dos arquivos, custo total US$ 0,000544. Uma comparação cronometrada contra
+  `tts_max_concurrency=1` foi tentada, mas a bateria de testes reais em sequência nesta mesma
+  sessão parece ter esbarrado em rate limit da chave (2 trechos sequenciais levaram 226s — muito
+  acima do esperado para o Kokoro, consistente com a política de retry/backoff tendo entrado em
+  ação), então não virou um benchmark limpo de "antes vs. depois"; a evidência que importa aqui —
+  correção (ordem, sem corrupção de manifesto, custo computado certo) — ficou confirmada contra o
+  serviço real, não só mockada.
+
+**Risco que sobrou:** o OpenRouter não documenta limite de concorrência por chave, então o teto
+de `tts_max_concurrency` é um valor conservador sem embasamento formal do provedor — quem usa uma
+chave de tier baixo pode precisar reduzir via `AUDIOFY_TTS_MAX_CONCURRENCY`. Um erro fatal em um
+trecho cancela os que ainda não começaram (`executor.shutdown(cancel_futures=True)`), mas os que
+já estavam em voo no momento do erro continuam rodando em segundo plano até terminar (podem ser
+cobrados) — o processo não espera por eles antes de propagar o erro, então em teoria pode haver
+uma janela onde o processo Python demora a encerrar de fato se uma dessas chamadas ficar presa
+até o timeout de 300s do provedor. Não afetei `repair_episode`: ela reusa `_synthesize_turns`,
+então ganha o paralelismo automaticamente. Observação à parte, não deste risco: `ruff format
+--check` já falhava em 4 arquivos antes desta mudança (`cost_analytics.py`, `sources/custom.py`,
+`test_narration.py`, `test_pipeline_resume.py`) por divergência entre a versão do `ruff` instalada
+neste ambiente e a que formatou o repositório por último — não mexi nesses arquivos fora do que
+esta task exigia, para não misturar refatoração alheia à mudança.
+
 ## 2026-07-28 — Resgate desistia na primeira resposta vazia, mas o vazio é intermitente
 
 **O que mudou:** o usuário relatou que o trecho `38m57s`, que antes era convertido corretamente,
