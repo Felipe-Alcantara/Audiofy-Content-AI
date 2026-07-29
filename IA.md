@@ -2363,6 +2363,41 @@ guiada pelo manifesto, não pela varredura do diretório. Episódios antigos que
 anteriores desta sessão, não foi possível validar com o app Electron em execução neste ambiente
 (`ELECTRON_RUN_AS_NODE=1` fixa faz o binário rodar como Node puro).
 
+## 2026-07-29 — Benchmark real do paralelismo: 8x mais rápido em 12 trechos
+
+**O que mudou:** nada no código — só a validação. A entrada anterior já tinha rodado uma
+geração real com `tts_max_concurrency=4`, mas a tentativa de comparar contra
+`tts_max_concurrency=1` na mesma sessão de testes saiu contaminada: a chave usada nas duas
+rodadas parece ter esbarrado em rate limit, e a rodada sequencial (2 trechos em 226s) ficou
+artificialmente lenta — sem valor como benchmark.
+
+**Medição limpa:** repeti o teste com **duas chaves diferentes** (uma pra cada rodada, evitando
+qualquer rate limit cruzado) e um lote mais próximo de um episódio de verdade — 12 falas de
+texto corrido, não frases soltas de teste, ainda no modelo `hexgrad/kokoro-82m`:
+
+| Concorrência | Trechos | Duração | Custo |
+| --- | --- | --- | --- |
+| 1 (sequencial) | 12 | **707,3s** | US$ 0,00104 |
+| 4 (paralelo) | 12 | **88,3s** | US$ 0,00104 |
+
+**8,01× mais rápido**, custo idêntico nas duas rodadas (mesmo texto, mesmo áudio gerado) —
+o paralelismo não muda quanto se paga, só quanto se espera. Ordem dos 12 segmentos confirmada
+correta (`chunk-001` a `chunk-012`) nas duas rodadas.
+
+**Um número, não uma constante.** 707,3/4 ≈ 176,8s seria o teto teórico com concorrência 4 e 0%
+de overhead; o resultado medido (88,3s) veio bem abaixo disso. A explicação mais honesta não é
+"o paralelismo rendeu mais que o esperado" — é que as duas rodadas usaram **chaves diferentes**
+(de propósito, para não repetir a contaminação por rate limit da tentativa anterior), e a
+latência por chamada do OpenRouter/Kokoro no momento de cada rodada não é garantidamente igual
+entre chaves ou ao longo do tempo. 8,01× é uma medição real e válida de uma execução, não uma
+constante reproduzível — o valor útil aqui é a ordem de grandeza (perto de 1 minuto e meio contra
+quase 12 minutos para o mesmo lote), não a segunda casa decimal.
+
+**Risco que sobrou:** atualiza a entrada anterior — `tts_max_concurrency=4` é um teto de
+segurança, não uma previsão de ganho; o ganho real por episódio vai variar com a latência do
+provedor no momento da geração. Continua valendo o mesmo risco já registrado: sem rate-limit
+awareness do lado do provedor, só o teto configurável.
+
 ## 2026-07-29 — Síntese de TTS em paralelo (chamadas ao OpenRouter deixam de ser uma por vez)
 
 **O que mudou:** `_synthesize_turns` (`src/audiofy/pipeline.py`) sintetizava um trecho por vez,
