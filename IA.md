@@ -3164,3 +3164,53 @@ em quatro arquivos Python não tocados (registrada em 2026-07-29).
 **Risco que sobrou:** faltam Chat, Conteúdo e Configurações (formulário, upload, modais, player) —
 as telas grandes. E o carregamento do bundle React via `file://` no Electron empacotado continua
 sem verificação visual, como na entrada anterior.
+
+## 2026-07-31 — Renderer React completo e padrão na feat/uso-publico
+
+**O que mudou:** o app inteiro passou para React, e o React virou o renderer padrão
+desta branch. Além de Custos e Episódios (migradas antes), entraram Chat, Conteúdo
+(lista, fontes, adicionar URL/arquivo/texto, detalhe com opções de geração, progresso
+e log), Configurações (chaves, diagnóstico, catálogo TTS e editor de perfis), o header
+(tira de configuração ativa, banner de geração e dock do player) e os dois modais
+(revisão de chunks e teleprompter, com destaque por tempo, pulo por parágrafo e
+arraste com inércia). `electron/renderer-react/src/` foi organizado em `lib/`
+(bridge, formatadores, vozes, statusView), `state/` (providers de player, status e
+configurações) e `components/` (uma tela por arquivo). `resolveRendererTarget()`
+saiu de dentro do `main.js` para `electron/environment.js`, testável: padrão React,
+`AUDIOFY_RENDERER=vanilla` volta ao antigo e `AUDIOFY_RENDERER_DEV_URL` usa o dev
+server do Vite.
+
+**Decisões:**
+
+- **Uma só implementação das regras de erro/progresso:** `renderer/status-view.js`
+  (já coberto por `electron/tests/status-view.test.js`) é importado pelo bundle React
+  em vez de reescrito em JSX. O `<script>` separado saiu do `index-react.html`.
+- **Estado compartilhado em providers, não em variáveis de módulo:** o overview do
+  `status` (com o polling de 2 s) é único e alimenta header, Episódios e o detalhe de
+  Conteúdo — no vanilla isso era `refreshStatus()` mexendo no DOM de três lugares.
+- **O `<audio>` continua sendo um só e mora no dock:** os modais o comandam pelo
+  contexto do player. Mover um `<audio>` em reprodução pelo DOM reinicia a mídia no
+  Chromium — foi o bug que o vanilla já tinha corrigido e que a migração preservou.
+- **O renderer vanilla fica no repositório**, como escape hatch e porque
+  `feat/uso-interno` e `feat/uso-api` seguem com ele.
+- **Diferença deliberada da versão vanilla:** a aba Episódios ganhou um botão
+  "🔄 Atualizar" (o vanilla só recarregava ao ativar a aba); o resto mantém textos,
+  formatos e classes CSS idênticos, reaproveitando `renderer/styles.css`.
+
+**Validação:** `cd electron/renderer-react && npm test && npm run lint && npm run build`
+(57 testes Vitest em 8 arquivos, oxlint sem erros nem avisos). `cd electron &&
+npm run check` verde (73 passes, 1 skip pré-existente do Windows), incluindo os dois
+testes novos de `resolveRendererTarget`. **Verificação real no app** (Playwright/xvfb
+sobre o Electron empacotado, carregando o bundle por `file://`): as cinco abas
+renderizam com dados reais (9 conteúdos, 12 episódios, perfil e chaves do usuário),
+o detalhe de conteúdo mostra estimativa/opções/log, a revisão de chunks abre com 85
+chunks e o console não registra nenhum erro — o risco em aberto desde 2026-07-30
+(bundle React via `file://` sem verificação visual) está fechado.
+`python3 scripts/check_quality.py --quick` mantém só a reprovação pré-existente de
+formatação em quatro arquivos Python não tocados.
+
+**Risco que sobrou:** a paridade foi verificada por testes e por inspeção visual em
+1200×800; falta conferir manualmente as larguras de 600 px e 380 px exigidas pelo
+`AGENTS.md` para mudanças visuais. E fluxos que gastam créditos de verdade (gerar,
+reparar, retomada automática por limite de chave) foram exercitados só por teste com
+a bridge simulada — não por uma geração real ponta a ponta nesta interface.

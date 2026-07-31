@@ -6,7 +6,7 @@ const { app, BrowserWindow, dialog, ipcMain, shell } = require("electron");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const { buildBridgeEnvironment } = require("./environment");
+const { buildBridgeEnvironment, resolveRendererTarget } = require("./environment");
 const { resolveProjectPath, validateBridgeRequest } = require("./security");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
@@ -93,20 +93,15 @@ function createWindow() {
       sandbox: true,
     },
   });
-  // Renderer padrão continua o vanilla (renderer/index.html). A versão React
-  // (piloto: aba Custos, ver docs/USO-PUBLICO.md) é opt-in via variável de
-  // ambiente, para não alterar o fluxo atual de ninguém.
-  //   AUDIOFY_RENDERER=react                        -> build estático (renderer/index-react.html)
-  //   AUDIOFY_RENDERER=react + AUDIOFY_RENDERER_DEV_URL=http://localhost:5173 -> servidor de dev do Vite (HMR)
-  // A CSP relaxada do servidor de dev do Vite só existe nesse segundo caso,
-  // que nunca roda no app empacotado (variáveis de ambiente não setadas).
-  if (process.env.AUDIOFY_RENDERER === "react" && process.env.AUDIOFY_RENDERER_DEV_URL) {
-    window.loadURL(process.env.AUDIOFY_RENDERER_DEV_URL);
-  } else if (process.env.AUDIOFY_RENDERER === "react") {
-    window.loadFile("renderer/index-react.html");
-  } else {
-    window.loadFile("renderer/index.html");
-  }
+  // Escolha do renderer (ver resolveRendererTarget em environment.js):
+  //   padrão                                     -> React (renderer/index-react.html)
+  //   AUDIOFY_RENDERER=vanilla                    -> renderer/index.html
+  //   AUDIOFY_RENDERER_DEV_URL=http://localhost:5173 -> servidor de dev do Vite (HMR)
+  // A CSP relaxada do servidor de dev só existe no último caso, que nunca roda
+  // no app empacotado (variável de ambiente não setada).
+  const renderer = resolveRendererTarget(process.env);
+  if (renderer.type === "url") window.loadURL(renderer.target);
+  else window.loadFile(renderer.target);
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event) => event.preventDefault());
 }

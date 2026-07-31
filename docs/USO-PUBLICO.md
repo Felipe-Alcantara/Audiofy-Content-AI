@@ -31,30 +31,33 @@ restritiva, `contextIsolation` e acessibilidade nas telas.
 Esta branch adapta apresentação, configuração e políticas públicas. O processamento,
 a auditoria, a retomada e o cálculo de custo continuam vindo do núcleo no `main`.
 
-## Migração do renderer para React
+## Renderer React (padrão desta branch)
 
-O renderer do Electron (`electron/renderer/`) está em transição, tela por tela, do
-JS vanilla atual para React — decisão do produto "Passar o AudioFy pra React",
-escopada só nesta branch (`feat/uso-interno` e `feat/uso-api` continuam com o
-renderer vanilla).
+O renderer do Electron foi migrado do JS vanilla para React — decisão do produto
+"Passar o AudioFy pra React", escopada só nesta branch (`feat/uso-interno` e
+`feat/uso-api` continuam com o renderer vanilla).
 
-- **Código novo:** `electron/renderer-react/` — projeto Vite + React isolado (JS puro,
+- **Código:** `electron/renderer-react/` — projeto Vite + React isolado (JS puro,
   sem TypeScript), com `package.json`, testes (Vitest + Testing Library) e lint
   (oxlint) próprios. Builda para `electron/renderer/dist-react/` (gerado, fora do
-  controle de versão).
-- **Camada de dados:** `electron/renderer-react/src/audiofyClient.js` envolve
-  `window.audiofy.bridge` (exposta por `preload.js`, sem mudança) em funções por
-  comando (`getStatus`, `getCosts`, ...) — mesma bridge, casca mais ergonômica para
-  componentes React.
-- **Como abrir a versão React:** `AUDIOFY_RENDERER=react npm start` (dentro de
-  `electron/`) abre `renderer/index-react.html` (build estático, mesma CSP restritiva
-  do `index.html` vanilla). Com `AUDIOFY_RENDERER_DEV_URL=http://localhost:5173`
-  também setada, abre o servidor de dev do Vite (HMR) em vez do build — único modo em
-  que a CSP é a do próprio Vite, nunca no app empacotado. Sem essas variáveis, o
-  comportamento padrão (`renderer/index.html` vanilla) não muda.
-- **Progresso:** só a aba **Custos** foi migrada até aqui (piloto — leitura simples,
-  sem formulário/modal/polling). As demais abas (Chat, Conteúdo, Episódios,
-  Configurações) continuam no renderer vanilla até serem migradas, uma por vez.
+  controle de versão). Organização: `src/lib/` (bridge, formatadores, vozes),
+  `src/state/` (providers de player, status e configurações) e `src/components/`
+  (uma pasta por tela + modais).
+- **Camada de dados:** `src/lib/audiofyClient.js` envolve `window.audiofy`
+  (exposta por `preload.js`, sem mudança) em uma função por comando da bridge.
+  As regras de erro/progresso continuam em `renderer/status-view.js`, importado
+  pelo bundle (`src/lib/statusView.js`) — uma implementação para as duas
+  superfícies, não duas cópias.
+- **Como abrir:** `npm start` (dentro de `electron/`) já abre o React.
+  `AUDIOFY_RENDERER=vanilla npm start` volta ao renderer antigo, que segue no
+  repositório como escape hatch e como base das outras superfícies.
+  `AUDIOFY_RENDERER_DEV_URL=http://localhost:5173 npm start` usa o servidor de dev
+  do Vite (HMR) — único modo com a CSP do próprio Vite, nunca no app empacotado.
+  A escolha vive em `resolveRendererTarget()` (`electron/environment.js`), coberta
+  por teste.
+- **Paridade:** todas as telas (Chat, Conteúdo, Episódios, Custos, Configurações),
+  o dock do player, a revisão de chunks e o teleprompter estão em React, com os
+  mesmos textos, formatos e CSS (`renderer/styles.css` é reaproveitado).
 - **Critério de "pronto" por tela:** componente React equivalente com os mesmos
   dados/textos/formatos da versão vanilla, teste Vitest + Testing Library cobrindo
   carregamento e casos de erro/vazio, e nenhuma regressão em `electron/tests/`

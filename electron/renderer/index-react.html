@@ -13,9 +13,8 @@
 </head>
 <body>
   <div id="root"></div>
-  <!-- Regras de erro/progresso compartilhadas com o renderer vanilla (window.audiofyStatusView);
-       carregado antes do bundle para não duplicar a lógica em React. -->
-  <script src="status-view.js"></script>
+  <!-- status-view.js (regras de erro/progresso compartilhadas com o renderer
+       vanilla) entra no próprio bundle, via src/lib/statusView.js. -->
   <script type="module" src="dist-react/app.js"></script>
 </body>
 </html>

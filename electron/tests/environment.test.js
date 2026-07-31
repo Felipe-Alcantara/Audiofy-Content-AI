@@ -3,7 +3,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { buildBridgeEnvironment } = require("../environment");
+const { buildBridgeEnvironment, resolveRendererTarget } = require("../environment");
 
 test("bridge remove somente valores que vieram do dotenv", () => {
   const environment = buildBridgeEnvironment({
@@ -48,4 +48,27 @@ test("bridge força UTF-8 para não corromper acentos em caminhos", () => {
   // Sem isso o Python usa o encoding do console (cp1252 no Windows) e devolve
   // caminhos corrompidos, que o app rejeita por não casarem com a raiz.
   assert.equal(environment.PYTHONIOENCODING, "utf-8");
+});
+
+test("renderer padrão desta branch é o React, com escape hatch para o vanilla", () => {
+  assert.deepEqual(resolveRendererTarget({}), { type: "file", target: "renderer/index-react.html" });
+  assert.deepEqual(resolveRendererTarget({ AUDIOFY_RENDERER: "react" }),
+    { type: "file", target: "renderer/index-react.html" });
+  assert.deepEqual(resolveRendererTarget({ AUDIOFY_RENDERER: "vanilla" }),
+    { type: "file", target: "renderer/index.html" });
+});
+
+test("servidor de dev do Vite só é usado quando explicitamente configurado", () => {
+  assert.deepEqual(
+    resolveRendererTarget({ AUDIOFY_RENDERER_DEV_URL: "http://localhost:5173" }),
+    { type: "url", target: "http://localhost:5173" }
+  );
+  // No vanilla a URL de dev não faz sentido e é ignorada.
+  assert.deepEqual(
+    resolveRendererTarget({
+      AUDIOFY_RENDERER: "vanilla",
+      AUDIOFY_RENDERER_DEV_URL: "http://localhost:5173",
+    }),
+    { type: "file", target: "renderer/index.html" }
+  );
 });

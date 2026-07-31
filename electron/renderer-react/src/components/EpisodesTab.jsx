@@ -1,27 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { abortEpisode, getStatus, openProjectPath } from "./audiofyClient.js";
+import { useCallback } from "react";
+import { abortEpisode, openProjectPath } from "../lib/audiofyClient.js";
 import {
   formatEpisodeDate,
   formatEpisodeDuration,
   formatFileSize,
   generationModeLabel,
-} from "./formatters.js";
+} from "../lib/formatters.js";
+import { friendlyGenerationError } from "../lib/statusView.js";
+import { usePlayer } from "../state/playerContext.js";
+import { useStatus } from "../state/statusContext.js";
 
-// Espelha renderEpisodes()/refreshStatus() de electron/renderer/renderer.js:
-// mesmos textos, formatos e classes CSS. Ações que dependem de superfícies ainda
-// não migradas (player do header, modal de chunks, teleprompter) ficam de fora
-// desta etapa — ver IA.md.
-const POLL_INTERVAL_MS = 2000;
-
-// friendlyGenerationError vive em renderer/status-view.js, carregado como script
-// clássico antes do bundle (index-react.html). Ler de window evita duplicar a regra.
-function friendlyGenerationError(error, keySource) {
-  const statusView = typeof window !== "undefined" ? window.audiofyStatusView : null;
-  if (statusView && typeof statusView.friendlyGenerationError === "function") {
-    return statusView.friendlyGenerationError(error, keySource);
-  }
-  return String(error || "");
-}
+// Espelha renderEpisodes() de electron/renderer/renderer.js: mesmos textos,
+// formatos e classes CSS. O status (e o polling de 2 s enquanto há geração
+// rodando) vem do StatusProvider, compartilhado com o header e a aba Conteúdo.
 
 function EpisodeFact({ label, value }) {
   return (
@@ -48,7 +39,8 @@ function productionLine(episode) {
   const music = episode.background_music ? ` · música ${episode.background_music}` : "";
   const source = episode.source_key ? `fonte ${episode.source_key} · ` : "";
   const presenters = (episode.presenters || [])
-    .map((p) => `${p.speaker}: ${p.voice}${p.style ? ` (${p.style})` : ""}`)
+    .map((presenter) => `${presenter.speaker}: ${presenter.voice}` +
+      `${presenter.style ? ` (${presenter.style})` : ""}`)
     .join(", ");
   const voices = presenters
     ? ` · vozes: ${presenters}`
@@ -68,7 +60,7 @@ function productionTitle(episode) {
   return parts.join(" · ") || undefined;
 }
 
-function EpisodeCard({ episode, onAbort, onOpenFolder }) {
+function EpisodeCard({ episode, onAbort, onPlay, onChunks, onFollow, onOpenFolder }) {
   const progress = episode.state === "rodando" && episode.progress && episode.progress.total
     ? ` · ${episode.progress.current}/${episode.progress.total}`
     : "";
@@ -124,6 +116,29 @@ function EpisodeCard({ episode, onAbort, onOpenFolder }) {
             🛑
           </button>
         )}
+        {episode.mp3 && (
+          <button
+            type="button"
+            title="Ouvir"
+            aria-label={`Ouvir ${episode.episode_id}`}
+            onClick={() => onPlay(episode)}
+          >
+            ▶️
+          </button>
+        )}
+        <button type="button" className="ghost" onClick={() => onChunks(episode)}>
+          🧪 chunks
+        </button>
+        {episode.mp3 && (
+          <button
+            type="button"
+            className="ghost"
+            title="Acompanhar a leitura com o texto na tela"
+            onClick={() => onFollow(episode)}
+          >
+            📖 acompanhar
+          </button>
+        )}
         <button
           type="button"
           title="Abrir pasta"
@@ -137,48 +152,20 @@ function EpisodeCard({ episode, onAbort, onOpenFolder }) {
   );
 }
 
-export default function EpisodesTab() {
-  const [state, setState] = useState({ status: "loading", episodes: [], error: null });
-  const timerRef = useRef(null);
-  const mountedRef = useRef(true);
-
-  const load = useCallback(async () => {
-    const overview = await getStatus();
-    if (!mountedRef.current) return;
-    if (!overview || !overview.ok) {
-      setState({
-        status: "error",
-        episodes: [],
-        error: overview ? overview.error : "Erro desconhecido.",
-      });
-      return;
-    }
-    setState({ status: "loaded", episodes: overview.episodes || [], error: null });
-    clearTimeout(timerRef.current);
-    // Mesmo polling do vanilla: só enquanto alguma geração está rodando.
-    if (overview.anything_running) timerRef.current = setTimeout(load, POLL_INTERVAL_MS);
-  }, []);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    load();
-    return () => {
-      mountedRef.current = false;
-      clearTimeout(timerRef.current);
-    };
-  }, [load]);
+export default function EpisodesTab({ onOpenChunks, onOpenTeleprompter }) {
+  const { episodes, error, refresh } = useStatus();
+  const { playEpisode } = usePlayer();
 
   const handleAbort = useCallback(async (episode) => {
     await abortEpisode(episode.episode_id, episode.language);
-    load();
-  }, [load]);
+    refresh();
+  }, [refresh]);
 
   const handleOpenFolder = useCallback(async (episode) => {
-    const error = await openProjectPath(episode.dir);
-    if (error) alert(error);
+    const failure = await openProjectPath(episode.dir);
+    if (failure) alert(failure);
   }, []);
 
-  const episodes = state.episodes;
   const completed = episodes.filter((episode) => episode.mp3).length;
   const summary = episodes.length
     ? `${completed} áudio(s) pronto(s) em ${episodes.length} registro(s), ` +
@@ -188,26 +175,23 @@ export default function EpisodesTab() {
   return (
     <section className="panel">
       <h2>Todos os episódios</h2>
-      <div className="row-actions">
-        <button type="button" onClick={load}>🔄 Atualizar</button>
+      <div className="form-row">
+        <button type="button" onClick={refresh}>🔄 Atualizar</button>
       </div>
-      {state.status === "error" && (
-        <p className="muted" role="alert">
-          Erro ao carregar episódios: {state.error}
-        </p>
-      )}
-      {state.status !== "error" && (
-        <p className="muted small" role="status">{summary}</p>
-      )}
-      <ul>
-        {episodes.length === 0 && state.status !== "error" && (
-          <li className="muted">Nenhum episódio ainda.</li>
-        )}
+      {error && <p className="muted" role="alert">{`Erro ao carregar episódios: ${error}`}</p>}
+      {!error && <p className="muted small" role="status">{summary}</p>}
+      <ul id="episodes">
+        {!error && episodes.length === 0 && <li className="muted">Nenhum episódio ainda.</li>}
         {episodes.map((episode) => (
           <EpisodeCard
             key={`${episode.episode_id}:${episode.language || "pt-BR"}`}
             episode={episode}
             onAbort={handleAbort}
+            onPlay={() => playEpisode(episode.mp3, episode.title || episode.episode_id)}
+            onChunks={() => onOpenChunks(
+              episode.episode_id, episode.title || episode.episode_id, episode.language
+            )}
+            onFollow={() => onOpenTeleprompter(episode)}
             onOpenFolder={handleOpenFolder}
           />
         ))}

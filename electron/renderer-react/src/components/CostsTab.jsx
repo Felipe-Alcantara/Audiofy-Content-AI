@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { getCosts } from "./audiofyClient.js";
-import { usd, formatEpisodeDuration } from "./formatters.js";
+import { getCosts } from "../lib/audiofyClient.js";
+import { usd, formatEpisodeDuration } from "../lib/formatters.js";
 
 function CostRow({ label, value }) {
   return (
