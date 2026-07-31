@@ -20,3 +20,18 @@ export function getStatus() {
 export function getCosts() {
   return callBridge(["costs"]);
 }
+
+export function abortEpisode(episodeId, language) {
+  const args = ["abort", episodeId];
+  if (language) args.push(`--language=${language}`);
+  return callBridge(args);
+}
+
+// Fora da bridge: abre um caminho do projeto no gerenciador de arquivos do SO
+// (preload.js expõe openPath). Devolve a mensagem de erro, ou vazio em sucesso.
+export function openProjectPath(target) {
+  if (!window.audiofy || typeof window.audiofy.openPath !== "function") {
+    return Promise.resolve("Ponte com o processo principal (window.audiofy) indisponível.");
+  }
+  return window.audiofy.openPath(target);
+}

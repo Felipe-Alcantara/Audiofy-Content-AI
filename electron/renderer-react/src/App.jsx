@@ -1,9 +1,9 @@
 import { useState } from "react";
 import CostsTab from "./CostsTab.jsx";
+import EpisodesTab from "./EpisodesTab.jsx";
 
-// Casca da versão React do renderer. Só a aba Custos está migrada nesta
-// entrega; as demais são placeholders até as próximas etapas (ver
-// docs/USO-PUBLICO.md).
+// Casca da versão React do renderer. Abas migradas: Custos e Episódios; as
+// demais são placeholders até as próximas etapas (ver docs/USO-PUBLICO.md).
 const TABS = [
   { id: "chat", label: "💬 Chat" },
   { id: "content", label: "📚 Conteúdo" },
@@ -48,7 +48,9 @@ export default function App() {
         </div>
       </header>
       <main>
-        {activeTab === "costs" ? <CostsTab /> : <Placeholder label={activeMeta.label} />}
+        {activeTab === "costs" ? <CostsTab />
+          : activeTab === "episodes" ? <EpisodesTab />
+            : <Placeholder label={activeMeta.label} />}
       </main>
     </>
   );

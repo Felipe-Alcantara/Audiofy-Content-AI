@@ -3132,3 +3132,35 @@ Configurações) são telas maiores (formulário, modal, polling, upload) que ai
 `audiofyClient.js` expandido e do mesmo padrão de teste, uma de cada vez. O carregamento do bundle
 React via `file://` dentro do Electron empacotado (fora do modo dev) não foi verificado
 visualmente nesta entrada — só build + testes automatizados.
+
+## 2026-07-31 — Migração da aba Episódios para React
+
+**O que mudou:** `electron/renderer-react/src/EpisodesTab.jsx` reproduz `renderEpisodes()` e o
+polling de `refreshStatus()` do renderer vanilla (`electron/renderer/renderer.js`) — mesmos textos,
+formatos, classes CSS e a repetição de 2 s enquanto houver geração rodando. `formatters.js` ganhou
+`formatEpisodeDate`, `formatFileSize` e `generationModeLabel`; `audiofyClient.js` ganhou
+`abortEpisode()` e `openProjectPath()` (este último sobre `window.audiofy.openPath` do preload).
+`index-react.html` passou a carregar `status-view.js` como script clássico antes do bundle, para o
+React reusar `friendlyGenerationError` em vez de duplicar a regra. `App.jsx` roteia a aba
+"🎧 Episódios" para o novo componente.
+
+**Por que:** continuação da tarefa do Notion "Passar o AudioFy pra React", escopada só na
+`feat/uso-publico` (`docs/ESTRATEGIA-DE-BRANCHES.md`) — confirmado pelo usuário nesta rodada.
+Episódios era a próxima tela mais simples depois de Custos: lista com polling, sem formulário nem
+modal. TDD: os 8 testes Vitest foram escritos antes do componente (carregamento, estado vazio,
+erro, progresso/abortar, aborto já pedido, abrir pasta, polling que para sozinho, botão Atualizar).
+
+**Decisão:** as ações que dependem de superfícies ainda não migradas — tocar no player do header
+(`▶️`), revisão de chunks (`🧪`) e teleprompter (`📖`) — ficaram **fora** desta etapa; o card React
+oferece só abortar e abrir pasta. Migrar essas ações exige antes o dock do player e os modais em
+React, e portá-las pela metade deixaria botões que não funcionam.
+
+**Validação:** `cd electron/renderer-react && npm test && npm run build && npm run lint`
+(12 testes Vitest passando, build regenerou `app.js`/`app.css`, oxlint sem erros).
+`cd electron && npm run check` verde (71 passes, 1 skip pré-existente de Windows).
+`python3 scripts/check_quality.py --quick` mantém apenas a reprovação pré-existente de formatação
+em quatro arquivos Python não tocados (registrada em 2026-07-29).
+
+**Risco que sobrou:** faltam Chat, Conteúdo e Configurações (formulário, upload, modais, player) —
+as telas grandes. E o carregamento do bundle React via `file://` no Electron empacotado continua
+sem verificação visual, como na entrada anterior.
