@@ -6,7 +6,10 @@ const readonly = "readonly";
 
 module.exports = [
   {
-    ignores: ["node_modules/**"],
+    // renderer-react/ é um projeto Vite isolado com seu próprio
+    // package.json/lint (oxlint) e build (dist-react/, gerado, não deve ser
+    // lintado como JS escrito à mão).
+    ignores: ["node_modules/**", "renderer-react/**", "renderer/dist-react/**"],
   },
   js.configs.recommended,
   {

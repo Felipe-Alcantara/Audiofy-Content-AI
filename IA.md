@@ -3101,3 +3101,34 @@ mantém avisos de formatação pré-existentes em quatro arquivos não tocados.
 adicionou `docs/USO-INTERNO.md`, `docs/USO-PUBLICO.md` e `docs/USO-API.md`, além de links no
 README. Os guias delimitam público, responsabilidades, limites e relação com o núcleo, sem
 duplicar a implementação. Validação: links locais conferidos pela régua de qualidade.
+
+## 2026-07-30 — Fundação React do renderer + piloto da aba Custos
+
+**O que mudou:** criou `electron/renderer-react/` (Vite + React, JS puro, `package.json`/testes/lint
+isolados) e migrou a aba Custos como piloto: `CostsTab.jsx` reproduz `renderCosts`/`loadCosts` de
+`electron/renderer/renderer.js` (mesmos dados, texto e formatos), com `audiofyClient.js` envolvendo
+`window.audiofy.bridge` em funções por comando (`getStatus`, `getCosts`). Nova página
+`electron/renderer/index-react.html` carrega o build estático (`dist-react/app.js`/`app.css`, nomes
+fixos sem hash) com a mesma CSP restritiva do `index.html` vanilla. `main.js` ganhou as variáveis de
+ambiente `AUDIOFY_RENDERER=react` (opcional) e `AUDIOFY_RENDERER_DEV_URL` (dev/HMR do Vite, CSP
+relaxada só nesse caso) sem alterar o comportamento padrão. `electron/eslint.config.cjs` passou a
+ignorar `renderer-react/**` e `renderer/dist-react/**` (projeto e build isolados, com seu próprio
+lint). `.gitignore` ganhou `electron/renderer-react/node_modules/` e `electron/renderer/dist-react/`.
+
+**Por que:** tarefa do Notion "Passar o AudioFy pra React", escopada só na `feat/uso-publico`
+(`docs/ESTRATEGIA-DE-BRANCHES.md`) — `feat/uso-interno`/`feat/uso-api` continuam com o renderer
+vanilla. Migração incremental: fundação + tela mais simples (leitura pura, sem formulário/modal/
+polling) antes de enfrentar telas com estado complexo, seguindo TDD (teste Vitest/Testing Library
+escrito junto do componente, cobrindo carregamento, estado vazio, erro e o botão Atualizar).
+
+**Validação:** `cd electron/renderer-react && npm run build && npm test && npm run lint` (4 testes
+Vitest passando, build gera `app.js`/`app.css`/`index.html` em `../renderer/dist-react`, oxlint sem
+erros, `npm audit` sem vulnerabilidades). `cd electron && npm run check` continua verde (lint +
+`node --check` + 71 testes `node --test`, 1 skip pré-existente no Windows) — nada no vanilla/main
+process quebrou.
+
+**Risco que sobrou:** só a aba Custos está migrada; as demais (Chat, Conteúdo, Episódios,
+Configurações) são telas maiores (formulário, modal, polling, upload) que ainda vão precisar de
+`audiofyClient.js` expandido e do mesmo padrão de teste, uma de cada vez. O carregamento do bundle
+React via `file://` dentro do Electron empacotado (fora do modo dev) não foi verificado
+visualmente nesta entrada — só build + testes automatizados.

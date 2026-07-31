@@ -93,7 +93,20 @@ function createWindow() {
       sandbox: true,
     },
   });
-  window.loadFile("renderer/index.html");
+  // Renderer padrão continua o vanilla (renderer/index.html). A versão React
+  // (piloto: aba Custos, ver docs/USO-PUBLICO.md) é opt-in via variável de
+  // ambiente, para não alterar o fluxo atual de ninguém.
+  //   AUDIOFY_RENDERER=react                        -> build estático (renderer/index-react.html)
+  //   AUDIOFY_RENDERER=react + AUDIOFY_RENDERER_DEV_URL=http://localhost:5173 -> servidor de dev do Vite (HMR)
+  // A CSP relaxada do servidor de dev do Vite só existe nesse segundo caso,
+  // que nunca roda no app empacotado (variáveis de ambiente não setadas).
+  if (process.env.AUDIOFY_RENDERER === "react" && process.env.AUDIOFY_RENDERER_DEV_URL) {
+    window.loadURL(process.env.AUDIOFY_RENDERER_DEV_URL);
+  } else if (process.env.AUDIOFY_RENDERER === "react") {
+    window.loadFile("renderer/index-react.html");
+  } else {
+    window.loadFile("renderer/index.html");
+  }
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event) => event.preventDefault());
 }
