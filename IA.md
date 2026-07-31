@@ -3209,8 +3209,10 @@ chunks e o console não registra nenhum erro — o risco em aberto desde 2026-07
 `python3 scripts/check_quality.py --quick` mantém só a reprovação pré-existente de
 formatação em quatro arquivos Python não tocados.
 
-**Risco que sobrou:** a paridade foi verificada por testes e por inspeção visual em
-1200×800; falta conferir manualmente as larguras de 600 px e 380 px exigidas pelo
-`AGENTS.md` para mudanças visuais. E fluxos que gastam créditos de verdade (gerar,
+As larguras exigidas pelo `AGENTS.md` foram conferidas no mesmo driver: em 600 px e
+380 px o layout empilha (abas em grade, painéis em coluna) sem estouro horizontal
+(`scrollWidth == innerWidth`) e sem erro de console.
+
+**Risco que sobrou:** fluxos que gastam créditos de verdade (gerar,
 reparar, retomada automática por limite de chave) foram exercitados só por teste com
 a bridge simulada — não por uma geração real ponta a ponta nesta interface.
