@@ -22,10 +22,10 @@ CLI/Electron, seguindo [docs/PLANO-TECNICO.md](docs/PLANO-TECNICO.md).
 
 ## Estado atual (resumo vivo)
 
-Última atualização: [2026-07-29]
+Última atualização: [2026-08-17]
 - Fase: MVP funcional; estratégia de separação em três superfícies documentada.
 - Estado: branches `feat/uso-interno`, `feat/uso-publico` e `feat/uso-api` criadas a partir de `main`.
-- Próximo passo: implementar e testar as bordas de cada frente sem duplicar o núcleo.
+- Próximo passo: revisar e apresentar os roteiros em `docs/APRESENTACAO-AUDIOFY-FLAVIA.md` e `docs/PRESENTATION-AUDIOFY-CAMERON.md`; depois decidir o piloto do módulo Áudio-revisão no Prisma.
 - Risco aberto: o Meu-Ecoo-Prisma ainda não possui integração executável; o contrato da API precisa ser validado com o consumidor antes de estabilizar a versão pública.
 
 ---
@@ -178,6 +178,22 @@ intenção era usar a assinatura para as etapas de texto, com modelos fora do Op
 **Validação:** 42 testes verdes (7 novos); provedor de assinatura testado ao vivo com o
 Claude Code real (JSON válido, custo zero); exportação NotebookLM executada contra o episódio
 piloto; menu e status smoke-testados.
+
+## 2026-08-17 — Apresentações do Audiofy para Flávia e Cameron
+
+**O que mudou:** criada uma fonte factual em duas apresentações adaptadas ao público:
+`docs/APRESENTACAO-AUDIOFY-FLAVIA.md` (português, operação e decisão da Vitis Souls) e
+`docs/PRESENTATION-AUDIOFY-CAMERON.md` (inglês, valor, tração, economia e risco). Ambas usam os
+mesmos números medidos — 12 episódios, 5h40min55s, 50.024 palavras, US$ 6,85 no total,
+US$ 0,57 por episódio e US$ 0,02 por minuto — e explicam a incorporação do motor no Prisma
+como módulo Áudio-revisão. A versão em inglês adapta o enquadramento, não traduz palavra por
+palavra.
+
+**Validação:** confirmado no repositório que existem 12 diretórios de episódios versionados;
+os fatos técnicos foram conferidos em `README.md`, `docs/MODELOS-E-CUSTOS.md`,
+`docs/USO-INTERNO.md` e nos artefatos de `data/episodes/`. A demonstração proposta usa o fluxo
+real de `start_app.py` e os artefatos auditáveis dos episódios. Nenhuma chave ou conteúdo
+privado foi incluído.
 
 **Risco que sobrou:** os flags headless das CLIs (`claude -p`, `gemini` via stdin,
 `codex exec -`) podem mudar entre versões; a falha é explícita (stderr no erro) e o fallback
