@@ -158,7 +158,14 @@
             <select id="narration-voice"></select>
             <button type="button" id="narration-voice-hint" class="voice-hint hidden"></button>
           </label>
+          <label id="voice-stability-label" class="hidden">Estabilidade da voz
+            <select id="voice-stability">
+              <option value="natural">Natural — interpretação planejada por trecho</option>
+              <option value="estavel">Estável — mesmo tom do começo ao fim</option>
+            </select>
+          </label>
           <p id="generation-mode-note" class="muted small"></p>
+          <p id="voice-stability-note" class="muted small hidden"></p>
           <div class="background-music-options">
             <div class="background-music-picker">
               <button id="btn-background-music" type="button">🎵 Escolher música de fundo</button>
@@ -477,6 +484,10 @@
           <label id="pf-force-language-row" class="checkbox-row hidden">
             <input type="checkbox" id="pf-force-language" />
             <span id="pf-force-language-text"></span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="pf-stable-voice" />
+            <span>Voz estável nas leituras (menos variação de tom)</span>
           </label>
           <span id="pf-presenters-label" class="field-label">Apresentadores</span>
           <div id="pf-presenters" role="group" aria-labelledby="pf-presenters-label"></div>

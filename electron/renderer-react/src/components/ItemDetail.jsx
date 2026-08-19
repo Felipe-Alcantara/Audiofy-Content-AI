@@ -30,6 +30,20 @@ const MODE_NOTES = {
   adaptation: "Cria matriz de cobertura, adapta o texto como roteiro e audita o resultado.",
 };
 
+// Na voz estável não há planejamento de interpretação: repetir a nota padrão
+// da leitura fiel aqui prometeria uma etapa que não vai acontecer.
+const STABLE_MODE_NOTES = {
+  verbatim: "O texto falado é preservado integralmente, em trechos maiores e retomáveis, "
+    + "sem etapa de planejamento de interpretação.",
+};
+
+const STABILITY_NOTES = {
+  natural: "A IA planeja emoção, ritmo e pausas trecho a trecho: mais expressivo, "
+    + "porém o tom varia ao longo do áudio.",
+  estavel: "Uma direção vocal única para a obra inteira, trechos maiores e volume "
+    + "nivelado entre eles: menos variação de tom, sem etapa de planejamento.",
+};
+
 const FORCE_LABELS = {
   verbatim: "Replanejar interpretação e regenerar áudios",
   reflexive: "Replanejar leitura reflexiva e regenerar áudios",
@@ -37,9 +51,14 @@ const FORCE_LABELS = {
 };
 
 function generationArgs(source, itemId, options) {
-  const { mode, voice, language, force, backgroundMusic, volume } = options;
+  const { mode, voice, language, force, backgroundMusic, volume, stability } = options;
   const args = ["generate", source, itemId, `--mode=${mode}`];
   if (mode === "verbatim" || mode === "reflexive") args.push(`--voice=${voice}`);
+  // Só as leituras têm direção vocal por trecho; no podcast adaptado a opção
+  // não existe e mandá-la seria ruído no contrato da bridge.
+  if (stability && (mode === "verbatim" || mode === "reflexive")) {
+    args.push(`--stability=${stability}`);
+  }
   if (force) args.push("--force");
   if (backgroundMusic) {
     args.push(`--background-music=${backgroundMusic}`);
@@ -58,6 +77,8 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
   const [language, setLanguage] = useState("pt-BR");
   const [voice, setVoice] = useState("");
   const [voiceTouched, setVoiceTouched] = useState(false);
+  const [stability, setStability] = useState("natural");
+  const [stabilityTouched, setStabilityTouched] = useState(false);
   const [force, setForce] = useState(false);
   const [music, setMusic] = useState({ path: null, name: null });
   const [volumePercent, setVolumePercent] = useState(8);
@@ -83,6 +104,12 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
     if (info) setLanguage(info.language || "pt-BR");
   }, [info]);
 
+  // O perfil define o padrão de estabilidade; a escolha por episódio só o
+  // sobrepõe quando o usuário mexe no seletor.
+  useEffect(() => {
+    if (info && !stabilityTouched) setStability(info.voice_stability || "natural");
+  }, [info, stabilityTouched]);
+
   useEffect(() => {
     if (voiceTouched) return;
     const preferred = profileVoice || "Sulafat";
@@ -97,6 +124,7 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
     setMusic({ path: null, name: null });
     setRequest(null);
     setForce(false);
+    setStabilityTouched(false);
   }, [item.item_id]);
 
   const status = episodes.find(
@@ -161,6 +189,7 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
           language,
           backgroundMusic: status.background_music_cache,
           volume: status.background_volume,
+          stability: status.voice_stability,
         }));
         if (!result.ok || (!result.started && result.reason !== "geração já em andamento")) {
           setRequest({
@@ -192,6 +221,10 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
     const modeLabel = mode === "verbatim" ? "Gerar leitura fiel"
       : mode === "reflexive" ? "Gerar leitura reflexiva"
       : "Gerar episódio";
+    const stabilityNote = needsNarrator && stability === "estavel"
+      ? "\n\nVoz estável: uma direção vocal única para o áudio inteiro, sem planejamento "
+        + "de interpretação por trecho (menos variação de tom e custo menor)."
+      : "";
     const narratorNote = mode === "verbatim"
       ? `\n\nNarrador: ${voice}. O texto não será reescrito; somente a interpretação será planejada.`
       : mode === "reflexive"
@@ -210,6 +243,7 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
       `(faixa US$ ${estimate.cost_min_usd.toFixed(2)}–${estimate.cost_max_usd.toFixed(2)}) ` +
       "(consome créditos do OpenRouter)." +
       narratorNote +
+      stabilityNote +
       (music.name
         ? `\n\nMúsica de fundo: ${music.name} a ${Math.round(backgroundVolume * 100)}%. ` +
           "Os chunks de voz serão reaproveitados quando compatíveis."
@@ -223,6 +257,7 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
     try {
       const result = await generateEpisode(generationArgs(source, item.item_id, {
         mode, voice, language, force, backgroundMusic: music.path, volume: backgroundVolume,
+        stability,
       }));
       if (!result.ok || !result.started) {
         setRequest({
@@ -239,7 +274,8 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
     } finally {
       setRequestPending(false);
     }
-  }, [estimate, force, item, language, mode, music, refreshStatus, source, voice, volumePercent]);
+  }, [estimate, force, item, language, mode, music, refreshStatus, source, stability, voice,
+    volumePercent]);
 
   const handleAbort = useCallback(async () => {
     const result = await abortEpisode(item.item_id, language);
@@ -308,6 +344,8 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
 
   const needsNarrator = mode === "verbatim" || mode === "reflexive";
   const showVoiceField = needsNarrator && !profileVoice;
+  const modeNote = (needsNarrator && stability === "estavel" && STABLE_MODE_NOTES[mode])
+    || MODE_NOTES[mode] || MODE_NOTES.adaptation;
   const voiceDiffers = Boolean(profileVoice) && voice !== profileVoice;
 
   return (
@@ -400,7 +438,27 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
             )}
           </label>
         )}
-        <p className="muted small">{MODE_NOTES[mode] || MODE_NOTES.adaptation}</p>
+        {needsNarrator && (
+          <label>
+            Estabilidade da voz
+            <select
+              value={stability}
+              disabled={locked}
+              onWheel={(event) => event.preventDefault()}
+              onChange={(event) => {
+                setStabilityTouched(true);
+                setStability(event.target.value);
+              }}
+            >
+              <option value="natural">Natural — interpretação planejada por trecho</option>
+              <option value="estavel">Estável — mesmo tom do começo ao fim</option>
+            </select>
+          </label>
+        )}
+        <p className="muted small">{modeNote}</p>
+        {needsNarrator && (
+          <p className="muted small">{STABILITY_NOTES[stability]}</p>
+        )}
 
         <div className="background-music-options">
           <div className="background-music-picker">

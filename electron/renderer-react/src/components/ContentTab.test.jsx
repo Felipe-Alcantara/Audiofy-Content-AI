@@ -156,8 +156,51 @@ describe("ContentTab", () => {
     fireEvent.click(screen.getByRole("button", { name: "📖 Gerar leitura fiel" }));
 
     await waitFor(() => expect(bridge).toHaveBeenCalledWith(
-      ["generate", "custom", "conto-1", "--mode=verbatim", "--voice=Sulafat"], undefined
+      ["generate", "custom", "conto-1", "--mode=verbatim", "--voice=Sulafat",
+        "--stability=natural"],
+      undefined
     ));
+  });
+
+  it("manda a estabilidade escolhida e só nas leituras", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const bridge = mockAudiofy({
+      ...BASE_HANDLERS,
+      generate: () => ({ ok: true, started: true }),
+    });
+
+    renderContent();
+    fireEvent.click(await screen.findByText("Conto do mar"));
+    await screen.findByRole("button", { name: "🎙️ Gerar episódio" });
+
+    // No podcast adaptado não há direção vocal por trecho: o campo nem aparece.
+    expect(screen.queryByLabelText("Estabilidade da voz")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Formato"), { target: { value: "verbatim" } });
+    fireEvent.change(await screen.findByLabelText("Estabilidade da voz"),
+      { target: { value: "estavel" } });
+    fireEvent.click(screen.getByRole("button", { name: "📖 Gerar leitura fiel" }));
+
+    await waitFor(() => expect(bridge).toHaveBeenCalledWith(
+      expect.arrayContaining(["--mode=verbatim", "--stability=estavel"]), undefined
+    ));
+  });
+
+  it("na voz estável não promete planejamento de interpretação", async () => {
+    mockAudiofy(BASE_HANDLERS);
+
+    renderContent();
+    fireEvent.click(await screen.findByText("Conto do mar"));
+    await screen.findByRole("button", { name: "🎙️ Gerar episódio" });
+    fireEvent.change(screen.getByLabelText("Formato"), { target: { value: "verbatim" } });
+
+    expect(await screen.findByText(/A IA planeja apenas ritmo/)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Estabilidade da voz"),
+      { target: { value: "estavel" } });
+
+    expect(screen.queryByText(/A IA planeja apenas ritmo/)).toBeNull();
+    expect(screen.getByText(/sem etapa de planejamento de interpretação/)).toBeInTheDocument();
   });
 
   it("acrescenta --force e --language quando escolhidos", async () => {

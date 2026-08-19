@@ -935,7 +935,18 @@ function updateGenerationMode() {
   const profileVoice = settingsInfo && settingsInfo.presenters.length === 1
     ? settingsInfo.presenters[0].voice : "";
   $("narration-voice-label").classList.toggle("hidden", !needsNarrator || Boolean(profileVoice));
-  $("generation-mode-note").textContent = mode === "verbatim"
+  $("voice-stability-label").classList.toggle("hidden", !needsNarrator);
+  $("voice-stability-note").classList.toggle("hidden", !needsNarrator);
+  $("voice-stability-note").textContent = estavel
+    ? "Uma direção vocal única para a obra inteira, trechos maiores e volume nivelado " +
+      "entre eles: menos variação de tom, sem etapa de planejamento."
+    : "A IA planeja emoção, ritmo e pausas trecho a trecho: mais expressivo, porém o " +
+      "tom varia ao longo do áudio.";
+  const estavel = needsNarrator && $("voice-stability").value === "estavel";
+  $("generation-mode-note").textContent = mode === "verbatim" && estavel
+    ? "O texto falado é preservado integralmente, em trechos maiores e retomáveis, " +
+      "sem etapa de planejamento de interpretação."
+    : mode === "verbatim"
     ? "O texto falado é preservado integralmente. A IA planeja apenas ritmo, pausas, " +
       "emoção e tensão em lotes retomáveis."
     : mode === "reflexive"
@@ -955,13 +966,18 @@ function generationArgs(
   source,
   itemId,
   { force = false, mode = null, voice = null, backgroundMusic = null, volume = null,
-    language = null } = {}
+    language = null, stability = null } = {}
 ) {
   const selectedMode = mode || $("generation-mode").value;
   const selectedVoice = voice || $("narration-voice").value;
   const selectedLang = language || $("generation-language").value;
+  const selectedStability = stability || $("voice-stability").value;
   const args = ["generate", source, itemId, `--mode=${selectedMode}`];
   if (selectedMode === "verbatim" || selectedMode === "reflexive") args.push(`--voice=${selectedVoice}`);
+  // Só as leituras têm direção vocal por trecho; no podcast adaptado a opção não existe.
+  if (selectedStability && (selectedMode === "verbatim" || selectedMode === "reflexive")) {
+    args.push(`--stability=${selectedStability}`);
+  }
   if (force) args.push("--force");
   if (backgroundMusic) {
     args.push(`--background-music=${backgroundMusic}`);
@@ -972,6 +988,7 @@ function generationArgs(
 }
 
 $("generation-mode").onchange = updateGenerationMode;
+$("voice-stability").onchange = updateGenerationMode;
 $("generation-language").onchange = () => refreshStatus();
 
 function clearBackgroundMusic() {
@@ -1036,6 +1053,7 @@ async function maybeAutoResume(status) {
       voice: status.narration_voice,
       backgroundMusic: status.background_music_cache,
       volume: status.background_volume,
+      stability: status.voice_stability,
     }));
     if (!result.ok || (!result.started && result.reason !== "geração já em andamento")) {
       showGenerationRequest(
@@ -1744,6 +1762,8 @@ function renderActiveConfig(info) {
 
   // Sincroniza o seletor de idioma com o perfil ativo
   $("generation-language").value = info.language || "pt-BR";
+  // Idem para a estabilidade da voz: o perfil dá o padrão, o episódio sobrepõe.
+  $("voice-stability").value = info.voice_stability || "natural";
 
   const voiceSelect = $("narration-voice");
   const previousVoice = voiceSelect.value;
@@ -2614,6 +2634,7 @@ async function openProfileForm(profile = null, tabCategory = null) {
   };
   renderTtsTierInfo();
   $("pf-force-language").checked = Boolean(profile && profile.force_language);
+  $("pf-stable-voice").checked = Boolean(profile && profile.stable_voice);
   renderLanguageAmbiguityInfo();
 
   $("pf-presenters").replaceChildren();
@@ -2658,6 +2679,7 @@ $("profile-form").onsubmit = async (event) => {
     tts_model: $("pf-tts-model").value,
     presenters_spec: spec,
     force_language: $("pf-force-language").checked,
+    stable_voice: $("pf-stable-voice").checked,
     activate: true,
   };
   if (!payload.name || !spec) {

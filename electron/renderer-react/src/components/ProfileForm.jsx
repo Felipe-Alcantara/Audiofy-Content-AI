@@ -134,6 +134,7 @@ export default function ProfileForm({ profile, category, onCancel, onSaved }) {
   const [auditModel, setAuditModel] = useState(base.audit_model || "");
   const [ttsModel, setTtsModel] = useState(base.tts_model || "");
   const [forceLanguage, setForceLanguage] = useState(Boolean(profile && profile.force_language));
+  const [stableVoice, setStableVoice] = useState(Boolean(profile && profile.stable_voice));
   const [presenters, setPresenters] = useState(() => (profile
     ? presentersFromSpec(profile.presenters_spec)
     : (info && info.presenters.length
@@ -224,6 +225,7 @@ export default function ProfileForm({ profile, category, onCancel, onSaved }) {
       tts_model: ttsModel,
       presenters_spec: spec,
       force_language: forceLanguage,
+      stable_voice: stableVoice,
       activate: true,
     };
     if (!payload.name || !spec) {
@@ -241,7 +243,7 @@ export default function ProfileForm({ profile, category, onCancel, onSaved }) {
     if (result.ok) onSaved();
     else setError(`✖ ${result.error}`);
   }, [auditModel, description, forceLanguage, name, onSaved, presenters, provider,
-    subscriptionModel, textModel, ttsModel]);
+    stableVoice, subscriptionModel, textModel, ttsModel]);
 
   return (
     <form className="profile-form" onSubmit={handleSubmit}>
@@ -374,6 +376,20 @@ export default function ProfileForm({ profile, category, onCancel, onSaved }) {
           <span>Forçar o idioma configurado no perfil</span>
         </label>
       )}
+
+      <label className="checkbox-row">
+        <input
+          type="checkbox"
+          checked={stableVoice}
+          onChange={(event) => setStableVoice(event.target.checked)}
+        />
+        <span>Voz estável nas leituras (menos variação de tom)</span>
+      </label>
+      <p className="muted small">
+        Padrão deste perfil para a leitura fiel e a reflexiva: uma direção vocal única
+        para o áudio inteiro, em vez de uma interpretação planejada por trecho. Cada
+        episódio ainda pode escolher o contrário na hora de gerar.
+      </p>
 
       <span className="field-label" id="pf-presenters-label">Apresentadores</span>
       <div id="pf-presenters" role="group" aria-labelledby="pf-presenters-label">
