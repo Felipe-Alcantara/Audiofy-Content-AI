@@ -20,10 +20,18 @@ _PILOT_COST_USD = 0.624287
 # Preços por milhão de tokens e taxa documentada pelo Google. Esse mapa é
 # apenas fallback quando o OpenRouter não disponibiliza o custo da geração.
 _TTS_TOKEN_PRICING = {
+    # A taxa de tokens de áudio por segundo veio da fatura, não da documentação:
+    # em 19/08/2026, oito gerações reais deste modelo cobraram entre 48,4 e 53,4
+    # tokens por segundo de áudio entregue (média 50,6), com o preço por token
+    # confirmado em US$ 20 por milhão. A tabela antiga assumia 25 e fazia o app
+    # prometer metade do preço real — o tipo de erro que só aparece na fatura.
+    # Gerações curtas do mesmo modelo já foram medidas a 25 tokens/s, então a
+    # taxa não é fixa; ficamos com a maior observada, porque subestimar custo é
+    # pior do que superestimar para quem decide se manda gerar.
     "google/gemini-3.1-flash-tts-preview": {
         "input_per_million": 1.0,
         "output_per_million": 20.0,
-        "audio_tokens_per_second": 25.0,
+        "audio_tokens_per_second": 50.6,
     },
     # Kokoro cobra por caractere ($0.62/M), sem custo de saída. O fator 4
     # compensa a divisão ``len / 4`` em estimate_tts_cost, resultando no

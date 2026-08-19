@@ -44,7 +44,15 @@ class EpisodeEstimateTest(unittest.TestCase):
         self.assertAlmostEqual(estimate.cost_min_usd, 0.80, places=2)
         self.assertAlmostEqual(estimate.cost_max_usd, 1.19, places=2)
 
-    def test_fallback_gemini_usa_preco_e_tokens_de_audio_oficiais(self):
+    def test_fallback_gemini_usa_a_taxa_de_tokens_medida_na_fatura(self):
+        """A tabela vinha de 25 tokens de áudio por segundo e as faturas reais
+        mostraram 50,6 — o dobro. Um estimador que promete metade do preço não
+        é conservador, é enganoso: quem decide gerar acha que vai pagar 0,03 por
+        minuto e paga 0,06.
+
+        Conferido em quatro gerações reais do mesmo modelo, com o custo vindo do
+        provedor (não estimado), em 19/08/2026.
+        """
         cost = estimate_tts_cost(
             SimpleNamespace(tts_model="google/gemini-3.1-flash-tts-preview"),
             text="fala curta",
@@ -52,8 +60,8 @@ class EpisodeEstimateTest(unittest.TestCase):
             duration_seconds=60,
         )
 
-        self.assertGreater(cost, 0.030)
-        self.assertLess(cost, 0.031)
+        self.assertGreater(cost, 0.060)
+        self.assertLess(cost, 0.062)
 
     def test_perfil_diferente_nao_entra_na_media(self):
         with tempfile.TemporaryDirectory() as tmp:
