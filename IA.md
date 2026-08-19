@@ -3347,3 +3347,35 @@ validado como YAML.
 **Risco que sobra:** a `main` deixou de ter branch de integração intermediária, então mudança
 arriscada passa a exigir disciplina de commit pequeno em vez de isolamento por branch. As duas
 atualizações maiores continuam pendentes e o repositório segue rodando Electron 41 e eslint 9.
+
+## 2026-08-19 — Rolagem do app restaurada (regressão da migração para React)
+
+**Sintoma relatado:** "o scroll do Conteúdo sumiu".
+
+**Causa:** o bundle React monta em `<div id="root">`, elemento que não existe no renderer vanilla
+e que não tinha nenhuma regra em `styles.css`. Ele fica **entre** o `body` e a casca do app, com
+altura automática: a cadeia de altura termina ali, `#app-content { flex: 1; min-height: 0 }` perde
+o pai flex e os painéis — que carregam o `overflow-y: auto` — crescem além da janela em vez de
+ficarem contidos nela. Como o `body` tem `overflow: hidden`, o excedente não ganha barra de
+rolagem: fica inalcançável.
+
+**Alcance maior que o relato:** medido no app real, o problema atingia todas as abas —
+Episódios com 5.158 px de conteúdo numa janela de 900 px, Configurações com 2.886 px, Custos com
+2.009 px. A regressão entrou em `5ba1448` (React como renderer padrão, 31/07) e passou três
+semanas sem ser notada.
+
+**Por que ninguém pegou antes:** os testes de componente rodam sobre jsdom, que não calcula
+layout; e `scripts/verify_app_ui.js` só media largura, porque a exigência escrita no `AGENTS.md`
+fala de 600 px e 380 px. Estouro vertical não era verificado em lugar nenhum.
+
+**Correção:** `#root` passa a ser container flex de altura contida (`flex: 1; min-height: 0;
+display: flex; flex-direction: column`), que é o que os elementos internos já esperavam. O
+renderer vanilla não tem esse elemento, então a regra é inócua lá.
+
+**Verificação nova:** `verify_app_ui.js` passa a reprovar quando o conteúdo do documento
+ultrapassa a altura da janela, informando aba e excesso. Foi escrita **antes** da correção e
+reproduziu o defeito nas seis combinações de aba e largura; depois da correção, o app fica
+contido e a lista de conteúdos volta a rolar (583 px visíveis para 1.004 px de conteúdo).
+
+**Risco que sobra:** a regra do `#root` vale para o bundle atual. Se o app um dia montar em outro
+elemento, a mesma quebra volta — a verificação de contenção vertical é a rede que pega isso.
