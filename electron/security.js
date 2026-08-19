@@ -7,7 +7,9 @@ const MAX_STDIN_LENGTH = 6 * 1024 * 1024;
 
 const COMMAND_ARITY = Object.freeze({
   "sources": [1, 1], "sync": [2, 2], "items": [2, 2], "search": [3, 3],
-  "item": [3, 3], "generate": [3, 8], "status": [1, 2], "abort": [2, 3],
+  // generate: comando + fonte + item + até 6 opções (--mode, --voice, --force,
+  // --background-music, --background-volume, --language, --stability).
+  "item": [3, 3], "generate": [3, 10], "status": [1, 2], "abort": [2, 3],
   "generation-log": [2, 3],
   "audio-chunks": [2, 3],
   "playback-position-get": [2, 2], "playback-position-save": [3, 3],

@@ -58,7 +58,18 @@ test("generate aceita música e volume sem liberar argumentos ilimitados", () =>
     "--background-music=/tmp/trilha.mp3", "--background-volume=0.08",
   ]));
   assert.throws(() => validateBridgeRequest([
-    "generate", "custom", "livro", "--mode=adaptation", "--force", "x", "y", "z", "extra",
+    "generate", "custom", "livro", "--mode=adaptation", "--force", "x", "y", "z", "extra", "demais", "sobrando",
+  ]));
+});
+
+// A combinação completa da tela de geração precisa caber na aridade: com o teto
+// antigo (8), leitura fiel em inglês, com música e regeneração forçada era
+// recusada aqui antes mesmo de sair do Electron.
+test("generate aceita a combinação completa da interface", () => {
+  assert.doesNotThrow(() => validateBridgeRequest([
+    "generate", "custom", "livro", "--mode=verbatim", "--voice=Sulafat", "--force",
+    "--background-music=/tmp/trilha.mp3", "--background-volume=0.08", "--language=en",
+    "--stability=estavel",
   ]));
 });
 
