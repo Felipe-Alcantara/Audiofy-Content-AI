@@ -3379,3 +3379,53 @@ contido e a lista de conteúdos volta a rolar (583 px visíveis para 1.004 px de
 
 **Risco que sobra:** a regra do `#root` vale para o bundle atual. Se o app um dia montar em outro
 elemento, a mesma quebra volta — a verificação de contenção vertical é a rede que pega isso.
+
+## 2026-08-19 — Auditoria do primeiro episódio longo em voz estável
+
+**Origem:** o usuário gerou um episódio real (28 min, 4.120 palavras) e reprovou o resultado —
+"partes muito inconsistentes", "baixo/abafado", "falando muito rápido" — e o custo, US$ 1,71.
+
+**Medição, não impressão.** A auditoria de silêncio do pipeline dava 8/8 ok, porque o defeito não
+é silêncio. Medindo brilho (centro espectral), volume e velocidade por trecho e **dentro** de cada
+trecho, o padrão apareceu imediatamente: a voz decai ao longo de uma mesma geração e reseta na
+seguinte.
+
+Curva média dos sete trechos longos, brilho da voz por tempo de áudio:
+
+| 15 s | 30 s | 45 s | 60 s | 90 s | 120 s | 255 s |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1.339 Hz | 1.233 Hz | 1.045 Hz | 1.024 Hz | 882 Hz | 705 Hz | 541 Hz |
+| 0% | −8% | −22% | −24% | −34% | −47% | −60% |
+
+A abertura do episódio (10 s, outra instrução) e os primeiros 20% de cada trecho ficam ambos em
+~1.150-1.285 Hz: **o que degrada é a posição dentro da geração**, não a voz nem a direção vocal.
+A velocidade entre trechos variou de 132 a 157 palavras/min, e o nível ficou com 2,4 LUFS de
+amplitude mesmo depois do nivelamento — que só corrige ganho por segmento e não alcança uma rampa
+interna.
+
+**A causa era minha.** Na entrega da manhã aumentei o trecho da leitura estável de 2.400 para
+4.000 caracteres, argumentando "menos emendas por hora de áudio". Troquei um defeito pequeno e
+frequente por um grande e prolongado: cada emenda passou a ser precedida por quatro minutos de
+degradação. O trecho passa a ter **600 caracteres** (~37 s, ~15% de perda), pelo joelho da curva.
+
+**Custo.** O app estimou US$ 1,32 (faixa 0,99-1,71) e a fatura foi US$ 1,71 — dentro da faixa,
+mas no teto. Investigando a fatura por geração: o preço por token está certo (US$ 20/milhão), mas
+a tabela de estimativa assumia **25 tokens de áudio por segundo** e as oito gerações reais deste
+episódio cobraram entre 48 e 53. A tabela foi corrigida para a maior taxa observada. Fica em
+aberto por que a taxa varia: gerações curtas medidas no mesmo dia, com três vozes diferentes,
+cobraram 25 tokens/s, enquanto um episódio de 27/07 com trechos pequenos cobrou ~45. O teste
+controlado que fecharia a questão não foi possível — as três chaves ficaram sem saldo.
+
+**Ferramenta nova:** `scripts/audit_audio_consistency.py` transforma essa análise em porta de
+qualidade — reprova quando um trecho perde mais brilho que o limite. Sem ele, "está abafado"
+continua sendo opinião contra opinião.
+
+**Estado das chaves (para quem for retomar):** a "Chave Audio Teste" está ligada à conta com
+saldo (US$ 3,55), mas tem limite próprio de US$ 6,00 já esgotado — recusa com HTTP 403, não 402;
+resolve-se ajustando o limite da chave no painel do provedor. As outras duas chaves pertencem à
+conta com US$ 0,80, que não cobre a reserva exigida por requisição.
+
+**Risco que sobra:** a correção do tamanho de trecho está validada por medição sobre o áudio já
+gerado (os primeiros 37 s de cada trecho longo), não por uma geração nova — que depende de
+crédito. O modo natural (2.400 caracteres) tem a mesma degradação e não foi alterado: mexer nele
+muda o comportamento de todos os episódios existentes e é decisão à parte.
