@@ -1,5 +1,15 @@
 # Estratégia de branches do Audiofy
 
+> **Estado desde 19/08/2026: as branches por superfície foram descontinuadas.** Tudo vive na
+> `main`, e as branches `feat/uso-interno`, `feat/uso-publico` e `feat/uso-api` foram removidas
+> depois de integradas — nenhuma delas tinha commit fora da `main`. O documento continua aqui
+> porque a **separação de escopos** que ele descreve permanece válida como critério de projeto:
+> o que muda é que ela passa a ser respeitada por módulo e por commit, não por branch.
+>
+> Trabalho novo entra direto na `main`, em commits pequenos e coesos. Crie branch só para
+> feature grande, refatoração significativa ou mudança de alto risco que precise ser testada
+> antes de entrar — e apague a branch assim que ela for integrada.
+
 ## Objetivo
 
 O Audiofy atende três superfícies com necessidades diferentes, mas não deve manter
@@ -41,6 +51,8 @@ fluxos reais do consumidor.
 
 ## Estado da decisão
 
-As três branches foram criadas a partir do `main` atual. A separação de código e a
-implementação do servidor HTTP ainda não foram declaradas concluídas; são próximas
-unidades de trabalho, cada uma com teste e documentação próprios.
+**Revisado em 19/08/2026.** As três branches existiram entre 29/07 e 19/08/2026 e foram
+removidas nesta data: o trabalho da superfície pública já estava na `main` e as outras duas
+não tinham nenhum commit próprio. A separação de código e o servidor HTTP continuam sendo
+unidades de trabalho futuras, cada uma com teste e documentação próprios — só que agora
+entregues na `main`, sem branch de longa duração.
