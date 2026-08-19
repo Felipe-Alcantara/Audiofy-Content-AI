@@ -199,8 +199,11 @@ describe("ContentTab", () => {
     fireEvent.change(screen.getByLabelText("Estabilidade da voz"),
       { target: { value: "estavel" } });
 
-    expect(screen.queryByText(/A IA planeja apenas ritmo/)).toBeNull();
-    expect(screen.getByText(/sem etapa de planejamento de interpretação/)).toBeInTheDocument();
+    // Espera a re-renderização terminar antes de sair do teste: assertivas
+    // síncronas aqui deixariam atualizações pendentes vazando para o próximo.
+    expect(await screen.findByText(/sem etapa de planejamento de interpretação/))
+      .toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText(/A IA planeja apenas ritmo/)).toBeNull());
   });
 
   it("acrescenta --force e --language quando escolhidos", async () => {
