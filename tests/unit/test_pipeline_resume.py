@@ -904,7 +904,7 @@ class LeituraEstavelTest(unittest.TestCase):
         instrucoes = {t["instructions"] for t in turns if t.get("kind") != "intro"}
         self.assertEqual(len(instrucoes), 1)
 
-    def test_preserva_o_texto_e_usa_menos_trechos_que_o_modo_natural(self):
+    def test_preserva_o_texto_e_nao_usa_trechos_maiores_que_o_natural(self):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             tracker = GenerationTracker(directory, "livro", generation_mode="verbatim")
@@ -930,7 +930,9 @@ class LeituraEstavelTest(unittest.TestCase):
 
         falado = "".join(t["text"] for t in estaveis if t.get("kind") != "intro")
         self.assertEqual(falado, self.item.text)
-        self.assertLess(len(estaveis), len(naturais))
+        # Trechos menores que os do modo natural: a voz decai dentro de uma
+        # mesma geração, então o trecho curto é o que preserva o timbre.
+        self.assertGreaterEqual(len(estaveis), len(naturais))
 
     def test_modo_natural_continua_planejando_por_trecho(self):
         """Guarda de regressão: o caminho que já funciona não pode mudar."""

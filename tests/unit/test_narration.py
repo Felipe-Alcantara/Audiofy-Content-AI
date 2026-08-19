@@ -259,13 +259,23 @@ class LeituraEstavelTest(unittest.TestCase):
         self.assertIn("Synthesize speech in English", direcao)
         self.assertIn("warm", direcao)
 
-    def test_trecho_estavel_e_maior_e_preserva_o_texto(self):
+    def test_trecho_estavel_e_curto_o_bastante_para_a_voz_nao_decair(self):
+        """A voz decai DENTRO de uma mesma geração: quanto mais longo o áudio de
+        uma requisição, mais escuro e mais baixo ele termina.
+
+        Medido em episódio real com trechos de 4.000 caracteres: o brilho caía de
+        ~1.150 Hz no início de cada trecho para ~520-690 Hz no fim, com o volume
+        junto — e voltava ao normal no trecho seguinte, o que é exatamente o que
+        o ouvinte percebe como inconsistência. Com trechos de tamanho de
+        parágrafo, o mesmo modelo termina acima de 1.000 Hz.
+
+        Por isso o trecho estável precisa ser MENOR que o da leitura natural, e
+        não maior: a emenda a mais custa menos que a degradação a mais.
+        """
         texto = ("Primeiro período. Segundo período!\n\n" * 400) + "Fim."
 
-        self.assertGreater(STABLE_TTS_CHARS, MAX_TTS_CHARS)
+        self.assertLessEqual(STABLE_TTS_CHARS, MAX_TTS_CHARS)
         chunks = split_verbatim_text(texto, max_chars=STABLE_TTS_CHARS)
 
         self.assertEqual("".join(chunk.text for chunk in chunks), texto)
         self.assertTrue(all(0 < len(chunk.text) <= STABLE_TTS_CHARS for chunk in chunks))
-        # Menos emendas por obra é o ponto do modo estável.
-        self.assertLess(len(chunks), len(split_verbatim_text(texto, max_chars=MAX_TTS_CHARS)))

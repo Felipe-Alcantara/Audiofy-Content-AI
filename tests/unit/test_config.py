@@ -177,9 +177,25 @@ class VoiceStabilitySettingsTest(unittest.TestCase):
             os.environ["AUDIOFY_VOICE_STABILITY"] = self._original
 
     def test_padrao_e_natural_e_nao_muda_o_pipeline_atual(self):
-        from audiofy.config import Settings
+        """Perfil sem a opção marcada mantém o comportamento histórico.
 
-        settings = Settings()
+        O perfil é fixado no teste de propósito: ler o perfil ativo da máquina
+        faria o resultado depender de quem rodou a suíte por último.
+        """
+        from audiofy.config import Settings
+        from audiofy.profiles import Profile
+
+        padrao = Profile(
+            name="padrao",
+            text_model="vendor/text",
+            audit_model="vendor/audit",
+            tts_model="vendor/tts",
+            presenters_spec="narrador:Kore",
+        )
+        with patch("audiofy.config.profile_store") as store:
+            store.return_value.active.return_value = padrao
+            settings = Settings()
+
         self.assertEqual(settings.voice_stability, "natural")
         self.assertFalse(settings.stable_voice)
 

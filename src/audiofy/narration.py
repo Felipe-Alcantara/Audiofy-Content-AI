@@ -9,11 +9,32 @@ from dataclasses import dataclass
 from .languages import DEFAULT_LANGUAGE, normalize
 
 MAX_TTS_CHARS = 2_400
-# Modo estável: trechos maiores significam menos emendas por hora de áudio, e
-# cada emenda é uma chamada independente ao TTS — o ponto onde o timbre muda.
-# 4.000 é o teto conservador: acima disso cresce o risco de o modelo truncar, e
-# refazer um trecho que falha fica caro demais.
-STABLE_TTS_CHARS = 4_000
+# Modo estável: trechos CURTOS, não longos.
+#
+# A intuição inicial foi a oposta — menos emendas por hora de áudio — e estava
+# errada. A voz decai dentro de uma mesma geração: medido em episódio real com
+# trechos de 4.000 caracteres, o brilho começava em ~1.150 Hz e terminava entre
+# 520 e 690 Hz, com o volume caindo junto (até -29 dB), e tudo voltava ao normal
+# no início do trecho seguinte. É esse contraste que o ouvinte descreve como
+# "abafado" e "parece que troca de voz".
+#
+# A abertura do mesmo episódio (10 s) e os primeiros 20% de cada trecho ficam
+# ambos em ~1.150-1.285 Hz: o que degrada é a posição dentro da geração, não a
+# instrução nem a voz. Com trechos de tamanho de parágrafo, o mesmo modelo
+# termina acima de 1.000 Hz.
+#
+# A curva de decaimento, medida a cada 15 segundos nos sete trechos longos do
+# episódio real (brilho médio, queda em relação ao início):
+#
+#     15 s → 1.339 Hz (0%)     60 s → 1.024 Hz (24%)     105 s → 749 Hz (44%)
+#     30 s → 1.233 Hz (8%)     75 s →   929 Hz (31%)     120 s → 705 Hz (47%)
+#     45 s → 1.045 Hz (22%)    90 s →   882 Hz (34%)
+#
+# O joelho está entre 30 e 45 segundos. 600 caracteres ≈ 37 segundos de fala,
+# onde a queda fica em torno de 15% — pequena o bastante para a emenda com o
+# trecho seguinte não soar como troca de voz, e ainda assim algumas frases
+# inteiras por chamada, em vez de picotar o texto palavra a palavra.
+STABLE_TTS_CHARS = 600
 MAX_PROSODY_BATCH_CHARS = 18_000
 MAX_DIRECTION_CHARS = 600
 MAX_REFLEXIVE_COMMENTARY_CHARS = 400
