@@ -3300,6 +3300,12 @@ escolher "Estável" a nota do formato deixa de prometer o planejamento de interp
 acontecer — contradição encontrada olhando a tela, não pelos testes. Em 600 px e 380 px o layout
 empilha sem estouro horizontal (`scrollWidth == innerWidth`) e o console não registra erro.
 
+**Intermitência encontrada depois dos commits:** o teste novo da interface terminava com
+assertivas síncronas logo após mudar o seletor, e as atualizações pendentes vazavam para o teste
+seguinte — que falhava em ~1 execução a cada 5. Diagnosticado comparando o comportamento com o
+teste desativado (6 execuções verdes) e com ele corrigido (14 verdes), em vez de aumentar timeout
+para esconder o sintoma.
+
 **Risco que sobra:** a variação que o modo elimina é a que o pipeline induzia. O drift interno do
 Gemini TTS entre chamadas independentes continua existindo e não há `seed` no endpoint do
 OpenRouter para zerá-lo. A confirmação final é auditiva: vale comparar o mesmo arquivo que gerou
