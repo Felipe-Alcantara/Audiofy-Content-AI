@@ -20,6 +20,12 @@
  *
  * Saída: um JSON no stdout com abas visitadas, medidas por largura, capturas
  * geradas e erros de console. Código de saída 1 quando alguma verificação falha.
+ *
+ * Verifica duas coisas que só aparecem no app real:
+ *   - estouro horizontal, nas larguras que o AGENTS.md exige;
+ *   - contenção vertical — a casca do app precisa caber na janela, porque o
+ *     `body` tem `overflow: hidden` e o que passar dele fica inalcançável, sem
+ *     barra de rolagem em lugar nenhum.
  */
 
 const fs = require("node:fs");
@@ -92,16 +98,27 @@ async function measure(page, width, outputDir, label) {
   await page.waitForTimeout(TAB_SETTLE_MS);
   // `globalThis` em vez de `document`/`window` diretos: a função roda no
   // contexto da página, mas é lintada aqui como código Node.
-  const metrics = await page.evaluate(() => ({
-    scrollWidth: globalThis.document.documentElement.scrollWidth,
-    innerWidth: globalThis.innerWidth,
-  }));
+  const metrics = await page.evaluate(() => {
+    const doc = globalThis.document;
+    // A rolagem real mora nos painéis (`overflow-y: auto`); o `body` só recorta.
+    // Se o conteúdo do body ultrapassa a janela, é porque algum elo da cadeia de
+    // altura soltou e os painéis cresceram sem limite: nada rola, tudo some.
+    const corpo = doc.body;
+    return {
+      scrollWidth: doc.documentElement.scrollWidth,
+      innerWidth: globalThis.innerWidth,
+      bodyScrollHeight: corpo ? corpo.scrollHeight : 0,
+      innerHeight: globalThis.innerHeight,
+    };
+  });
   const screenshot = path.join(outputDir, `${label}-${width}px.png`);
   await page.screenshot({ path: screenshot });
   return {
     width,
     ...metrics,
     overflow: metrics.scrollWidth > metrics.innerWidth,
+    // 1 px de folga: arredondamento de layout não é regressão.
+    verticalOverflow: metrics.bodyScrollHeight > metrics.innerHeight + 1,
     screenshot,
   };
 }
@@ -135,12 +152,18 @@ async function main() {
     }
 
     const overflowing = measurements.filter((entry) => entry.overflow);
+    const spilling = measurements.filter((entry) => entry.verticalOverflow);
     report = {
       tabs,
       widths: options.widths,
       measurements,
       consoleErrors,
-      ok: overflowing.length === 0 && consoleErrors.length === 0,
+      horizontalOverflow: overflowing.map((entry) => `${entry.tab} @ ${entry.width}px`),
+      verticalOverflow: spilling.map(
+        (entry) => `${entry.tab} @ ${entry.width}px (${entry.bodyScrollHeight}px `
+          + `de conteúdo numa janela de ${entry.innerHeight}px)`
+      ),
+      ok: overflowing.length === 0 && spilling.length === 0 && consoleErrors.length === 0,
       output: options.out,
     };
   } finally {
@@ -150,7 +173,8 @@ async function main() {
   console.log(JSON.stringify(report, null, 2));
   if (!report.ok) {
     console.error(
-      "Verificação visual reprovada: layout com estouro horizontal ou erro de console."
+      "Verificação visual reprovada: estouro horizontal, conteúdo além da janela "
+        + "(sem rolagem alcançável) ou erro de console."
     );
     process.exitCode = 1;
   }
