@@ -333,9 +333,19 @@ O seletor **Estabilidade da voz** (ao lado do narrador) escolhe entre dois compo
 - **Natural** — o padrão histórico descrito acima: a IA planeja emoção, ritmo e pausas trecho a
   trecho. É mais expressivo, mas o tom varia ao longo do áudio, porque cada trecho vai ao TTS com
   uma instrução diferente.
-- **Estável** — uma direção vocal única para a obra inteira, trechos maiores (4.000 caracteres em
-  vez de 2.400) e volume nivelado entre eles. Some a etapa de planejamento de interpretação:
-  menos variação de tom entre trechos, geração mais rápida e sem o custo do modelo de texto.
+- **Estável** — uma direção vocal única para a obra inteira, trechos **curtos** (600 caracteres,
+  contra 2.400 do modo natural) e volume nivelado entre eles. Some a etapa de planejamento de
+  interpretação: menos variação de tom, geração mais rápida e sem o custo do modelo de texto.
+
+O trecho curto não é detalhe de implementação: a voz do modelo **decai dentro de uma mesma
+geração**. Medido em episódio real com trechos de 4.000 caracteres, o brilho da voz caía de
+~1.150 Hz no início de cada trecho para ~520–690 Hz no fim, com o volume junto, e voltava ao
+normal no trecho seguinte — é esse contraste que se ouve como "abafado" e "parece que trocou de
+voz". Trechos de tamanho de parágrafo terminam acima de 1.000 Hz no mesmo modelo.
+
+A curva foi medida a cada 15 segundos: a queda é de 8% aos 30 segundos, 22% aos 45 e 47% aos dois
+minutos. Os 600 caracteres correspondem a ~37 segundos de fala, onde a perda ainda fica em torno
+de 15%.
 
 O padrão vem do perfil ativo (**Perfis → Voz estável nas leituras**) e cada episódio pode escolher
 o contrário na hora de gerar. Trocar a estabilidade regenera os áudios do episódio, porque a
@@ -577,6 +587,18 @@ xvfb-run -a node scripts/verify_app_ui.js        # sem display (CI, servidor)
 
 Ele reprova quando alguma aba estoura horizontalmente ou quando o console registra erro. Aceita
 `--out=<pasta>` para as capturas e `--widths=600,380` para outras larguras.
+
+Para conferir se um episódio gerado soa consistente — a queixa típica é "parece que troca de voz
+no meio" —, meça em vez de opinar:
+
+```bash
+pip install numpy                       # só para a auditoria; não é dependência do app
+python scripts/audit_audio_consistency.py data/episodes/<episódio>
+```
+
+O relatório separa a variação **entre** trechos da variação **dentro** de cada trecho, mostra a
+curva de decaimento do brilho da voz e reprova (código 1) quando algum trecho perde mais brilho
+do que o limite. É o que dimensiona o tamanho de trecho da leitura estável.
 
 Os controles incluem Ruff, cobertura mínima de 70%, ESLint sem warnings, testes Python/Node,
 `pip-audit`, `npm audit` e validação de todos os JSON versionados. A CI repete a suíte em
