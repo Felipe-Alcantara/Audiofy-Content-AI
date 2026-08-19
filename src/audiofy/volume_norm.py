@@ -107,6 +107,39 @@ def _parse_loudnorm_json(stderr: str) -> LoudnessInfo | None:
         return None
 
 
+_FFPROBE_TIMEOUT = 60
+
+
+def _audio_stream_params(path: Path) -> tuple[int, int, str] | None:
+    """Taxa de amostragem, canais e codec do segmento, ou ``None`` se ilegível."""
+    try:
+        result = run_tool(
+            "ffprobe",
+            [
+                "-v",
+                "error",
+                "-select_streams",
+                "a:0",
+                "-show_entries",
+                "stream=codec_name,sample_rate,channels",
+                "-of",
+                "csv=p=0",
+                str(path),
+            ],
+            timeout=_FFPROBE_TIMEOUT,
+        )
+    except Exception:  # noqa: BLE001 - sem os parâmetros, o chamador desiste
+        return None
+    fields = [field.strip() for field in result.stdout.strip().splitlines()[0].split(",")]
+    if len(fields) < 3:
+        return None
+    codec, sample_rate, channels = fields[0], fields[1], fields[2]
+    try:
+        return int(sample_rate), int(channels), codec
+    except ValueError:
+        return None
+
+
 def _apply_loudnorm(
     path: Path,
     measurement: LoudnessInfo,
@@ -116,6 +149,19 @@ def _apply_loudnorm(
 ) -> None:
     """Aplica ``loudnorm`` linear em duas passagens, sobrescrevendo o segmento."""
     temporary = path.with_suffix(path.suffix + ".norm.tmp")
+    # O FFmpeg escolhe o muxer pela extensão da saída, e ".norm.tmp" não diz
+    # nada a ele: sem declarar o formato, a chamada morre com "Invalid
+    # argument" e o nivelamento derruba a montagem do episódio.
+    output_format = path.suffix.lstrip(".").lower() or "wav"
+    # O filtro `loudnorm` trabalha internamente a 192 kHz e leva essa taxa para
+    # a saída. O concat demuxer da montagem exige parâmetros idênticos entre os
+    # segmentos: um trecho normalizado a 192 kHz é reproduzido a 24 kHz e estica
+    # o episódio (7,4 minutos viraram 36 numa geração real). Travar taxa, canais
+    # e codec nos valores da origem mantém o segmento intercambiável.
+    params = _audio_stream_params(path)
+    if params is None:
+        raise ValueError(f"Não foi possível ler os parâmetros de áudio de {path.name}.")
+    sample_rate, channels, codec = params
     try:
         run_tool(
             "ffmpeg",
@@ -134,6 +180,14 @@ def _apply_loudnorm(
                     f":measured_thresh={measurement.threshold_lufs}"
                     ":linear=true"
                 ),
+                "-ar",
+                str(sample_rate),
+                "-ac",
+                str(channels),
+                "-c:a",
+                codec,
+                "-f",
+                output_format,
                 str(temporary),
             ],
             timeout=_LOUDNORM_TIMEOUT,

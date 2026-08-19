@@ -1,6 +1,7 @@
 """Normalização de volume por segmento: medição, limiar e aplicação."""
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -146,3 +147,81 @@ class NormalizeSegmentsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FormatoDaSaidaTemporariaTest(unittest.TestCase):
+    """O arquivo temporário termina em `.norm.tmp`, e o FFmpeg não adivinha o
+    muxer por essa extensão: sem `-f`, ele falha com "Invalid argument" e o
+    nivelamento derruba a montagem do episódio. Pego numa geração real."""
+
+    @patch("audiofy.volume_norm._audio_stream_params", return_value=(24_000, 1, "pcm_s16le"))
+    @patch("audiofy.volume_norm.run_tool")
+    def test_declara_o_formato_do_arquivo_temporario(self, run_tool, _params):
+        from audiofy.volume_norm import _apply_loudnorm
+
+        destino = Path(tempfile.gettempdir()) / "chunk-teste.wav"
+        with (
+            patch.object(Path, "is_file", return_value=True),
+            patch.object(Path, "stat") as stat,
+            patch.object(Path, "replace"),
+            patch.object(Path, "unlink"),
+        ):
+            stat.return_value = SimpleNamespace(st_size=4096)
+            _apply_loudnorm(destino, LoudnessInfo(-25.0, -8.0, 4.0, -35.0))
+
+        args = run_tool.call_args.args[1]
+        self.assertIn("-f", args)
+        self.assertEqual(args[args.index("-f") + 1], "wav")
+
+    @patch("audiofy.volume_norm._audio_stream_params", return_value=(24_000, 1, "mp3"))
+    @patch("audiofy.volume_norm.run_tool")
+    def test_formato_acompanha_a_extensao_do_segmento(self, run_tool, _params):
+        from audiofy.volume_norm import _apply_loudnorm
+
+        destino = Path(tempfile.gettempdir()) / "chunk-teste.mp3"
+        with (
+            patch.object(Path, "is_file", return_value=True),
+            patch.object(Path, "stat") as stat,
+            patch.object(Path, "replace"),
+            patch.object(Path, "unlink"),
+        ):
+            stat.return_value = SimpleNamespace(st_size=4096)
+            _apply_loudnorm(destino, LoudnessInfo(-25.0, -8.0, 4.0, -35.0))
+
+        args = run_tool.call_args.args[1]
+        self.assertEqual(args[args.index("-f") + 1], "mp3")
+
+
+class ParametrosDoAudioPreservadosTest(unittest.TestCase):
+    """O `loudnorm` reamostra para 192 kHz internamente. Sem travar a saída na
+    taxa original, o segmento normalizado sai a 192 kHz e o concat demuxer o
+    reproduz a 24 kHz: numa geração real, 7,4 minutos de áudio viraram um MP3
+    de 36 minutos. Regressão medida, não hipótese."""
+
+    @patch("audiofy.volume_norm._audio_stream_params", return_value=(24_000, 1, "pcm_s16le"))
+    @patch("audiofy.volume_norm.run_tool")
+    def test_forca_taxa_canais_e_codec_da_origem(self, run_tool, _params):
+        from audiofy.volume_norm import _apply_loudnorm
+
+        destino = Path(tempfile.gettempdir()) / "chunk-teste.wav"
+        with (
+            patch.object(Path, "is_file", return_value=True),
+            patch.object(Path, "stat") as stat,
+            patch.object(Path, "replace"),
+            patch.object(Path, "unlink"),
+        ):
+            stat.return_value = SimpleNamespace(st_size=4096)
+            _apply_loudnorm(destino, LoudnessInfo(-25.0, -8.0, 4.0, -35.0))
+
+        args = run_tool.call_args.args[1]
+        self.assertEqual(args[args.index("-ar") + 1], "24000")
+        self.assertEqual(args[args.index("-ac") + 1], "1")
+        self.assertEqual(args[args.index("-c:a") + 1], "pcm_s16le")
+
+    @patch("audiofy.volume_norm.run_tool")
+    def test_le_os_parametros_reais_do_segmento(self, run_tool):
+        from audiofy.volume_norm import _audio_stream_params
+
+        run_tool.return_value = SimpleNamespace(stdout="pcm_s16le,24000,1\n")
+
+        self.assertEqual(_audio_stream_params(Path("a.wav")), (24_000, 1, "pcm_s16le"))
