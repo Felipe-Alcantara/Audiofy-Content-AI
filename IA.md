@@ -3310,3 +3310,40 @@ para esconder o sintoma.
 Gemini TTS entre chamadas independentes continua existindo e não há `seed` no endpoint do
 OpenRouter para zerá-lo. A confirmação final é auditiva: vale comparar o mesmo arquivo que gerou
 a reclamação nos dois modos antes de mostrar à Flávia.
+
+## 2026-08-19 — Consolidação na main e limpeza de branches
+
+**Motivo:** a estratégia de uma branch por superfície (`feat/uso-publico`, `feat/uso-interno`,
+`feat/uso-api`) tinha deixado o repositório com dez branches, sete delas do Dependabot, e nenhuma
+delas viva. Por decisão do responsável, o trabalho passa a ficar na `main` e as branches saem.
+
+**O que mudou:**
+
+- `feat/uso-publico` entrou na `main` por fast-forward — não havia divergência a reconciliar.
+  `feat/uso-interno` e `feat/uso-api` não tinham nenhum commit fora da `main`: eram restos.
+
+- **Cinco atualizações de dependência integradas**, cada uma validada antes da seguinte: `pypdf`
+  6.14.2→6.15.0, `coverage` 7.15.2→7.15.4, `ruff` 0.15.20→0.16.2, `actions/checkout` →7.0.1 e
+  `actions/setup-python` →7.0.0. A validação rodou em ambiente virtual próprio, porque o Python
+  do sistema recusa instalação direta (PEP 668) e instalar à força mascararia qual versão foi
+  realmente testada.
+
+- **Duas propostas foram descartadas sem integrar:** `electron` 41.7.1→43.4.0 e `eslint`
+  9.39.4→10.8.1. São saltos de versão maior — o Electron carrega a superfície de segurança do
+  app desktop e o eslint muda regras entre majors. Entram em trabalho próprio, com verificação
+  no app real, não junto de uma limpeza de branches. O Dependabot reabre as propostas.
+
+- O merge do `setup-python` conflitou porque a branch saiu de uma base anterior ao bump do
+  `checkout`. Resolvido ficando com a versão mais nova de cada ação. Aproveitando, o comentário
+  de pin do `checkout` foi corrigido: dizia `# v4` enquanto o hash já era o da 7.0.1, e
+  comentário de pin errado engana quem for auditar o workflow.
+
+**Validação:** com as versões novas instaladas, 538 testes Python verdes; `ruff check` limpo com
+a 0.16.2 e `ruff format --check` reprovando exatamente os mesmos dois arquivos de antes
+(`cost_analytics.py` e `sources/custom.py`) — o ruff novo não introduziu regressão. `npm run
+check` do Electron verde (74 pass, 1 skip) e 59 testes de interface verdes. Workflow do CI
+validado como YAML.
+
+**Risco que sobra:** a `main` deixou de ter branch de integração intermediária, então mudança
+arriscada passa a exigir disciplina de commit pequeno em vez de isolamento por branch. As duas
+atualizações maiores continuam pendentes e o repositório segue rodando Electron 41 e eslint 9.
