@@ -27,7 +27,9 @@ python scripts/check_quality.py
 ```
 
 Durante iterações sem rede, use `python scripts/check_quality.py --quick`. Mudanças visuais no
-Electron também exigem verificação manual nas larguras de 600 px e 380 px. Registre mudanças de
+Electron também exigem verificação nas larguras de 600 px e 380 px — use
+`xvfb-run -a node scripts/verify_app_ui.js`, que abre o app real, percorre as abas, mede o
+layout e reprova em estouro horizontal ou erro de console. Registre mudanças de
 arquitetura, comportamento, dependências ou riscos em uma nova entrada datada no fim de `IA.md`.
 
 Commits seguem Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).

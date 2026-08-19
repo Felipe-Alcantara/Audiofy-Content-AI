@@ -326,6 +326,22 @@ lotes com checkpoint, cache por trecho, retry e retomada. Isso segue a recomenda
 longas para evitar perda de consistência. O aplicativo não impõe limite de caracteres ao texto
 colado; os limites reais são armazenamento, memória, tempo e créditos disponíveis na máquina.
 
+### Estabilidade da voz
+
+O seletor **Estabilidade da voz** (ao lado do narrador) escolhe entre dois comportamentos:
+
+- **Natural** — o padrão histórico descrito acima: a IA planeja emoção, ritmo e pausas trecho a
+  trecho. É mais expressivo, mas o tom varia ao longo do áudio, porque cada trecho vai ao TTS com
+  uma instrução diferente.
+- **Estável** — uma direção vocal única para a obra inteira, trechos maiores (4.000 caracteres em
+  vez de 2.400) e volume nivelado entre eles. Some a etapa de planejamento de interpretação:
+  menos variação de tom entre trechos, geração mais rápida e sem o custo do modelo de texto.
+
+O padrão vem do perfil ativo (**Perfis → Voz estável nas leituras**) e cada episódio pode escolher
+o contrário na hora de gerar. Trocar a estabilidade regenera os áudios do episódio, porque a
+instrução muda em todos os trechos; episódios já prontos não são afetados enquanto não forem
+regerados.
+
 O modo preserva o texto; ele não concede direito de reproduzir livros ou fanfics. Importe apenas
 obras próprias, em domínio público ou para as quais você tenha autorização adequada.
 
@@ -549,6 +565,18 @@ python scripts/check_quality.py
 # Ciclo rápido sem as auditorias que dependem da rede
 python scripts/check_quality.py --quick
 ```
+
+Mudanças visuais no Electron pedem uma passada no app de verdade — o `check_quality.py` não sobe
+a interface. O script abaixo abre o aplicativo, percorre as abas, mede o layout nas larguras
+exigidas e salva capturas:
+
+```bash
+node scripts/verify_app_ui.js                    # com ambiente gráfico
+xvfb-run -a node scripts/verify_app_ui.js        # sem display (CI, servidor)
+```
+
+Ele reprova quando alguma aba estoura horizontalmente ou quando o console registra erro. Aceita
+`--out=<pasta>` para as capturas e `--widths=600,380` para outras larguras.
 
 Os controles incluem Ruff, cobertura mínima de 70%, ESLint sem warnings, testes Python/Node,
 `pip-audit`, `npm audit` e validação de todos os JSON versionados. A CI repete a suíte em

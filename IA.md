@@ -3232,3 +3232,75 @@ As larguras exigidas pelo `AGENTS.md` foram conferidas no mesmo driver: em 600 p
 **Risco que sobrou:** fluxos que gastam créditos de verdade (gerar,
 reparar, retomada automática por limite de chave) foram exercitados só por teste com
 a bridge simulada — não por uma geração real ponta a ponta nesta interface.
+
+## 2026-08-19 — Voz estável na leitura fiel (menos variação de tonalidade)
+
+**Motivo:** ouvintes relataram que o áudio da leitura fiel "troca de voz" e "sai do tom" no meio
+do episódio (marcas em ~3 min, 4:50 e 5:00 — justamente fronteiras de trecho). A causa não era o
+modelo: o próprio pipeline pedia ao LLM uma **direção vocal diferente para cada trecho**
+(`prosody.json`) e mandava cada uma ao TTS em chamadas independentes. Estava, literalmente,
+pedindo que cada trecho soasse diferente do anterior.
+
+**Decisões:**
+
+- **Opção nova em vez de mudança de comportamento.** `Settings.voice_stability` (`natural` |
+  `estavel`) com padrão `natural`: quem não escolher nada continua com o pipeline de sempre, byte
+  a byte. O campo é texto e não booleano de propósito — `Settings.__post_init__` só preenche
+  campos vazios com o padrão do perfil, então um `False` explícito do episódio seria confundido
+  com "não informado" e trocado pelo valor do perfil.
+- **Dois níveis de escolha:** `Profile.stable_voice` dá o padrão (checkbox em Perfis) e o seletor
+  por episódio (aba Conteúdo) sobrepõe. A precedência é episódio > `AUDIOFY_VOICE_STABILITY` >
+  perfil.
+- **O modo estável faz três coisas:** direção vocal única para a obra (`stable_direction`, sem
+  nenhuma chamada de modelo), trechos de 4.000 em vez de 2.400 caracteres (menos emendas por
+  hora de áudio) e nivelamento de volume por segmento antes da montagem.
+- **`volume_norm.py` finalmente ligado ao pipeline.** O módulo existia com teste unitário e nunca
+  tinha rodado em produção; ligá-lo só no modo estável limita o alcance de código não exercitado.
+  Ele é acabamento: `_normalize_levels` engole qualquer falha e segue com os segmentos originais,
+  porque a geração já foi paga trecho a trecho.
+- **Invalidação vem de graça:** `_segment_fingerprint` já inclui `instructions`, então ligar ou
+  desligar a estabilidade invalida os segmentos daquele episódio. Trocar a estabilidade força
+  regeneração (bridge e pipeline), senão o MP3 sairia metade estável e metade natural.
+
+**Bugs reais encontrados pela geração de verdade (não por teste):**
+
+1. **`volume_norm` quebrava a montagem.** O arquivo temporário termina em `.norm.tmp` e o FFmpeg
+   não infere muxer por essa extensão: `Invalid argument`, exit 234, episódio perdido na última
+   etapa. Corrigido com `-f` explícito.
+2. **`loudnorm` reamostra para 192 kHz** e levava essa taxa para a saída. Como o concat demuxer
+   exige parâmetros idênticos, o trecho normalizado era reproduzido a 24 kHz: **7,4 minutos de
+   áudio viraram um MP3 de 36 minutos**. Corrigido travando taxa, canais e codec nos valores da
+   origem (`_audio_stream_params`). Os dois casos viraram teste de regressão.
+3. **Aridade do IPC (pré-existente):** `electron/security.js` permitia no máximo 8 argumentos em
+   `generate`, mas a tela já podia montar 9 (leitura fiel + voz + force + música + volume +
+   idioma). Essa combinação era recusada antes de sair do Electron. Teto subiu para 10 e ganhou
+   teste com a combinação completa.
+
+**Validação:** 538 testes Python, `cd electron && npm run check` (74 pass, 1 skip) e
+`cd electron/renderer-react && npm test && npm run lint` (59 testes) verdes.
+`python3 scripts/check_quality.py --quick` mantém apenas a reprovação pré-existente de formatação
+em `cost_analytics.py` e `sources/custom.py`, arquivos não tocados aqui.
+
+**Geração real** (chaves do usuário, OpenRouter, `google/gemini-3.1-flash-tts-preview`, voz
+Zephyr): item de 6.626 caracteres / 1.178 palavras em modo estável → 3 turnos (intro + 2 trechos),
+**uma única instrução de TTS** para todos os trechos, nenhum `prosody.json` escrito, nenhuma
+chamada ao modelo de texto, auditoria de áudio 3/3 ok, MP3 de 7,63 min coerente com a soma dos
+segmentos e os três segmentos dentro de 0,44 LUFS um do outro. Custo: US$ 0,3551 (inclui o trecho
+regerado para provar a correção do nivelamento).
+
+**Ferramenta em vez de roteiro manual:** a verificação visual que o `AGENTS.md` exige a cada
+mudança no Electron era refeita à mão a cada entrega. Ela virou `scripts/verify_app_ui.js`, que
+abre o app real, percorre as abas, mede `scrollWidth`/`innerWidth` em cada largura, salva capturas
+e reprova em estouro horizontal ou erro de console. Fica fora do `check_quality.py` de propósito:
+precisa de servidor gráfico e sobe o app inteiro, lento demais para a régua de cada commit.
+
+**Verificação real na interface** (Playwright/xvfb sobre o Electron empacotado): o seletor
+aparece na leitura fiel com "Natural" pré-selecionado do perfil, some no podcast adaptado, e ao
+escolher "Estável" a nota do formato deixa de prometer o planejamento de interpretação que não vai
+acontecer — contradição encontrada olhando a tela, não pelos testes. Em 600 px e 380 px o layout
+empilha sem estouro horizontal (`scrollWidth == innerWidth`) e o console não registra erro.
+
+**Risco que sobra:** a variação que o modo elimina é a que o pipeline induzia. O drift interno do
+Gemini TTS entre chamadas independentes continua existindo e não há `seed` no endpoint do
+OpenRouter para zerá-lo. A confirmação final é auditiva: vale comparar o mesmo arquivo que gerou
+a reclamação nos dois modos antes de mostrar à Flávia.
