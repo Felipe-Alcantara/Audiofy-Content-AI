@@ -1,6 +1,7 @@
 """Regressões da síntese retomável e idempotente por segmento."""
 
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -27,7 +28,11 @@ from audiofy.providers.openrouter import OpenRouterError, SpeechResult  # noqa: 
 from audiofy.runtime.status import GenerationAborted, GenerationTracker  # noqa: E402
 
 
-def _settings(max_attempts: int = 3, tts_max_concurrency: int = 1) -> SimpleNamespace:
+def _settings(
+    max_attempts: int = 3,
+    tts_max_concurrency: int = 1,
+    voice_stability: str = "natural",
+) -> SimpleNamespace:
     # concorrência 1 por padrão: os testes deste arquivo assumem consumo
     # determinístico e em ordem da lista `side_effect` do mock, o que só vale
     # com um único worker. Testes de concorrência real ficam em
@@ -42,6 +47,8 @@ def _settings(max_attempts: int = 3, tts_max_concurrency: int = 1) -> SimpleName
         tts_retry_max_seconds=0,
         language="pt-BR",
         tts_max_concurrency=tts_max_concurrency,
+        voice_stability=voice_stability,
+        stable_voice=voice_stability == "estavel",
     )
 
 
@@ -813,17 +820,14 @@ class TurnCountStabilityTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             tracker = GenerationTracker(directory, "episodio")
-            with patch("audiofy.pipeline.openrouter.text_to_speech") as tts, patch(
-                "audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01
+            with (
+                patch("audiofy.pipeline.openrouter.text_to_speech") as tts,
+                patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01),
             ):
-                tts.side_effect = [
-                    SpeechResult(b"\x00\x00" * 300, f"gen-{n}") for n in range(50)
-                ]
+                tts.side_effect = [SpeechResult(b"\x00\x00" * 300, f"gen-{n}") for n in range(50)]
                 paths = _synthesize_turns(_settings(), directory, turns, tracker)
 
-        self.assertEqual(
-            len(paths), len(turns), "um turno de entrada deve virar um segmento"
-        )
+        self.assertEqual(len(paths), len(turns), "um turno de entrada deve virar um segmento")
         for path in paths:
             self.assertIn(f"de-{len(turns):03d}", path.name)
 
@@ -846,9 +850,7 @@ class RescueRetryTest(unittest.TestCase):
     @patch("audiofy.pipeline._wait_for_retry")
     @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
     @patch("audiofy.pipeline.openrouter.text_to_speech")
-    def test_resgate_insiste_quando_a_resposta_vem_vazia(
-        self, text_to_speech, _cost, _wait
-    ):
+    def test_resgate_insiste_quando_a_resposta_vem_vazia(self, text_to_speech, _cost, _wait):
         vazio = OpenRouterError("TTS retornou resposta vazia ou curta demais.", retryable=True)
         # Texto original vazio; o resgate falha uma vez e acerta na seguinte.
         text_to_speech.side_effect = [
@@ -867,3 +869,140 @@ class RescueRetryTest(unittest.TestCase):
         self.assertEqual(len(paths), 1, "o trecho não pode ser perdido por um vazio isolado")
         enviados = [call[0][1] for call in text_to_speech.call_args_list]
         self.assertEqual(enviados[-1], "38 minutos e 57 segundos")
+
+
+class LeituraEstavelTest(unittest.TestCase):
+    """Modo estável na leitura fiel: nenhuma direção por trecho, nenhum LLM.
+
+    A queixa que originou a feature era variação de tonalidade entre trechos —
+    causada pelo próprio pipeline, que pedia uma interpretação diferente a cada
+    chamada de TTS. No modo estável a instrução é uma só.
+    """
+
+    def setUp(self):
+        texto = ("Capítulo um. O perigo aumentava lentamente...\n\n" * 150) + "Fim."
+        self.item = SimpleNamespace(text=texto, title="Livro de Teste")
+
+    def test_nao_chama_o_planejador_e_usa_uma_unica_direcao(self):
+        analisador = Mock()
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            tracker = GenerationTracker(directory, "livro", generation_mode="verbatim")
+
+            turns = _prepare_verbatim_turns(
+                _settings(voice_stability="estavel"),
+                self.item,
+                directory,
+                tracker,
+                False,
+                analisador,
+            )
+            prosody_existe = (directory / "prosody.json").exists()
+
+        analisador.assert_not_called()
+        self.assertFalse(prosody_existe)
+        instrucoes = {t["instructions"] for t in turns if t.get("kind") != "intro"}
+        self.assertEqual(len(instrucoes), 1)
+
+    def test_preserva_o_texto_e_usa_menos_trechos_que_o_modo_natural(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            tracker = GenerationTracker(directory, "livro", generation_mode="verbatim")
+            estaveis = _prepare_verbatim_turns(
+                _settings(voice_stability="estavel"),
+                self.item,
+                directory,
+                tracker,
+                False,
+                Mock(),
+            )
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            tracker = GenerationTracker(directory, "livro", generation_mode="verbatim")
+            naturais = _prepare_verbatim_turns(
+                _settings(),
+                self.item,
+                directory,
+                tracker,
+                False,
+                Mock(return_value={"segments": []}),
+            )
+
+        falado = "".join(t["text"] for t in estaveis if t.get("kind") != "intro")
+        self.assertEqual(falado, self.item.text)
+        self.assertLess(len(estaveis), len(naturais))
+
+    def test_modo_natural_continua_planejando_por_trecho(self):
+        """Guarda de regressão: o caminho que já funciona não pode mudar."""
+        analisador = Mock(
+            return_value={
+                "segments": [
+                    {"id": index, "direction": f"direção {index}"} for index in range(1, 40)
+                ]
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            tracker = GenerationTracker(directory, "livro", generation_mode="verbatim")
+
+            turns = _prepare_verbatim_turns(
+                _settings(), self.item, directory, tracker, False, analisador
+            )
+
+            self.assertTrue((directory / "prosody.json").exists())
+        analisador.assert_called_once()
+        instrucoes = {t["instructions"] for t in turns if t.get("kind") != "intro"}
+        self.assertGreater(len(instrucoes), 1)
+
+
+class NivelamentoDeVolumeTest(unittest.TestCase):
+    """`volume_norm` existia no repositório sem estar ligado ao pipeline.
+
+    Ligá-lo só no modo estável limita o alcance de um módulo que nunca rodou em
+    produção, e é parte do que reduz a sensação de "troca de voz" entre trechos.
+    """
+
+    @patch("audiofy.pipeline.normalize_segments")
+    def test_modo_natural_nao_mexe_no_volume_dos_segmentos(self, normalize):
+        from audiofy.pipeline import _normalize_levels
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tracker = GenerationTracker(Path(tmp), "livro")
+            _normalize_levels(_settings(), [Path("a.wav")], tracker)
+
+        normalize.assert_not_called()
+
+    @patch("audiofy.pipeline.normalize_segments", return_value=[])
+    def test_modo_estavel_nivela_os_segmentos(self, normalize):
+        from audiofy.pipeline import _normalize_levels
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tracker = GenerationTracker(Path(tmp), "livro")
+            _normalize_levels(_settings(voice_stability="estavel"), [Path("a.wav")], tracker)
+
+        normalize.assert_called_once()
+
+    @patch(
+        "audiofy.pipeline.normalize_segments",
+        side_effect=subprocess.CalledProcessError(234, ["ffmpeg"]),
+    )
+    def test_falha_do_ffmpeg_nao_derruba_o_episodio(self, _normalize):
+        """O nivelamento é acabamento: uma falha aqui não pode custar a geração
+        inteira, que já foi paga trecho a trecho. Regressão de geração real."""
+        from audiofy.pipeline import _normalize_levels
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tracker = GenerationTracker(Path(tmp), "livro")
+            _normalize_levels(_settings(voice_stability="estavel"), [Path("a.wav")], tracker)
+
+    @patch("audiofy.pipeline.normalize_segments", side_effect=OSError("ffmpeg sumiu"))
+    def test_falha_no_nivelamento_nao_derruba_o_episodio(self, _normalize):
+        from audiofy.pipeline import _normalize_levels
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tracker = GenerationTracker(Path(tmp), "livro")
+            _normalize_levels(_settings(voice_stability="estavel"), [Path("a.wav")], tracker)
+
+
+if __name__ == "__main__":
+    unittest.main()

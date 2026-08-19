@@ -183,6 +183,12 @@ def _resolved(env_name: str, profile_value: str) -> str:
     return os.environ.get(env_name) or profile_value
 
 
+#: Estabilidade da voz aceita pelo pipeline e pela bridge.
+NATURAL_VOICE = "natural"
+STABLE_VOICE = "estavel"
+VOICE_STABILITY_CHOICES = (NATURAL_VOICE, STABLE_VOICE)
+
+
 def _default_settings() -> dict:
     profile = profile_store().active()
     return {
@@ -198,6 +204,9 @@ def _default_settings() -> dict:
         ),
         "language": _resolved("AUDIOFY_LANGUAGE", profile.language),
         "force_language": profile.force_language,
+        "voice_stability": _resolved(
+            "AUDIOFY_VOICE_STABILITY", STABLE_VOICE if profile.stable_voice else NATURAL_VOICE
+        ),
     }
 
 
@@ -214,6 +223,12 @@ class Settings:
     # Manda o idioma explícito ao TTS em vez de deixar o modelo detectá-lo pelo
     # texto. Só surte efeito nos modelos que aceitam o parâmetro.
     force_language: bool = False
+    # Estabilidade da voz nas leituras: "natural" (uma direção de interpretação
+    # por trecho, planejada por LLM) ou "estavel" (direção única para a obra).
+    # É texto, e não booleano, porque `__post_init__` só preenche campos vazios
+    # com o padrão do perfil: um `False` explícito vindo do episódio seria
+    # confundido com "não informado" e trocado pelo valor do perfil.
+    voice_stability: str = ""
     presenters: list[Presenter] = field(default_factory=list)
     # O Gemini TTS via OpenRouter só aceita "pcm" (cru, 16-bit mono); o pipeline
     # embrulha em WAV. Modelos que suportem "mp3"/"wav" podem trocar via env.
@@ -246,6 +261,18 @@ class Settings:
         for name, value in defaults.items():
             if not getattr(self, name):
                 setattr(self, name, value)
+        # Configuração parcial (integrações antigas, testes) não conhece o
+        # campo: sem valor, vale o comportamento histórico.
+        if not self.voice_stability:
+            self.voice_stability = NATURAL_VOICE
+        if self.voice_stability not in VOICE_STABILITY_CHOICES:
+            escolhas = "', '".join(VOICE_STABILITY_CHOICES)
+            raise ValueError(f"A estabilidade da voz deve ser uma de: '{escolhas}'.")
+
+    @property
+    def stable_voice(self) -> bool:
+        """Diz se a síntese deve usar direção vocal única em vez de por trecho."""
+        return self.voice_stability == STABLE_VOICE
 
     def require_api_key(self) -> str:
         if not self.api_key:

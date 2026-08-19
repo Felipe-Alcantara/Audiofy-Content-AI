@@ -514,7 +514,7 @@ class ForcedGenerationTest(unittest.TestCase):
     def test_opcoes_da_leitura_fiel_exigem_voz_conhecida(self):
         self.assertEqual(
             bridge._generation_options(["--mode=verbatim", "--voice=Sulafat", "--force"]),
-            (True, "verbatim", "Sulafat", None, 0.08, "pt-BR"),
+            (True, "verbatim", "Sulafat", None, 0.08, "pt-BR", ""),
         )
         with self.assertRaisesRegex(ValueError, "voz de narrador"):
             bridge._generation_options(["--mode=verbatim"])
@@ -551,7 +551,7 @@ class ForcedGenerationTest(unittest.TestCase):
             bridge._generation_options(
                 ["--background-music=/tmp/trilha.mp3", "--background-volume=0.12"]
             ),
-            (False, "adaptation", None, "/tmp/trilha.mp3", 0.12, "pt-BR"),
+            (False, "adaptation", None, "/tmp/trilha.mp3", 0.12, "pt-BR", ""),
         )
         with self.assertRaisesRegex(ValueError, "1% e 25%"):
             bridge._generation_options(["--background-volume=0.5"])
@@ -1017,3 +1017,73 @@ class ForceLanguageProfileTest(unittest.TestCase):
         )
 
         self.assertFalse(profile.force_language)
+
+
+class VoiceStabilityBridgeTest(unittest.TestCase):
+    """A escolha de estabilidade precisa atravessar bridge → worker → Settings.
+
+    Sem isso o seletor da interface não teria efeito nenhum na síntese, e sem a
+    regeneração forçada o MP3 sairia metade estável e metade natural.
+    """
+
+    def test_opcao_e_lida_e_validada(self):
+        self.assertEqual(
+            bridge._generation_options(["--mode=adaptation", "--stability=estavel"]),
+            (False, "adaptation", None, None, 0.08, "pt-BR", "estavel"),
+        )
+        with self.assertRaisesRegex(ValueError, "[Ee]stabilidade"):
+            bridge._generation_options(["--stability=meio-estavel"])
+
+    @patch("audiofy.pipeline.generate_episode", return_value=Path("livro.mp3"))
+    @patch("audiofy.bridge.get_source")
+    def test_worker_repassa_a_estabilidade_ao_settings(self, get_source, generate_episode):
+        get_source.return_value.get_item.return_value = object()
+
+        bridge._cmd_run_generation(
+            "custom",
+            "livro",
+            generation_mode="verbatim",
+            narration_voice="Sulafat",
+            voice_stability="estavel",
+        )
+
+        settings = generate_episode.call_args.args[0]
+        self.assertEqual(settings.voice_stability, "estavel")
+        self.assertTrue(settings.stable_voice)
+
+    @patch("audiofy.runtime.process.launch_detached")
+    def test_trocar_a_estabilidade_forca_regeneracao(self, launch):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / "livro"
+            directory.mkdir(parents=True)
+            (directory / "status.json").write_text(
+                json.dumps(
+                    {
+                        "state": "concluido",
+                        "generation_mode": "verbatim",
+                        "narration_voice": "Sulafat",
+                        "voice_stability": "natural",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with (
+                patch("audiofy.bridge._episode_dir", return_value=directory),
+                patch("audiofy.bridge.Settings") as settings,
+            ):
+                settings.return_value.require_api_key.return_value = "k"
+                resultado = bridge._cmd_generate(
+                    "custom",
+                    "livro",
+                    generation_mode="verbatim",
+                    narration_voice="Sulafat",
+                    voice_stability="estavel",
+                )
+
+        self.assertTrue(resultado["force"])
+        self.assertEqual(resultado["voice_stability"], "estavel")
+        self.assertIn("--stability=estavel", launch.call_args.args[0])
+
+
+if __name__ == "__main__":
+    unittest.main()

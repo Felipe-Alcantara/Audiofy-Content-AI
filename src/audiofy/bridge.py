@@ -10,6 +10,7 @@
     python3 -m audiofy.bridge generate <fonte> <item-id> [--force]
         [--mode=adaptation|verbatim|reflexive] [--voice=<voz>]
         [--background-music=<arquivo>] [--background-volume=0.01..0.25]
+        [--stability=natural|estavel]
     python3 -m audiofy.bridge run-generation <fonte> <item-id> [opções]  # uso interno
     python3 -m audiofy.bridge repair <fonte> <item-id>
     python3 -m audiofy.bridge run-repair <fonte> <item-id> [opções]     # uso interno
@@ -166,6 +167,7 @@ def _episode_summary(directory: Path) -> dict:
             "generation_mode", metrics_data.get("generation_mode", "adaptation")
         ),
         "narration_voice": status.get("narration_voice"),
+        "voice_stability": status.get("voice_stability") or "",
         "presenters": _read_presenters_summary(directory),
         "key_source": status.get("key_source"),
         "background_music": status.get("background_music"),
@@ -421,6 +423,17 @@ def _validate_generation_options(
     return generation_mode, narration_voice
 
 
+def _voice_stability(value: str) -> str:
+    """Valida a estabilidade da voz; vazio significa "usar o padrão do perfil"."""
+    from .config import VOICE_STABILITY_CHOICES
+
+    value = (value or "").strip()
+    if value and value not in VOICE_STABILITY_CHOICES:
+        escolhas = "', '".join(VOICE_STABILITY_CHOICES)
+        raise ValueError(f"A estabilidade da voz deve ser uma de: '{escolhas}'.")
+    return value
+
+
 def _cache_background_music(value: str) -> tuple[str, str]:
     """Valida e copia música externa para cache privado, retornando caminho relativo e nome."""
     source = Path(value).expanduser().resolve(strict=True)
@@ -472,13 +485,14 @@ def _background_volume(value: str | float) -> float:
 
 def _generation_options(
     arguments: list[str],
-) -> tuple[bool, str, str | None, str | None, float, str]:
+) -> tuple[bool, str, str | None, str | None, float, str, str]:
     force = False
     generation_mode = "adaptation"
     narration_voice = None
     background_music = None
     background_volume = 0.08
     language = "pt-BR"
+    voice_stability = ""
     for argument in arguments:
         if argument == "--force":
             force = True
@@ -490,6 +504,8 @@ def _generation_options(
             background_music = argument.partition("=")[2]
         elif argument.startswith("--background-volume="):
             background_volume = _background_volume(argument.partition("=")[2])
+        elif argument.startswith("--stability="):
+            voice_stability = _voice_stability(argument.partition("=")[2])
         elif argument.startswith("--language="):
             from .languages import is_supported
 
@@ -499,7 +515,7 @@ def _generation_options(
         else:
             raise ValueError(f"Opção de geração desconhecida: {argument}")
     mode, voice = _validate_generation_options(generation_mode, narration_voice)
-    return force, mode, voice, background_music, background_volume, language
+    return force, mode, voice, background_music, background_volume, language, voice_stability
 
 
 def _cmd_generate(
@@ -511,10 +527,12 @@ def _cmd_generate(
     background_music: str | None = None,
     background_volume: float = 0.08,
     language: str = "pt-BR",
+    voice_stability: str = "",
 ) -> dict:
     generation_mode, narration_voice = _validate_generation_options(
         generation_mode, narration_voice
     )
+    voice_stability = _voice_stability(voice_stability)
     background_volume = _background_volume(background_volume)
     background_cache = None
     background_name = None
@@ -528,11 +546,16 @@ def _cmd_generate(
         return {"started": False, "reason": "geração já em andamento", "dir": str(directory)}
     previous_mode = status.get("generation_mode", "adaptation") if status else None
     previous_voice = status.get("narration_voice") if status else None
+    previous_stability = status.get("voice_stability") if status else None
     if status and (
         previous_mode != generation_mode
         or (generation_mode == "verbatim" and previous_voice != narration_voice)
+        # Estabilidade muda a instrução de todos os trechos: retomar aqui
+        # entregaria um MP3 metade estável e metade natural.
+        or (voice_stability and previous_stability and previous_stability != voice_stability)
     ):
-        # Trocar formato ou voz muda todos os segmentos e precisa reiniciar a contabilidade.
+        # Trocar formato, voz ou estabilidade muda todos os segmentos e precisa
+        # reiniciar a contabilidade.
         force = True
     Settings().require_api_key()
     directory.mkdir(parents=True, exist_ok=True)
@@ -546,6 +569,7 @@ def _cmd_generate(
         background_music=background_name,
         background_music_cache=background_cache,
         background_volume=background_volume if background_cache else None,
+        voice_stability=voice_stability,
     )
     child_args = [
         sys.executable,
@@ -565,6 +589,8 @@ def _cmd_generate(
         child_args.append(f"--background-volume={background_volume}")
     if language != "pt-BR":
         child_args.append(f"--language={language}")
+    if voice_stability:
+        child_args.append(f"--stability={voice_stability}")
     from .runtime.process import launch_detached
 
     try:
@@ -593,6 +619,7 @@ def _cmd_generate(
         "force": force,
         "generation_mode": generation_mode,
         "narration_voice": narration_voice,
+        "voice_stability": voice_stability,
         "background_music": background_name,
         "background_volume": background_volume if background_cache else None,
         "dir": str(directory),
@@ -609,14 +636,20 @@ def _cmd_run_generation(
     background_music: str | None = None,
     background_volume: float = 0.08,
     language: str = "pt-BR",
+    voice_stability: str = "",
 ) -> dict:
     generation_mode, narration_voice = _validate_generation_options(
         generation_mode, narration_voice
     )
+    voice_stability = _voice_stability(voice_stability)
     from .pipeline import generate_episode
 
     try:
         settings = Settings()
+        if voice_stability:
+            from dataclasses import replace as _replace_stability
+
+            settings = _replace_stability(settings, voice_stability=voice_stability)
         if language != "pt-BR":
             from dataclasses import replace as _replace_lang
 
@@ -872,6 +905,9 @@ def _cmd_settings_info() -> dict:
         "language_ambiguous_models": sorted(LANGUAGE_AMBIGUOUS_MODELS),
         "language_forcing_models": sorted(LANGUAGE_FORCING_MODELS),
         "language": settings.language,
+        # Padrão de estabilidade da voz vindo do perfil: a tela de geração usa
+        # isso como valor inicial do seletor por episódio.
+        "voice_stability": settings.voice_stability,
         # Registro único de idiomas: a interface pode montar o seletor a partir daqui
         # em vez de manter os <option> fixos no HTML.
         "languages": [{"code": lang.code, "label": lang.ui_label} for lang in LANGUAGES.values()],
@@ -1106,11 +1142,15 @@ def main() -> None:
         elif command == "item" and len(rest) >= 2:
             result = _cmd_item(rest[0], rest[1])
         elif command == "generate" and len(rest) >= 2:
-            force, mode, voice, music, volume, lang = _generation_options(rest[2:])
-            result = _cmd_generate(rest[0], rest[1], force, mode, voice, music, volume, lang)
+            force, mode, voice, music, volume, lang, stability = _generation_options(rest[2:])
+            result = _cmd_generate(
+                rest[0], rest[1], force, mode, voice, music, volume, lang, stability
+            )
         elif command == "run-generation" and len(rest) >= 2:
-            force, mode, voice, music, volume, lang = _generation_options(rest[2:])
-            result = _cmd_run_generation(rest[0], rest[1], force, mode, voice, music, volume, lang)
+            force, mode, voice, music, volume, lang, stability = _generation_options(rest[2:])
+            result = _cmd_run_generation(
+                rest[0], rest[1], force, mode, voice, music, volume, lang, stability
+            )
         elif command == "status":
             result = _cmd_status(rest[0] if rest else None)
         elif command == "generation-log" and rest:
@@ -1120,10 +1160,10 @@ def main() -> None:
                     log_lang = arg.split("=", 1)[1]
             result = _cmd_generation_log(rest[0], log_lang)
         elif command == "repair" and len(rest) >= 2:
-            _, _, _, music, volume, repair_lang = _generation_options(rest[2:])
+            _, _, _, music, volume, repair_lang, _ = _generation_options(rest[2:])
             result = _cmd_repair(rest[0], rest[1], repair_lang)
         elif command == "run-repair" and len(rest) >= 2:
-            _, _, _, music, volume, repair_lang = _generation_options(rest[2:])
+            _, _, _, music, volume, repair_lang, _ = _generation_options(rest[2:])
             result = _cmd_run_repair(rest[0], rest[1], music, volume, repair_lang)
         elif command == "audio-chunks" and rest:
             lang = ""

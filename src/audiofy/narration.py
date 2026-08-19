@@ -9,6 +9,11 @@ from dataclasses import dataclass
 from .languages import DEFAULT_LANGUAGE, normalize
 
 MAX_TTS_CHARS = 2_400
+# Modo estável: trechos maiores significam menos emendas por hora de áudio, e
+# cada emenda é uma chamada independente ao TTS — o ponto onde o timbre muda.
+# 4.000 é o teto conservador: acima disso cresce o risco de o modelo truncar, e
+# refazer um trecho que falha fica caro demais.
+STABLE_TTS_CHARS = 4_000
 MAX_PROSODY_BATCH_CHARS = 18_000
 MAX_DIRECTION_CHARS = 600
 MAX_REFLEXIVE_COMMENTARY_CHARS = 400
@@ -309,6 +314,35 @@ def tts_direction(
     parts = _TTS_DIRECTION[normalize(language)]
     style = parts["style"].format(style=narrator_style) if narrator_style else ""
     return parts["base"] + style + parts["direction"].format(direction=direction)
+
+
+# ── Modo estável: uma direção só para a obra inteira ────────────────────────
+# A leitura fiel pede ao LLM uma direção vocal diferente por trecho e manda cada
+# uma ao TTS. Isso é, literalmente, um pedido para que cada trecho soe diferente
+# do anterior — e foi o que os ouvintes relataram como "troca de voz" e "sai do
+# tom" no meio do áudio. Aqui a instrução é fixa, determinística e idêntica em
+# todos os trechos, sem nenhuma chamada de modelo.
+_STABLE_DIRECTION = {
+    "pt-BR": (
+        " Direção única para a obra inteira: mantenha timbre, altura, velocidade e "
+        "energia constantes do começo ao fim, como uma única sessão de gravação. "
+        "Leia com naturalidade sóbria, sem dramatizar nem mudar o caráter da voz "
+        "entre os trechos; a pontuação guia as pausas, e nada mais."
+    ),
+    "en": (
+        " One direction for the entire work: keep timbre, pitch, pace and energy "
+        "constant from start to finish, as in a single recording session. Read with "
+        "sober naturalness, without dramatizing or changing the character of the "
+        "voice between passages; punctuation guides the pauses, and nothing else."
+    ),
+}
+
+
+def stable_direction(narrator_style: str = "", language: str = DEFAULT_LANGUAGE) -> str:
+    """Direção de TTS idêntica para todos os trechos da leitura estável."""
+    parts = _TTS_DIRECTION[normalize(language)]
+    style = parts["style"].format(style=narrator_style) if narrator_style else ""
+    return parts["base"] + style + _STABLE_DIRECTION[normalize(language)]
 
 
 # Direção de TTS para o comentário reflexivo (fala nova, não o texto do autor).

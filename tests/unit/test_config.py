@@ -157,3 +157,76 @@ class TtsMaxConcurrencySettingsTest(unittest.TestCase):
         os.environ["AUDIOFY_TTS_MAX_CONCURRENCY"] = "17"
         with self.assertRaises(ValueError):
             Settings()
+
+
+class VoiceStabilitySettingsTest(unittest.TestCase):
+    """A estabilidade da voz é resolvida em três níveis: episódio > env > perfil.
+
+    O campo é texto (e não booleano) de propósito: `Settings.__post_init__` só
+    preenche campos vazios com o padrão do perfil, então um `False` explícito
+    vindo do episódio seria silenciosamente trocado pelo valor do perfil.
+    """
+
+    def setUp(self):
+        self._original = os.environ.pop("AUDIOFY_VOICE_STABILITY", None)
+
+    def tearDown(self):
+        if self._original is None:
+            os.environ.pop("AUDIOFY_VOICE_STABILITY", None)
+        else:
+            os.environ["AUDIOFY_VOICE_STABILITY"] = self._original
+
+    def test_padrao_e_natural_e_nao_muda_o_pipeline_atual(self):
+        from audiofy.config import Settings
+
+        settings = Settings()
+        self.assertEqual(settings.voice_stability, "natural")
+        self.assertFalse(settings.stable_voice)
+
+    def test_perfil_com_voz_estavel_chega_ao_settings(self):
+        from audiofy.config import Settings
+        from audiofy.profiles import Profile
+
+        perfil = Profile(
+            name="estavel",
+            text_model="vendor/text",
+            audit_model="vendor/audit",
+            tts_model="vendor/tts",
+            presenters_spec="narrador:Kore",
+            stable_voice=True,
+        )
+        with patch("audiofy.config.profile_store") as store:
+            store.return_value.active.return_value = perfil
+            settings = Settings()
+
+        self.assertEqual(settings.voice_stability, "estavel")
+        self.assertTrue(settings.stable_voice)
+
+    def test_escolha_do_episodio_vence_o_perfil_nos_dois_sentidos(self):
+        from audiofy.config import Settings
+        from audiofy.profiles import Profile
+
+        perfil = Profile(
+            name="estavel",
+            text_model="vendor/text",
+            audit_model="vendor/audit",
+            tts_model="vendor/tts",
+            presenters_spec="narrador:Kore",
+            stable_voice=True,
+        )
+        with patch("audiofy.config.profile_store") as store:
+            store.return_value.active.return_value = perfil
+            self.assertFalse(Settings(voice_stability="natural").stable_voice)
+        self.assertTrue(Settings(voice_stability="estavel").stable_voice)
+
+    def test_variavel_de_ambiente_sobrepoe_o_perfil(self):
+        from audiofy.config import Settings
+
+        os.environ["AUDIOFY_VOICE_STABILITY"] = "estavel"
+        self.assertTrue(Settings().stable_voice)
+
+    def test_valor_desconhecido_e_recusado(self):
+        from audiofy.config import Settings
+
+        with self.assertRaises(ValueError):
+            Settings(voice_stability="muito-estavel")

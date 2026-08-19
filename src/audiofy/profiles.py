@@ -39,6 +39,11 @@ class Profile:
     # pelo texto. Só tem efeito nos modelos que aceitam o parâmetro (ver
     # LANGUAGE_FORCING_MODELS); nos demais o campo é ignorado.
     force_language: bool = False
+    # Padrão de estabilidade da voz nas leituras (fiel e reflexiva). Ligado, o
+    # pipeline usa uma direção vocal única em vez de uma por trecho — menos
+    # variação de tom, sem a etapa de planejamento de interpretação. O episódio
+    # pode sobrescrever esta escolha na hora de gerar.
+    stable_voice: bool = False
 
 
 _TTS = "google/gemini-3.1-flash-tts-preview"
@@ -579,6 +584,7 @@ def profile_from_payload(payload: dict[str, Any]) -> Profile:
         text_provider=provider,
         language=language,
         force_language=bool(payload.get("force_language", False)),
+        stable_voice=bool(payload.get("stable_voice", False)),
         subscription_model=subscription_model,
     )
 

@@ -35,6 +35,7 @@ from .languages import detect_language, prompt_label
 from .media import media_duration_seconds
 from .narration import (
     MAX_TTS_CHARS,
+    STABLE_TTS_CHARS,
     commentary_direction,
     fallback_commentary,
     fallback_direction,
@@ -52,6 +53,7 @@ from .narration import (
     speakable_fallback,
     split_into_paragraphs,
     split_verbatim_text,
+    stable_direction,
     tts_direction,
 )
 from .prompts import audit_prompt, coverage_prompt, script_prompt, system_prompt
@@ -60,6 +62,7 @@ from .runtime.process import run_tool
 from .runtime.retry import RetryPolicy
 from .runtime.status import GenerationTracker
 from .sources.base import ContentItem
+from .volume_norm import normalize_segments
 
 
 def episode_dir(item_id: str, language: str = "pt-BR") -> Path:
@@ -98,12 +101,16 @@ def generate_episode(
         raise ValueError("A leitura reflexiva e a leitura fiel exigem exatamente um narrador.")
     directory = episode_dir(item.item_id, settings.language)
     previous = GenerationTracker.load(directory)
+    previous_stability = (previous or {}).get("voice_stability") or ""
     if previous and (
         previous.get("generation_mode", "adaptation") != generation_mode
         or (
             generation_mode in {"verbatim", "reflexive"}
             and previous.get("narration_voice") != narration_voice
         )
+        # A estabilidade muda a instrução de todos os trechos; retomar entre os
+        # dois modos entregaria um MP3 metade estável e metade natural.
+        or (previous_stability and previous_stability != getattr(settings, "voice_stability", ""))
     ):
         force = True
     tracker = GenerationTracker(
@@ -128,6 +135,7 @@ def generate_episode(
             else None
         ),
         background_volume=background_volume if background_music else None,
+        voice_stability=getattr(settings, "voice_stability", ""),
     )
     try:
         result = _run(
@@ -208,6 +216,7 @@ def repair_episode(
         key_source=api_key_source(),
         background_music=(background_music.name if background_music else None),
         background_volume=background_volume if background_music else None,
+        voice_stability=getattr(settings, "voice_stability", ""),
     )
     try:
         print(f"🔧 Reparando {len(bad_files)} segmento(s) com silêncio problemático…")
@@ -224,6 +233,8 @@ def repair_episode(
             generation_mode=generation_mode,
         )
 
+        # Antes da auditoria: ela deve medir o áudio que vai de fato para o MP3.
+        _normalize_levels(settings, segments, tracker)
         tracker.stage("auditoria_audio", total=len(segments), current=0)
         audio_audit_result = audit_segments(directory, segments, on_progress=tracker.advance)
         summary = audio_audit_result["summary"]
@@ -480,6 +491,8 @@ def _run(
         if generation_mode in {"verbatim", "reflexive"}
         else "🎧 5/5 Montagem com ffmpeg…"
     )
+    # Antes da auditoria: ela deve medir o áudio que vai de fato para o MP3.
+    _normalize_levels(settings, segments, tracker)
     tracker.stage("auditoria_audio", total=len(segments), current=0)
     audio_audit = audit_segments(directory, segments, on_progress=tracker.advance)
     audit_summary = audio_audit["summary"]
@@ -545,7 +558,10 @@ def _prepare_verbatim_turns(
     analyze: Callable[[str], dict],
 ) -> list[dict]:
     """Planeja somente a interpretação; o texto falado sempre vem da fonte original."""
-    chunks = split_verbatim_text(item.text)
+    stable = bool(getattr(settings, "stable_voice", False))
+    chunks = split_verbatim_text(item.text, STABLE_TTS_CHARS if stable else MAX_TTS_CHARS)
+    if stable:
+        return _stable_verbatim_turns(settings, item, directory, chunks)
     source_digest = hashlib.sha256(item.text.encode("utf-8")).hexdigest()
     path = directory / "prosody.json"
     loaded = None if force else _load_json(path)
@@ -610,6 +626,77 @@ def _prepare_verbatim_turns(
     return turns
 
 
+def _stable_verbatim_turns(
+    settings: Settings,
+    item: ContentItem,
+    directory: Path,
+    chunks: list,
+) -> list[dict]:
+    """Monta a leitura fiel com uma direção vocal única, sem consultar modelo nenhum.
+
+    É o caminho da voz estável: sem planejamento por trecho não há `prosody.json`
+    a manter nem chamada de LLM a retomar, então a função não tem cache — ela é
+    determinística e refazê-la custa microssegundos.
+    """
+    narrator = settings.presenters[0]
+    lang = settings.language
+    direction = stable_direction(narrator.style, lang)
+    turns: list[dict] = [
+        {
+            "turn_id": "N00000",
+            "speaker": narrator.speaker,
+            "text": intro_text(item.title, "verbatim", lang),
+            "instructions": intro_direction(lang),
+            "kind": "intro",
+        },
+    ]
+    turns.extend(
+        {
+            "turn_id": f"N{chunk.index:05d}",
+            "speaker": narrator.speaker,
+            "text": chunk.text,
+            "instructions": direction,
+        }
+        for chunk in chunks
+    )
+    if "".join(t["text"] for t in turns if t.get("kind") != "intro") != item.text:
+        raise AssertionError("A montagem da leitura estável alterou o texto original.")
+    _save_json(
+        directory / "narration-script.json",
+        {
+            "mode": "verbatim",
+            "voice_stability": settings.voice_stability,
+            "source_sha256": hashlib.sha256(item.text.encode("utf-8")).hexdigest(),
+            "turns": turns,
+        },
+    )
+    return turns
+
+
+def _normalize_levels(settings: Settings, segments: list[Path], tracker: GenerationTracker) -> None:
+    """Equaliza o volume dos segmentos antes da montagem, só na voz estável.
+
+    Diferença de intensidade entre trechos é lida pelo ouvinte como troca de voz,
+    e o `loudnorm` de passagem única da montagem final não corrige desnível local.
+    O nivelamento é um acabamento: se o FFmpeg falhar aqui, o episódio segue com
+    os segmentos originais em vez de perder a geração inteira.
+    """
+    if not getattr(settings, "stable_voice", False):
+        return
+    print("🔊 Nivelando o volume dos trechos…", flush=True)
+    tracker.stage("nivelamento", total=len(segments), current=0)
+    try:
+        results = normalize_segments(segments, on_progress=tracker.advance)
+    except Exception as error:  # noqa: BLE001 - acabamento não derruba a geração
+        # Qualquer falha aqui (FFmpeg ausente, codec, disco) custa no máximo o
+        # nivelamento; os trechos originais seguem íntegros para a montagem, e
+        # a geração já foi paga trecho a trecho.
+        print(f"   ⚠ Nivelamento de volume ignorado: {error}", flush=True)
+        return
+    ajustados = sum(1 for result in results if result.normalized)
+    print(f"   {ajustados} de {len(segments)} trecho(s) ajustados.", flush=True)
+
+
 def _prepare_reflexive_turns(
     settings: Settings,
     item: ContentItem,
@@ -646,12 +733,14 @@ def _prepare_reflexive_turns(
 
     # Divide parágrafos longos em sub-chunks para o limite do TTS.
     # Cada parágrafo lógico tem um id; sub-chunks compartilham o mesmo para-id.
+    stable = bool(getattr(settings, "stable_voice", False))
+    chunk_chars = STABLE_TTS_CHARS if stable else MAX_TTS_CHARS
     para_chunks: list[tuple[int, str]] = []  # (para_id, text)
     for para_id, para in enumerate(paragraphs, 1):
-        if len(para) <= MAX_TTS_CHARS:
+        if len(para) <= chunk_chars:
             para_chunks.append((para_id, para))
         else:
-            sub_chunks = split_verbatim_text(para)
+            sub_chunks = split_verbatim_text(para, chunk_chars)
             for sub in sub_chunks:
                 para_chunks.append((para_id, sub.text))
 
@@ -678,9 +767,13 @@ def _prepare_reflexive_turns(
         return f"{block_id}:{digest}"
 
     # ── 1. Planejamento de prosódia para os chunks verbatim ──────────────────
+    # Na voz estável esta etapa inteira não existe: a direção é uma só, fixa,
+    # e o comentário reflexivo mantém a direção própria dele.
     from .narration import NarrationChunk
 
-    narration_chunks = [NarrationChunk(i + 1, text) for i, (_, text) in enumerate(para_chunks)]
+    narration_chunks = (
+        [] if stable else [NarrationChunk(i + 1, text) for i, (_, text) in enumerate(para_chunks)]
+    )
     cached_prosody = {
         i + 1
         for i, (para_id, text) in enumerate(para_chunks)
@@ -757,14 +850,19 @@ def _prepare_reflexive_turns(
         },
     ]
 
+    stable_instructions = stable_direction(narrator.style, lang) if stable else ""
     for i, (para_id, chunk_text) in enumerate(para_chunks):
-        direction = prosody_cache[_chunk_key(para_id, chunk_text)]["direction"]
+        if stable:
+            instructions = stable_instructions
+        else:
+            direction = prosody_cache[_chunk_key(para_id, chunk_text)]["direction"]
+            instructions = tts_direction(direction, narrator.style, lang)
         turns.append(
             {
                 "turn_id": f"R{len(turns) + 1:05d}",
                 "speaker": narrator.speaker,
                 "text": chunk_text,
-                "instructions": tts_direction(direction, narrator.style, lang),
+                "instructions": instructions,
                 "kind": "verbatim",
             }
         )

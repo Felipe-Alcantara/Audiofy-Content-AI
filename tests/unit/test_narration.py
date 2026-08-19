@@ -7,12 +7,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from audiofy.narration import (  # noqa: E402
+    MAX_TTS_CHARS,
+    STABLE_TTS_CHARS,
     NarrationChunk,
     fallback_direction,
     is_speakable,
     parse_prosody_plan,
     prosody_batches,
     split_verbatim_text,
+    stable_direction,
     tts_direction,
 )
 
@@ -75,7 +78,6 @@ class ProsodyContractTest(unittest.TestCase):
         self.assertIn("tensão", direction)
         self.assertIn("ordem exata", instruction)
         self.assertIn("caloroso", instruction)
-
 
 
 class SpeakableFallbackTest(unittest.TestCase):
@@ -218,3 +220,52 @@ class DenseTableSplitTest(unittest.TestCase):
                 anterior[-1:].isdigit() and seguinte[:1].isdigit(),
                 f"corte no meio de um número entre {anterior[-12:]!r} e {seguinte[:12]!r}",
             )
+
+
+class LeituraEstavelTest(unittest.TestCase):
+    """Modo estável: uma direção só para a obra inteira, em vez de uma por trecho.
+
+    A variação de tonalidade relatada pelos ouvintes vinha de o pipeline pedir
+    ao TTS uma interpretação diferente a cada trecho; aqui o contrato é o
+    oposto — a mesma instrução, sempre.
+    """
+
+    def test_a_direcao_nao_muda_entre_trechos(self):
+        primeira = stable_direction("grave e pausado", "pt-BR")
+        segunda = stable_direction("grave e pausado", "pt-BR")
+
+        self.assertEqual(primeira, segunda)
+        self.assertIn("grave e pausado", primeira)
+
+    def test_preserva_a_base_de_leitura_literal(self):
+        direcao = stable_direction("", "pt-BR")
+
+        self.assertIn("Sintetize fala em português brasileiro", direcao)
+        self.assertIn("sem acrescentar, omitir, resumir ou corrigir palavras", direcao)
+
+    def test_nao_carrega_direcao_por_trecho(self):
+        direcao = stable_direction("", "pt-BR")
+
+        self.assertNotIn("Direção deste trecho", direcao)
+        self.assertNotIn("{direction}", direcao)
+
+    def test_pede_uniformidade_explicita(self):
+        self.assertIn("constantes", stable_direction("", "pt-BR"))
+        self.assertIn("constant", stable_direction("", "en"))
+
+    def test_ingles_usa_a_base_em_ingles(self):
+        direcao = stable_direction("warm", "en")
+
+        self.assertIn("Synthesize speech in English", direcao)
+        self.assertIn("warm", direcao)
+
+    def test_trecho_estavel_e_maior_e_preserva_o_texto(self):
+        texto = ("Primeiro período. Segundo período!\n\n" * 400) + "Fim."
+
+        self.assertGreater(STABLE_TTS_CHARS, MAX_TTS_CHARS)
+        chunks = split_verbatim_text(texto, max_chars=STABLE_TTS_CHARS)
+
+        self.assertEqual("".join(chunk.text for chunk in chunks), texto)
+        self.assertTrue(all(0 < len(chunk.text) <= STABLE_TTS_CHARS for chunk in chunks))
+        # Menos emendas por obra é o ponto do modo estável.
+        self.assertLess(len(chunks), len(split_verbatim_text(texto, max_chars=MAX_TTS_CHARS)))

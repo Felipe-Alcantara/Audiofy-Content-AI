@@ -218,5 +218,35 @@ class SettingsProfileNameTest(unittest.TestCase):
         self.assertEqual(Settings().subscription_model, "opus")
 
 
+class VozEstavelNoPerfilTest(unittest.TestCase):
+    """O perfil guarda o padrão de estabilidade; o episódio pode sobrescrever."""
+
+    def _payload(self, **extra):
+        return {
+            "name": "leitura",
+            "text_model": "vendor/text",
+            "audit_model": "vendor/audit",
+            "tts_model": "vendor/tts",
+            "presenters_spec": "narrador:Kore",
+            **extra,
+        }
+
+    def test_desligado_por_padrao(self):
+        self.assertFalse(profile_from_payload(self._payload()).stable_voice)
+
+    def test_guarda_a_escolha(self):
+        self.assertTrue(profile_from_payload(self._payload(stable_voice=True)).stable_voice)
+
+    def test_sobrevive_ao_salvamento(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            caminho = Path(tmp) / "profiles.json"
+            store = ProfileStore(caminho)
+            store.save(profile_from_payload(self._payload(stable_voice=True)))
+
+            recarregado = ProfileStore(caminho)
+
+        self.assertTrue(recarregado.get("leitura").stable_voice)
+
+
 if __name__ == "__main__":
     unittest.main()

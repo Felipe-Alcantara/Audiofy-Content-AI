@@ -38,6 +38,7 @@ class GenerationTracker:
         background_music: str | None = None,
         background_music_cache: str | None = None,
         background_volume: float | None = None,
+        voice_stability: str = "",
     ) -> None:
         self.directory = directory
         self.directory.mkdir(parents=True, exist_ok=True)
@@ -72,6 +73,9 @@ class GenerationTracker:
             "background_music": background_music,
             "background_music_cache": background_music_cache,
             "background_volume": background_volume,
+            # Estabilidade da voz usada nesta geração: a interface mostra o que
+            # foi gerado, e a bridge decide por ela se retomar é seguro.
+            "voice_stability": voice_stability,
         }
         # O launcher já limpou aborts antigos. Um abort pedido enquanto o worker
         # iniciava precisa sobreviver até o primeiro checkpoint do processo filho.
@@ -143,6 +147,7 @@ class GenerationTracker:
         background_music: str | None = None,
         background_music_cache: str | None = None,
         background_volume: float | None = None,
+        voice_stability: str = "",
     ) -> None:
         """Publica o início antes de lançar o worker, fechando a janela sem feedback."""
         directory.mkdir(parents=True, exist_ok=True)
@@ -177,6 +182,9 @@ class GenerationTracker:
             "background_music": background_music,
             "background_music_cache": background_music_cache,
             "background_volume": background_volume,
+            # Estabilidade da voz usada nesta geração: a interface mostra o que
+            # foi gerado, e a bridge decide por ela se retomar é seguro.
+            "voice_stability": voice_stability,
         }
         (directory / cls.ABORT_FILE).unlink(missing_ok=True)
         cls._write(directory, data)
