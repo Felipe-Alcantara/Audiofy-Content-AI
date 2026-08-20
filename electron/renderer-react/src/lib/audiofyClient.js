@@ -47,6 +47,12 @@ export function regenerateChunks(source, itemId, chunkIndexes, language) {
   );
 }
 
+// Marcações de tempo por trecho: é o que permite trocar o slide na hora certa
+// em vez de procurar a posição de ouvido.
+export function exportMarkers(episodeId, language) {
+  return callBridge(withLanguage(["export-markers", episodeId], language));
+}
+
 export function repairEpisode(source, itemId, language) {
   return callBridge(withLanguage(["repair", source, itemId], language));
 }

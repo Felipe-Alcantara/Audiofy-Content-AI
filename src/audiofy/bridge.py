@@ -12,6 +12,7 @@
         [--background-music=<arquivo>] [--background-volume=0.01..0.25]
         [--stability=natural|estavel]
     python3 -m audiofy.bridge regenerate-chunks <fonte> <item-id> <2,3,7> [--language=<idioma>]
+    python3 -m audiofy.bridge export-markers <item-id> [--language=<idioma>]
     python3 -m audiofy.bridge run-generation <fonte> <item-id> [opções]  # uso interno
     python3 -m audiofy.bridge repair <fonte> <item-id>
     python3 -m audiofy.bridge run-repair <fonte> <item-id> [opções]     # uso interno
@@ -731,6 +732,27 @@ def _parse_chunk_selection(selection: object, disponiveis: set[int]) -> list[int
     return sorted(indices)
 
 
+def _cmd_export_markers(item_id: str, language: str = "") -> dict:
+    """Grava legendas e capítulos com o tempo de cada trecho do episódio.
+
+    É o que falta para montar vídeo: sem isso, sincronizar slide com narração
+    vira procurar a posição de ouvido.
+    """
+    from .markers import export_markers
+
+    directory = _episode_dir(item_id, language)
+    dados = _cmd_audio_chunks(item_id, language)
+    trechos = [chunk for chunk in dados.get("chunks", []) if chunk.get("kind") != "intro"]
+    if not trechos:
+        raise ValueError("Este episódio ainda não tem trechos de áudio gerados.")
+    escritos = export_markers(directory, trechos, base_name=item_id.replace("/", "__"))
+    return {
+        "files": [str(caminho) for caminho in escritos],
+        "chunks": len(trechos),
+        "dir": str(directory),
+    }
+
+
 def _cmd_regenerate_chunks(
     source_key: str, item_id: str, chunks: object, language: str = ""
 ) -> dict:
@@ -1322,6 +1344,12 @@ def main() -> None:
                 if arg.startswith("--language="):
                     log_lang = arg.split("=", 1)[1]
             result = _cmd_generation_log(rest[0], log_lang)
+        elif command == "export-markers" and rest:
+            marker_lang = ""
+            for arg in rest[1:]:
+                if arg.startswith("--language="):
+                    marker_lang = arg.split("=", 1)[1]
+            result = _cmd_export_markers(rest[0], marker_lang)
         elif command == "regenerate-chunks" and len(rest) >= 3:
             chunk_lang = ""
             for arg in rest[3:]:

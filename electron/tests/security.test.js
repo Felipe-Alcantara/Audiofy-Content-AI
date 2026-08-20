@@ -65,6 +65,14 @@ test("generate aceita música e volume sem liberar argumentos ilimitados", () =>
 // A combinação completa da tela de geração precisa caber na aridade: com o teto
 // antigo (8), leitura fiel em inglês, com música e regeneração forçada era
 // recusada aqui antes mesmo de sair do Electron.
+test("exportação de marcações passa pelo IPC", () => {
+  assert.doesNotThrow(() => validateBridgeRequest(["export-markers", "episodio"]));
+  assert.doesNotThrow(() => validateBridgeRequest([
+    "export-markers", "episodio", "--language=en",
+  ]));
+  assert.throws(() => validateBridgeRequest(["export-markers"]));
+});
+
 test("regeneração de trechos passa pelo IPC com e sem idioma", () => {
   assert.doesNotThrow(() => validateBridgeRequest([
     "regenerate-chunks", "custom", "episodio", "2,3,7",

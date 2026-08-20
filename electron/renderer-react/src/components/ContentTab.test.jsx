@@ -21,7 +21,7 @@ const ITEM_DETAIL = {
   estimated_cost_usd: 0.2,
   estimate: {
     cost_usd: 0.2, cost_min_usd: 0.15, cost_max_usd: 0.3,
-    duration_minutes: 9.5, sample_count: 3,
+    duration_minutes: 9.5, sample_count: 3, speaking_rate_wpm: 126,
   },
 };
 
@@ -267,5 +267,31 @@ describe("ContentTab", () => {
     await waitFor(() => expect(bridge).toHaveBeenCalledWith(
       ["add-url", "https://exemplo.test/post"], undefined
     ));
+  });
+
+  it("diz quanto texto cabe na duração alvo e quanto cortar", async () => {
+    mockAudiofy(BASE_HANDLERS);
+
+    renderContent();
+    fireEvent.click(await screen.findByText("Conto do mar"));
+    await screen.findByRole("button", { name: "🎙️ Gerar episódio" });
+
+    fireEvent.change(screen.getByLabelText(/Duração alvo/), { target: { value: "5" } });
+
+    // 1200 palavras a 126 palavras/min ≈ 9,5 min; em 5 min cabem 630.
+    expect(await screen.findByText(/630 palavras/)).toBeInTheDocument();
+    expect(screen.getByText(/cortar/i)).toBeInTheDocument();
+  });
+
+  it("não pede corte quando o texto já cabe na duração alvo", async () => {
+    mockAudiofy(BASE_HANDLERS);
+
+    renderContent();
+    fireEvent.click(await screen.findByText("Conto do mar"));
+    await screen.findByRole("button", { name: "🎙️ Gerar episódio" });
+
+    fireEvent.change(screen.getByLabelText(/Duração alvo/), { target: { value: "30" } });
+
+    expect(await screen.findByText(/já cabe/i)).toBeInTheDocument();
   });
 });

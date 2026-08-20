@@ -16,6 +16,7 @@ const COMMAND_ARITY = Object.freeze({
   "repair": [3, 4],
   // regenerate-chunks: comando + fonte + item + lista de trechos + --language.
   "regenerate-chunks": [4, 5],
+  "export-markers": [2, 3],
   "tts-catalog": [1, 1], "notebooklm": [3, 3], "add-url": [2, 2],
   "add-text": [1, 1], "add-file": [2, 2], "reextract-file": [2, 2],
   "chat": [1, 2], "chat-history": [1, 2],

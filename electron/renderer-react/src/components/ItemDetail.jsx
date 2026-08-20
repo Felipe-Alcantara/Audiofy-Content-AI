@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   abortEpisode,
   chooseBackgroundMusic,
+  exportMarkers,
   exportNotebookLm,
   generateEpisode,
   getBalance,
@@ -78,6 +79,7 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
   const [voice, setVoice] = useState("");
   const [voiceTouched, setVoiceTouched] = useState(false);
   const [stability, setStability] = useState("natural");
+  const [targetMinutes, setTargetMinutes] = useState("");
   const [stabilityTouched, setStabilityTouched] = useState(false);
   const [force, setForce] = useState(false);
   const [music, setMusic] = useState({ path: null, name: null });
@@ -139,6 +141,24 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
 
   const estimate = (item.estimates && item.estimates[mode]) || item.estimate;
   const actual = item.actual;
+
+  // Quanto texto cabe na duração que o vídeo precisa ter. A taxa de leitura vem
+  // do histórico real deste modelo e voz, não de uma média de mercado: medindo
+  // o próprio áudio é que se descobriu a velocidade com que ele lê de fato.
+  const alvo = Number.parseFloat(targetMinutes);
+  const taxa = estimate.speaking_rate_wpm;
+  const encaixe = Number.isFinite(alvo) && alvo > 0 && taxa > 0
+    ? (() => {
+      const cabem = Math.floor(alvo * taxa);
+      const sobra = Math.max(0, (item.words || 0) - cabem);
+      return {
+        cabem,
+        sobra,
+        proporcao: item.words ? sobra / item.words : 0,
+        atual: (item.words || 0) / taxa,
+      };
+    })()
+    : null;
 
   const estimateLine = actual && (actual.generation_mode || "adaptation") === mode
     ? `Realizado: US$ ${actual.cost_usd.toFixed(4)} ` +
@@ -276,6 +296,18 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
     }
   }, [estimate, force, item, language, mode, music, refreshStatus, source, stability, voice,
     volumePercent]);
+
+  const handleMarkers = useCallback(async () => {
+    const resultado = await exportMarkers(item.item_id, language);
+    if (!resultado.ok) {
+      alert(`Não foi possível exportar as marcações: ${resultado.error}`);
+      return;
+    }
+    alert(
+      `Marcações de ${resultado.chunks} trecho(s) exportadas na pasta do episódio:\n\n` +
+      resultado.files.map((caminho) => caminho.split("/").pop()).join("\n")
+    );
+  }, [item.item_id, language]);
 
   const handleAbort = useCallback(async () => {
     const result = await abortEpisode(item.item_id, language);
@@ -465,6 +497,27 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
             </select>
           </label>
         )}
+        <label className="target-duration">
+          Duração alvo do vídeo (min, opcional)
+          <input
+            type="number"
+            min="1"
+            step="1"
+            placeholder="ex.: 20"
+            value={targetMinutes}
+            disabled={locked}
+            onChange={(event) => setTargetMinutes(event.target.value)}
+          />
+        </label>
+        {encaixe && (
+          <p className="muted small">
+            {encaixe.sobra > 0
+              ? `Neste ritmo (${Math.round(taxa)} palavras/min) o texto rende ~${encaixe.atual.toFixed(1)} min. `
+                + `Em ${alvo} min cabem ${encaixe.cabem} palavras: é preciso cortar `
+                + `${encaixe.sobra} palavras (${Math.round(encaixe.proporcao * 100)}% do texto).`
+              : `O texto já cabe: rende ~${encaixe.atual.toFixed(1)} min, contra os ${alvo} min pedidos.`}
+          </p>
+        )}
         <p className="muted small">{modeNote}</p>
         {needsNarrator && (
           <p className="muted small">{STABILITY_NOTES[stability]}</p>
@@ -529,6 +582,15 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
         {done && (
           <button type="button" onClick={() => playEpisode(status.mp3, item.title)}>
             ▶️ Ouvir
+          </button>
+        )}
+        {done && (
+          <button
+            type="button"
+            title="Legendas (.srt) e capítulos com o tempo de cada trecho, para sincronizar slides na edição"
+            onClick={handleMarkers}
+          >
+            🎬 Marcações de tempo
           </button>
         )}
         {status && (
