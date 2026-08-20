@@ -29,6 +29,7 @@ from .artifacts import (
     write_source_document,
 )
 from .audio_audit import audit_segments
+from .audio_quality import SegmentQuality, audit_quality, descrever
 from .config import EPISODES_DIR, Settings, api_key_candidates, api_key_source
 from .estimates import EpisodeMetrics, estimate_tts_cost
 from .languages import detect_language, prompt_label
@@ -495,6 +496,9 @@ def _run(
     _normalize_levels(settings, segments, tracker)
     tracker.stage("auditoria_audio", total=len(segments), current=0)
     audio_audit = audit_segments(directory, segments, on_progress=tracker.advance)
+    # Silêncio é uma dimensão; volume, brilho e decaimento são outras três, e
+    # foram elas que produziram o áudio reprovado que ninguém detectou.
+    _audit_quality_report(directory, segments, tracker)
     audit_summary = audio_audit["summary"]
     if audit_summary["critical"]:
         print(
@@ -671,6 +675,47 @@ def _stable_verbatim_turns(
         },
     )
     return turns
+
+
+def _audit_quality_report(
+    directory: Path, segments: list[Path], tracker: GenerationTracker
+) -> dict | None:
+    """Mede a qualidade sonora dos trechos e relata o que saiu ruim.
+
+    Deliberadamente **não** regera nada: refazer trecho gasta crédito, e gastar
+    sem o usuário pedir é decisão dele, não do pipeline. O relatório fica em
+    ``audio-quality.json`` e a interface oferece o botão de refazer.
+
+    Uma falha aqui não pode custar o episódio: a medição é diagnóstico, e os
+    trechos seguem íntegros para a montagem de qualquer forma.
+    """
+    tracker.stage("qualidade_sonora", total=len(segments), current=0)
+    try:
+        relatorio = audit_quality(directory, segments, on_progress=tracker.advance)
+    except Exception as error:  # noqa: BLE001 - diagnóstico não derruba produção
+        print(f"   ⚠ Auditoria de qualidade sonora ignorada: {error}", flush=True)
+        return None
+
+    resumo = relatorio["summary"]
+    if not resumo["com_problema"]:
+        print(f"   {resumo['total']} trecho(s) medidos; nenhum destoa do episódio.", flush=True)
+        return relatorio
+
+    print(
+        f"\n⚠ {resumo['com_problema']} de {resumo['total']} trecho(s) saíram abaixo do "
+        "padrão do episódio:",
+        flush=True,
+    )
+    for dados in relatorio["segments"]:
+        if dados.get("issues"):
+            medida = SegmentQuality(**dados)
+            print(f"   trecho {medida.chunk_index}: {descrever(medida)}", flush=True)
+    print(
+        "   Nada foi refeito automaticamente. Use a revisão de trechos no app "
+        "para regerar só o que precisa.",
+        flush=True,
+    )
+    return relatorio
 
 
 def _normalize_levels(settings: Settings, segments: list[Path], tracker: GenerationTracker) -> None:

@@ -6,6 +6,8 @@ import sys
 import tempfile
 import unittest
 import wave
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -1053,6 +1055,48 @@ class ManifestoSemOrfaosTest(unittest.TestCase):
 
         self.assertNotIn("sobra-de-geracao-anterior.wav", entradas)
         self.assertEqual(len(entradas), 1)
+
+
+class AuditoriaDeQualidadeNaGeracaoTest(unittest.TestCase):
+    """A geração precisa avisar quando um trecho saiu ruim.
+
+    A decisão de produto é avisar e oferecer, nunca refazer sozinho: refazer
+    gasta crédito sem o usuário pedir. Uma falha na medição também não pode
+    custar o episódio — ela é diagnóstico, não etapa de produção.
+    """
+
+    @patch("audiofy.pipeline.audit_quality")
+    def test_relata_os_trechos_com_problema_sem_regerar(self, audit):
+        from audiofy.pipeline import _audit_quality_report
+
+        audit.return_value = {
+            "summary": {"total": 3, "com_problema": 1, "trechos_com_problema": [2]},
+            "segments": [],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            tracker = GenerationTracker(directory, "livro")
+            saida = StringIO()
+            with redirect_stdout(saida):
+                relatorio = _audit_quality_report(directory, [Path("a.wav")], tracker)
+
+        self.assertEqual(relatorio["summary"]["com_problema"], 1)
+        audit.assert_called_once()
+        texto = saida.getvalue()
+        self.assertIn("1", texto)
+        self.assertNotIn("regerado", texto.lower())
+
+    @patch("audiofy.pipeline.audit_quality", side_effect=OSError("ffprobe sumiu"))
+    def test_falha_na_medicao_nao_derruba_o_episodio(self, _audit):
+        from audiofy.pipeline import _audit_quality_report
+
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            tracker = GenerationTracker(directory, "livro")
+            with redirect_stdout(StringIO()):
+                relatorio = _audit_quality_report(directory, [Path("a.wav")], tracker)
+
+        self.assertIsNone(relatorio)
 
 
 if __name__ == "__main__":
