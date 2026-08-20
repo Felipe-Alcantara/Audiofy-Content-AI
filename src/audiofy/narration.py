@@ -30,11 +30,13 @@ MAX_TTS_CHARS = 2_400
 #     30 s → 1.233 Hz (8%)     75 s →   929 Hz (31%)     120 s → 705 Hz (47%)
 #     45 s → 1.045 Hz (22%)    90 s →   882 Hz (34%)
 #
-# O joelho está entre 30 e 45 segundos. 600 caracteres ≈ 37 segundos de fala,
-# onde a queda fica em torno de 15% — pequena o bastante para a emenda com o
-# trecho seguinte não soar como troca de voz, e ainda assim algumas frases
-# inteiras por chamada, em vez de picotar o texto palavra a palavra.
-STABLE_TTS_CHARS = 600
+# O joelho está entre 30 e 45 segundos. A geração de validação corrigiu a conta
+# do tamanho: a fala sai a ~14 caracteres por segundo, não 16, então 600
+# caracteres dariam 43 segundos — já depois do joelho, e o trecho mais longo
+# dessa geração perdeu 30% de brilho. Com 450 caracteres o trecho fica em torno
+# de 32 segundos, onde a curva ainda está em ~20%, e sobra espaço para algumas
+# frases inteiras por chamada em vez de picotar o texto.
+STABLE_TTS_CHARS = 450
 MAX_PROSODY_BATCH_CHARS = 18_000
 MAX_DIRECTION_CHARS = 600
 MAX_REFLEXIVE_COMMENTARY_CHARS = 400

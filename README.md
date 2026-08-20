@@ -333,7 +333,7 @@ O seletor **Estabilidade da voz** (ao lado do narrador) escolhe entre dois compo
 - **Natural** — o padrão histórico descrito acima: a IA planeja emoção, ritmo e pausas trecho a
   trecho. É mais expressivo, mas o tom varia ao longo do áudio, porque cada trecho vai ao TTS com
   uma instrução diferente.
-- **Estável** — uma direção vocal única para a obra inteira, trechos **curtos** (600 caracteres,
+- **Estável** — uma direção vocal única para a obra inteira, trechos **curtos** (450 caracteres,
   contra 2.400 do modo natural) e volume nivelado entre eles. Some a etapa de planejamento de
   interpretação: menos variação de tom, geração mais rápida e sem o custo do modelo de texto.
 
@@ -344,8 +344,9 @@ normal no trecho seguinte — é esse contraste que se ouve como "abafado" e "pa
 voz". Trechos de tamanho de parágrafo terminam acima de 1.000 Hz no mesmo modelo.
 
 A curva foi medida a cada 15 segundos: a queda é de 8% aos 30 segundos, 22% aos 45 e 47% aos dois
-minutos. Os 600 caracteres correspondem a ~37 segundos de fala, onde a perda ainda fica em torno
-de 15%.
+minutos. A 14 caracteres por segundo, os 450 caracteres correspondem a ~32 segundos de fala, onde
+a perda fica em torno de 20%. Medido depois numa geração real com a configuração nova: o brilho
+termina entre 1.097 e 1.340 Hz, contra 518 a 690 Hz nos trechos de 4.000 caracteres.
 
 O padrão vem do perfil ativo (**Perfis → Voz estável nas leituras**) e cada episódio pode escolher
 o contrário na hora de gerar. Trocar a estabilidade regenera os áudios do episódio, porque a
