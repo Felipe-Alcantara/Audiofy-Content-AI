@@ -72,7 +72,7 @@ function ModelPicker({ label, models, value, onChange }) {
   );
 }
 
-function PresenterRow({ presenter, voices, ttsModel, onChange, onRemove }) {
+function PresenterRow({ presenter, voices, ttsModel, voiceProfiles, onChange, onRemove }) {
   const hasVoices = voices.length > 0;
   return (
     <div className="presenter-row">
@@ -91,7 +91,7 @@ function PresenterRow({ presenter, voices, ttsModel, onChange, onRemove }) {
       >
         {hasVoices
           ? voices.map(([name, tone]) => (
-            <option key={name} value={name}>{voiceOptionLabel(name, tone, ttsModel)}</option>
+            <option key={name} value={name}>{voiceOptionLabel(name, tone, ttsModel, voiceProfiles)}</option>
           ))
           : <option value="">Nenhuma voz catalogada para este modelo</option>}
       </select>
@@ -414,6 +414,7 @@ export default function ProfileForm({ profile, category, onCancel, onSaved }) {
             presenter={presenter}
             voices={voices}
             ttsModel={ttsModel}
+            voiceProfiles={info && info.voice_profiles}
             onChange={(updated) => setPresenters((current) =>
               current.map((entry, position) => (position === index ? updated : entry)))}
             onRemove={() => setPresenters((current) =>

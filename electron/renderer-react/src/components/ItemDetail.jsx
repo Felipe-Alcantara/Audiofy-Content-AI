@@ -417,13 +417,23 @@ export default function ItemDetail({ item, source, onItemsChanged, onOpenChunks 
               {voiceEntries.length > 0
                 ? voiceEntries.map(([name, tone]) => (
                   <option key={name} value={name}>
-                    {voiceOptionLabel(name, tone, info.tts_model)}
+                    {voiceOptionLabel(name, tone, info.tts_model, info.voice_profiles)}
                   </option>
                 ))
                 : profileVoice
-                  ? <option value={profileVoice}>{voiceOptionLabel(profileVoice, "", info.tts_model)}</option>
+                  ? <option value={profileVoice}>
+                      {voiceOptionLabel(profileVoice, "", info.tts_model, info.voice_profiles)}
+                    </option>
                   : <option value="" disabled>Nenhuma voz catalogada para este modelo</option>}
             </select>
+            {info.voice_profiles && info.voice_profiles[voice] && (
+              <span className="muted small">
+                {`Medido em 3 gerações: tom ${info.voice_profiles[voice].pitch_hz} Hz `
+                  + `(${info.voice_profiles[voice].pitch_min_hz}-${info.voice_profiles[voice].pitch_max_hz}), `
+                  + `${info.voice_profiles[voice].chars_per_second} caracteres por segundo. `
+                  + "O tom varia entre gerações; a faixa mostra quanto."}
+              </span>
+            )}
             {voiceDiffers && (
               <button
                 type="button"

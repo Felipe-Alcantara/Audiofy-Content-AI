@@ -1017,6 +1017,8 @@ def _cmd_settings_info() -> dict:
         LANGUAGE_FORCING_MODELS,
         TTS_TIERS,
         TTS_VOICE_CATALOGS,
+        VOICE_PROFILES,
+        pitch_label,
     )
 
     settings = Settings()
@@ -1048,6 +1050,18 @@ def _cmd_settings_info() -> dict:
         ],
         "gemini_voices": GEMINI_VOICES,
         "voice_catalogs": TTS_VOICE_CATALOGS,
+        # Nome de voz não descreve som: o seletor mostra o que foi medido.
+        "voice_profiles": {
+            nome: {
+                "pitch_hz": perfil.pitch_hz,
+                "pitch_min_hz": perfil.pitch_min_hz,
+                "pitch_max_hz": perfil.pitch_max_hz,
+                "brightness_hz": perfil.brightness_hz,
+                "chars_per_second": perfil.chars_per_second,
+                "pitch_label": pitch_label(perfil),
+            }
+            for nome, perfil in VOICE_PROFILES.items()
+        },
         "tts_tiers": TTS_TIERS,
         # Avisam o frontend sobre a variante do português: quais modelos podem
         # variar entre pt-BR e pt-PT, e em quais dá para forçar o idioma.

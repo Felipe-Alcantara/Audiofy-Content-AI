@@ -18,7 +18,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from audiofy.voices import TTS_VOICE_CATALOGS  # noqa: E402
+from audiofy.voices import (  # noqa: E402
+    TTS_VOICE_CATALOGS,
+    pitch_label,
+    voice_profile,
+    voice_summary,
+    voices_for_model,
+)
 
 _FIXTURE = Path(__file__).resolve().parents[1] / "fixtures" / "openrouter_supported_voices.json"
 LIVE_VOICES: dict[str, list[str]] = json.loads(_FIXTURE.read_text(encoding="utf-8"))
@@ -128,3 +134,46 @@ class LanguageAmbiguityTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PerfilMedidoDasVozesTest(unittest.TestCase):
+    """Nome de voz não diz como ela soa: 'Fenrir' e 'Alnilam' parecem masculinas
+    e não são. O catálogo passa a carregar medição, não suposição."""
+
+    def test_traz_tom_brilho_e_velocidade_medidos(self):
+        perfil = voice_profile("Umbriel")
+
+        self.assertIsNotNone(perfil)
+        self.assertTrue(120 <= perfil.pitch_hz <= 160)
+        self.assertGreater(perfil.brightness_hz, 0)
+        self.assertGreater(perfil.chars_per_second, 5)
+
+    def test_voz_sem_medicao_devolve_nada_em_vez_de_chutar(self):
+        self.assertIsNone(voice_profile("VozQueNaoExiste"))
+
+    def test_separa_graves_de_agudas_pelo_tom(self):
+        self.assertEqual(pitch_label(voice_profile("Umbriel")), "grave")
+        self.assertEqual(pitch_label(voice_profile("Sulafat")), "aguda")
+
+    def test_a_faixa_medida_mostra_a_incerteza(self):
+        """A mesma voz varia entre gerações: Charon mediu 146, 159 e 174 Hz.
+        Publicar só a mediana esconderia isso de quem escolhe a voz."""
+        for nome in ("Charon", "Schedar", "Umbriel"):
+            perfil = voice_profile(nome)
+            self.assertLessEqual(perfil.pitch_min_hz, perfil.pitch_hz)
+            self.assertGreaterEqual(perfil.pitch_max_hz, perfil.pitch_hz)
+
+    def test_resumo_legivel_traz_rotulo_e_numero(self):
+        resumo = voice_summary("Umbriel")
+
+        self.assertIn("grave", resumo)
+        self.assertIn("Hz", resumo)
+
+    def test_todas_as_vozes_do_modelo_medido_tem_perfil(self):
+        """Meia medição é pior que nenhuma: quem escolhe compararia voz medida
+        com voz sem medida e acharia que a diferença é da voz."""
+        catalogo = voices_for_model("google/gemini-3.1-flash-tts-preview")
+
+        sem_perfil = [nome for nome in catalogo if voice_profile(nome) is None]
+
+        self.assertEqual(sem_perfil, [])

@@ -8,6 +8,8 @@ os importa e re-exporta via ``TTS_VOICE_CATALOGS``.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from .providers.openrouter import (
     CSM_VOICES,
     DEEPGRAM_VOICES,
@@ -45,6 +47,101 @@ TTS_VOICE_CATALOGS: dict[str, dict[str, str]] = {
     "qwen/qwen-audio-3.0-tts-flash": QWEN_TTS_FLASH_VOICES,
     "qwen/qwen-audio-3.0-tts-plus": QWEN_TTS_PLUS_VOICES,
 }
+
+# ── Perfil medido de cada voz ─────────────────────────────────────────────────
+# O catálogo diz o nome da voz e um rótulo de tom, mas nome não descreve som:
+# medindo, `Fenrir` e `Alnilam` não são vozes masculinas, apesar de soarem
+# assim no nome. Quem escolhe pelo nome só descobre o erro depois de pagar por
+# um episódio inteiro.
+#
+# Estes números vêm de `scripts/measure_voices.py`: a mesma frase sintetizada
+# três vezes por voz, medindo tom fundamental (autocorrelação), brilho (mesma
+# métrica da auditoria de qualidade) e velocidade de leitura.
+#
+# A faixa entre `pitch_min_hz` e `pitch_max_hz` não é imprecisão do medidor: é
+# a voz que muda de uma geração para outra. `Charon` mediu 146, 159 e 174 Hz;
+# `Sulafat`, 224, 224 e 226. Publicar só a mediana esconderia essa diferença de
+# quem precisa escolher uma voz confiável para uma apresentação.
+
+
+@dataclass(frozen=True)
+class VoiceProfile:
+    """Como a voz soa de fato, medido em três gerações."""
+
+    pitch_hz: int
+    pitch_min_hz: int
+    pitch_max_hz: int
+    brightness_hz: int
+    chars_per_second: float
+
+
+#: Fronteiras de rótulo. A variação típica entre gerações é de ~17 Hz, então
+#: vozes perto da fronteira recebem "intermediária" — é mais honesto do que
+#: afirmar um lado que a próxima geração pode desmentir.
+PITCH_LOW_HZ = 160
+PITCH_HIGH_HZ = 190
+
+VOICE_PROFILES: dict[str, VoiceProfile] = {
+    "Algenib": VoiceProfile(133, 131, 141, 1870, 13.0),
+    "Sadaltager": VoiceProfile(139, 130, 159, 1670, 13.1),
+    "Umbriel": VoiceProfile(142, 135, 143, 1674, 13.2),
+    "Enceladus": VoiceProfile(144, 139, 149, 1523, 12.5),
+    "Gacrux": VoiceProfile(146, 137, 159, 1684, 13.4),
+    "Algieba": VoiceProfile(147, 135, 152, 1862, 12.9),
+    "Puck": VoiceProfile(150, 144, 157, 1913, 13.5),
+    "Iapetus": VoiceProfile(152, 150, 161, 1618, 12.7),
+    "Pulcherrima": VoiceProfile(152, 150, 155, 1582, 13.3),
+    "Sadachbia": VoiceProfile(154, 145, 156, 1692, 13.3),
+    "Schedar": VoiceProfile(157, 133, 176, 2706, 13.2),
+    "Alnilam": VoiceProfile(158, 152, 164, 1490, 14.2),
+    "Rasalgethi": VoiceProfile(158, 146, 164, 1536, 12.7),
+    "Charon": VoiceProfile(159, 146, 174, 1550, 13.7),
+    "Achird": VoiceProfile(161, 149, 180, 1600, 13.6),
+    "Zubenelgenubi": VoiceProfile(168, 154, 182, 1338, 12.8),
+    "Orus": VoiceProfile(173, 166, 194, 1572, 12.9),
+    "Fenrir": VoiceProfile(183, 180, 190, 1739, 13.4),
+    "Laomedeia": VoiceProfile(193, 185, 214, 1349, 13.2),
+    "Aoede": VoiceProfile(200, 189, 202, 1706, 13.3),
+    "Despina": VoiceProfile(200, 198, 220, 1596, 13.1),
+    "Kore": VoiceProfile(203, 194, 218, 1700, 13.2),
+    "Zephyr": VoiceProfile(204, 198, 211, 1640, 13.0),
+    "Vindemiatrix": VoiceProfile(209, 195, 222, 1667, 13.2),
+    "Callirrhoe": VoiceProfile(211, 205, 222, 1480, 13.4),
+    "Erinome": VoiceProfile(212, 212, 230, 1462, 13.0),
+    "Autonoe": VoiceProfile(216, 212, 216, 1633, 13.2),
+    "Achernar": VoiceProfile(219, 202, 222, 1933, 13.2),
+    "Leda": VoiceProfile(224, 220, 226, 1754, 13.5),
+    "Sulafat": VoiceProfile(224, 224, 226, 1928, 13.4),
+}
+
+
+def voice_profile(voice: str) -> VoiceProfile | None:
+    """Perfil medido da voz, ou ``None`` quando ela ainda não foi medida."""
+    return VOICE_PROFILES.get(voice)
+
+
+def pitch_label(profile: VoiceProfile | None) -> str:
+    """Rótulo de tom a partir da medição, não do nome da voz."""
+    if profile is None:
+        return "sem medição"
+    if profile.pitch_hz < PITCH_LOW_HZ:
+        return "grave"
+    if profile.pitch_hz < PITCH_HIGH_HZ:
+        return "intermediária"
+    return "aguda"
+
+
+def voice_summary(voice: str) -> str:
+    """Resumo para o seletor: rótulo, tom medido e velocidade de leitura."""
+    profile = voice_profile(voice)
+    if profile is None:
+        return ""
+    return (
+        f"{pitch_label(profile)} · {profile.pitch_hz} Hz "
+        f"({profile.pitch_min_hz}-{profile.pitch_max_hz}) · "
+        f"{profile.chars_per_second:.1f} car/s"
+    )
+
 
 # ── Tiers de custo/qualidade ──────────────────────────────────────────────────
 # O custo efetivo por milhão de caracteres considera tanto tokens de entrada

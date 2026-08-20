@@ -129,9 +129,17 @@ export function sortVoicesByLanguage(entries) {
 }
 
 // Opção de <select> para uma voz: rótulo legível + tom, quando houver.
-export function voiceOptionLabel(voice, tone, ttsModel) {
+export function voiceOptionLabel(voice, tone, ttsModel, profiles) {
   const cleanTone = tone && voiceToneLabel(tone, voice);
-  return cleanTone ? `${voiceLabel(voice, ttsModel)} · ${cleanTone}` : voiceLabel(voice, ttsModel);
+  const base = cleanTone
+    ? `${voiceLabel(voice, ttsModel)} · ${cleanTone}`
+    : voiceLabel(voice, ttsModel);
+  // O perfil medido vem antes do rótulo do catálogo porque é o único dado
+  // que descreve como a voz soa: "Fenrir" e "Alnilam" parecem masculinas pelo
+  // nome e não são.
+  const profile = profiles && profiles[voice];
+  if (!profile) return base;
+  return `${base} · ${profile.pitch_label} ${profile.pitch_hz} Hz`;
 }
 
 export function presentersFromSpec(spec) {

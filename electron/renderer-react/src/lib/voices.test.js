@@ -70,6 +70,23 @@ describe("voiceLanguageCode e ordenação", () => {
   });
 });
 
+describe("voiceOptionLabel com perfil medido", () => {
+  const PERFIS = {
+    Umbriel: { pitch_hz: 142, pitch_min_hz: 135, pitch_max_hz: 143, pitch_label: "grave" },
+  };
+
+  it("mostra o tom medido, que é o que descreve a voz", () => {
+    expect(voiceOptionLabel("Umbriel", "firme (multilíngue)", "google/gemini", PERFIS))
+      .toContain("grave 142 Hz");
+  });
+
+  it("voz sem medição continua legível, sem número inventado", () => {
+    const rotulo = voiceOptionLabel("Charon", "firme", "google/gemini", PERFIS);
+    expect(rotulo).toContain("Charon");
+    expect(rotulo).not.toContain("Hz");
+  });
+});
+
 describe("voiceOptionLabel", () => {
   it("junta rótulo e tom quando há descrição", () => {
     expect(voiceOptionLabel("pf_dora", "feminina, clara (pt-br)", "hexgrad/kokoro"))
