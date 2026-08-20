@@ -331,6 +331,22 @@ _TTS_DIRECTION = {
 }
 
 
+# ── O que a instrução de voz realmente faz ─────────────────────────────────
+# Medido em 19 gerações reais do Gemini TTS (19-20/08/2026), mesma voz e mesmo
+# texto, variando só a instrução:
+#
+#     "Fale MUITO animado, acelerado e agudo"  → 11,0 s, 1.525 Hz, -16,9 dB
+#     "Fale muito devagar, sussurrando, grave" → 11,0 s, 1.564 Hz, -18,1 dB
+#
+# Com três repetições de cada, a diferença entre as duas instruções ficou
+# MENOR que a variação entre repetições da mesma instrução, nas três medidas.
+# Ou seja: neste modelo a instrução não muda velocidade, brilho nem volume de
+# forma mensurável — quem muda o resultado é a escolha da voz.
+#
+# As instruções continuam sendo enviadas porque descrevem a intenção, porque
+# outros modelos podem respeitá-las, e porque o que se mede aqui não cobre
+# entonação e ênfase. Mas não conte com elas para corrigir ritmo ou volume:
+# para isso existem o tamanho do trecho e o nivelamento.
 def tts_direction(
     direction: str, narrator_style: str = "", language: str = DEFAULT_LANGUAGE
 ) -> str:

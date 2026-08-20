@@ -99,6 +99,13 @@ function PresenterRow({ presenter, voices, ttsModel, onChange, onRemove }) {
         className="pf-style"
         type="text"
         placeholder="tom (opcional)"
+        title={
+          "O tom é enviado ao modelo de voz como instrução. Medido em 19 gerações reais do "
+          + "Gemini TTS: instruções opostas (\"eufórico e acelerado\" contra \"sussurrado e "
+          + "lento\") produziram áudios cuja diferença de velocidade, brilho e volume ficou "
+          + "menor que a variação entre repetições da MESMA instrução. Ou seja: neste modelo "
+          + "o tom não muda o áudio de forma mensurável. Escolher a voz muda."
+        }
         value={presenter.style}
         onChange={(event) => onChange({ ...presenter, style: event.target.value })}
       />
@@ -392,6 +399,14 @@ export default function ProfileForm({ profile, category, onCancel, onSaved }) {
       </p>
 
       <span className="field-label" id="pf-presenters-label">Apresentadores</span>
+      <p className="muted small">
+        O campo <strong>tom</strong> vai ao modelo de voz como instrução, mas medimos que ele
+        não muda velocidade, brilho nem volume de forma detectável no Gemini TTS: instruções
+        opostas produziram áudios com diferença menor que a variação entre repetições da mesma
+        instrução. Quem realmente muda o resultado é a <strong>escolha da voz</strong>. O campo
+        continua aqui porque outros modelos podem respeitá-lo — e porque ele descreve a intenção
+        para quem lê o perfil depois.
+      </p>
       <div id="pf-presenters" role="group" aria-labelledby="pf-presenters-label">
         {presenters.map((presenter, index) => (
           <PresenterRow
