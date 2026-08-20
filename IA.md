@@ -3483,3 +3483,40 @@ pontuação deprime o número), parte pode ser audível. O timbre está comprova
 
 **Risco que sobra:** a confirmação final continua sendo auditiva. A medição prova que o timbre
 parou de decair; se ainda incomodar ao ouvir, o próximo eixo a investigar é o ritmo.
+
+## 2026-08-20 — Voz masculina, e uma técnica que faltava
+
+**Escolher voz também precisa de medição.** O catálogo do modelo tem 30 vozes e nenhuma indicação
+de gênero. Doze candidatas foram sintetizadas com a mesma frase e medidas por US$ 0,07: **Fenrir
+(250 Hz) e Alnilam (202 Hz) são femininas apesar do nome**, e o `Orus`, que mediu 145 Hz num
+episódio de julho, mediu 194 Hz agora. Escolhida `Umbriel` (136 Hz, brilho 1.319 Hz) por ser grave
+sem ambiguidade e ter brilho na faixa dos trechos aprovados na véspera.
+
+Escolher pelo nome custaria US$ 2 e 32 minutos de áudio para descobrir o erro no fim — o mesmo
+padrão do defeito original: premissa não medida virando padrão.
+
+**Ressíntese seletiva, barata e reutilizável.** A primeira geração com a voz nova teve 10 trechos
+destoantes contra 1 da versão aprovada. Em vez de regerar tudo com outra voz (mais US$ 2), apagar
+**só os 10 trechos ruins** e deixar o pipeline ressintetizá-los custou **US$ 0,26** — e nove
+melhoraram. A degradação varia entre chamadas, então repetir só o trecho ruim resolve na maioria
+dos casos.
+
+Isso qualifica o próximo passo mais robusto: hoje `scripts/audit_audio_consistency.py` **detecta**
+a degradação; o pipeline poderia **corrigi-la sozinho**, auditando os segmentos após a síntese e
+refazendo os destoantes antes de montar. Sai de "detectar" para "tornar raro".
+
+**Duas origens distintas de degradação.** Um trecho reprovou nas três tentativas (28%, 35%, 33%):
+não é azar, é a forma do texto — três parágrafos curtos emendados, com uma frase isolada no meio.
+A degradação por **posição dentro da geração** está resolvida pelo tamanho do trecho; a
+degradação por **forma do texto** não está, e pede reagrupar o texto para frases isoladas não
+caírem sozinhas num trecho.
+
+**Resultado:** queda média de brilho aos 30 s de 16,8% (versão aprovada) para 9,6%, com o mesmo
+1 trecho de 81 acima do limite. Aprovado na escuta.
+
+**Referência de duração, medida no próprio episódio:** a locução sai a **14,3 caracteres por
+segundo**. Vinte minutos comportam ~17.170 caracteres (~2.860 palavras); dez minutos, ~8.580
+(~1.430 palavras). O texto atual do Prisma tem 27.045 — 37% acima do alvo de 20 minutos. Por
+decisão do responsável, o enxugamento é ajuste de edição, não nova geração.
+
+**Custo do dia:** US$ 2,30 (audição US$ 0,07, episódio US$ 1,94, ressíntese US$ 0,29).
