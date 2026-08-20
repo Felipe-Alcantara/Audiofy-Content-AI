@@ -3429,3 +3429,52 @@ conta com US$ 0,80, que não cobre a reserva exigida por requisição.
 gerado (os primeiros 37 s de cada trecho longo), não por uma geração nova — que depende de
 crédito. O modo natural (2.400 caracteres) tem a mesma degradação e não foi alterado: mexer nele
 muda o comportamento de todos os episódios existentes e é decisão à parte.
+
+## 2026-08-19 (noite) — Validação real da correção, com o episódio regerado
+
+**O que faltava:** a correção do tamanho de trecho tinha sido dimensionada por medição sobre o
+áudio antigo, não por geração nova. O responsável destravou o saldo com uma chave sem teto
+próprio e a validação foi feita em duas etapas, curta antes da longa, para não gastar o episódio
+inteiro sem saber se a correção pegava.
+
+**Etapa 1 — validação curta (US$ 0,19).** 2.750 caracteres do mesmo texto do episódio reprovado,
+em 5 trechos. Resultado: brilho terminando entre 1.097 e 1.340 Hz, contra 518 a 690 Hz antes; a
+queda por trecho caiu de 43-62% para 12-30%.
+
+**Correção de uma conta minha, achada por essa etapa:** eu dimensionei o trecho supondo 16
+caracteres por segundo de fala. O real é **14**, então os 600 caracteres davam 43 segundos de
+áudio — depois do joelho da curva —, e o trecho mais longo perdeu 30% de brilho, acima do limite
+que o próprio utilitário de auditoria usa. O valor final é **450 caracteres** (~32 s).
+
+**Etapa 2 — episódio completo regerado (US$ 1,94).**
+
+| | Antes (4.000 caracteres) | Depois (450) |
+| --- | --- | --- |
+| Trechos | 8 | 81 |
+| Brilho no fim do trecho | 518-690 Hz | 974-1.608 Hz |
+| Trechos acima do limite de 25% | 7 de 8 | 1 de 81 |
+| Curva média aos 30 s | −53% | −17% |
+| Duração | 28,1 min | 32,0 min |
+| Custo | US$ 1,71 | US$ 1,94 |
+| Custo por minuto | US$ 0,061 | US$ 0,061 |
+
+**O que a correção custa:** o episódio ficou **14% mais longo e 13% mais caro** para o mesmo
+texto. Cada trecho traz resquício de silêncio nas pontas, e 81 trechos acumulam mais silêncio que
+8. O preço por minuto é idêntico — paga-se mais porque o arquivo é maior, não porque encareceu.
+
+**Efeito colateral medido, ainda não resolvido:** a variação de ritmo entre trechos **aumentou**,
+de 132-157 para 89-149 palavras por minuto. Parte é ruído da métrica (trecho curto com muita
+pontuação deprime o número), parte pode ser audível. O timbre está comprovadamente estável; ritmo
+é o eixo que sobra.
+
+**Duas imprecisões de contabilidade observadas de passagem**, nenhuma corrigida ainda:
+
+- O custo registrado no episódio (`status.json`, `metrics.json`) **acumula gerações sucessivas do
+  mesmo episódio**: marcou US$ 3,66, que é a soma da geração reprovada (US$ 1,71) com a nova
+  (US$ 1,94). Defensável como custo total do episódio, mas confunde quem lê como "custo desta
+  geração".
+- O `segments.json` manteve **8 entradas órfãs** da divisão anterior depois que os arquivos foram
+  descartados: 89 entradas para 81 arquivos. Só afeta relatório, não a montagem.
+
+**Risco que sobra:** a confirmação final continua sendo auditiva. A medição prova que o timbre
+parou de decair; se ainda incomodar ao ouvir, o próximo eixo a investigar é o ritmo.
