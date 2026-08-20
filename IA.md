@@ -3520,3 +3520,56 @@ segundo**. Vinte minutos comportam ~17.170 caracteres (~2.860 palavras); dez min
 decisão do responsável, o enxugamento é ajuste de edição, não nova geração.
 
 **Custo do dia:** US$ 2,30 (audição US$ 0,07, episódio US$ 1,94, ressíntese US$ 0,29).
+
+## 2026-08-20 — O app passa a medir o que os ouvintes reclamaram
+
+Pacote de mudanças para que os defeitos investigados em 19/08 não voltem em silêncio. Cada
+decisão abaixo vem de medição feita nos episódios reais, não de suposição.
+
+**1. Qualidade sonora virou verificação, não impressão** (`audio_quality.py`). A auditoria que já
+existia procura silêncio e respondeu 8/8 ok no episódio reprovado — corretamente, porque não havia
+silêncio. Agora cada geração mede volume, brilho da voz e **quanto o brilho cai do começo ao fim
+de cada trecho**, grava em `audio-quality.json` e lista o que destoa.
+
+Os limiares são **relativos ao próprio episódio**: brilho absoluto muda com a voz, e um limite
+fixo reprovaria uma voz grave inteira em vez do trecho defeituoso. O limiar de queda (25%) foi
+calibrado entre dois episódios reais medidos pela mesma métrica — no aprovado, mediana 3% e nenhum
+dos 40 trechos passa de 25%; no reprovado, mediana 18% e 5 de 12 passam. Tudo com FFmpeg, sem
+dependência nova.
+
+**2. Refazer só o que saiu ruim.** A geração não regera nada sozinha — gastar crédito sem o
+usuário pedir é decisão dele. A revisão de trechos passa a mostrar o problema de cada um, já com
+os defeituosos marcados, e refaz apenas os selecionados. Medido em produção: dez trechos por
+US$ 0,26 contra ~US$ 2 de uma geração inteira, com nove melhorando.
+
+**3. Voz escolhida por medição, não pelo nome.** As 30 vozes do modelo foram sintetizadas três
+vezes cada e medidas em tom, brilho e velocidade (`scripts/measure_voices.py`). `Fenrir` (183 Hz)
+e `Alnilam` (158 Hz) não são as vozes masculinas que o nome sugere. A faixa entre as três medições
+é publicada junto: `Charon` mediu 146, 159 e 174 Hz, e vozes perto da fronteira recebem o rótulo
+honesto de "intermediária" em vez de um lado que a próxima geração desmente.
+
+**4. A instrução de voz não faz o que parece.** Testado com 19 gerações, mesma voz e texto:
+"fale MUITO animado, acelerado e agudo" e "fale muito devagar, sussurrando, grave" produziram
+11,0 s cada, brilho de 1.525 e 1.564 Hz, volume de -16,9 e -18,1 dB. Com três repetições de cada,
+**a diferença entre as instruções ficou menor que a variação entre repetições da mesma
+instrução**. A interface passa a dizer isso, em vez de sugerir um controle que não existe. O que
+muda o resultado é a voz e o tamanho do trecho.
+
+Consequência que fica registrada e não foi executada: se a instrução não muda o áudio, a etapa de
+planejamento de interpretação do modo natural — uma chamada de LLM por lote — está pagando por
+algo sem efeito mensurável. Remover é decisão de produto, não correção de defeito.
+
+**5. Narração para vídeo.** Campo de duração alvo que responde quanto texto cabe e quanto cortar
+(usando a velocidade de leitura do histórico real), e exportação de legendas `.srt` e capítulos
+com o tempo de cada trecho, para sincronizar slides sem procurar de ouvido.
+
+**Validação:** 573 testes Python, 76 Electron, 66 de interface, lint e build verdes. Verificação
+no app real (Playwright/xvfb): a duração alvo respondeu "cortar 1.520 palavras (37% do texto)" no
+episódio de 32 minutos — o mesmo número calculado à mão na análise —, a revisão de trechos mostrou
+"81 trecho(s) medidos, nenhum destoa do episódio", o seletor de voz listou as 30 vozes com tom
+medido, e a exportação gerou 81 marcações com tempo acumulado correto acima de uma hora. Sem
+estouro de layout e sem erro de console.
+
+**Risco que sobra:** os limiares de qualidade foram calibrados com dois episódios de um modelo e
+duas vozes. Episódio de voz muito diferente pode precisar de ajuste — o utilitário aceita o limite
+por parâmetro, e os números de calibração estão no código, ao lado do limiar.

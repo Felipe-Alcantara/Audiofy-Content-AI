@@ -353,6 +353,42 @@ o contrário na hora de gerar. Trocar a estabilidade regenera os áudios do epis
 instrução muda em todos os trechos; episódios já prontos não são afetados enquanto não forem
 regerados.
 
+### Verificação de qualidade sonora
+
+Toda geração mede, por trecho, **volume**, **brilho da voz** e **quanto esse brilho cai do começo
+ao fim do próprio trecho** — as três dimensões que produziram áudio reprovado sem que nenhuma
+verificação detectasse. O resultado fica em `audio-quality.json` e aparece na revisão de trechos.
+
+Os limiares são relativos ao próprio episódio: brilho absoluto muda com a voz, e um limite fixo
+reprovaria uma voz grave inteira em vez do trecho defeituoso.
+
+Nada é refeito automaticamente. Na revisão de trechos, os problemáticos vêm marcados e o botão
+refaz **só o que estiver selecionado** — medido em produção, refazer dez trechos destoantes custou
+US$ 0,26 contra ~US$ 2 de regerar o episódio, e nove deles melhoraram, porque a degradação varia
+entre chamadas.
+
+### Escolha de voz por medição
+
+O seletor de narrador mostra o **tom medido** de cada voz, não só o nome. As 30 vozes do modelo
+foram sintetizadas três vezes cada e medidas: `Fenrir` e `Alnilam` não são vozes masculinas apesar
+de parecerem pelo nome. A faixa entre as medições também aparece, porque a mesma voz muda de uma
+geração para outra — `Charon` mediu 146, 159 e 174 Hz.
+
+Para medir vozes novas ou outro modelo: `python scripts/measure_voices.py --modelo <id>`.
+
+### Narração para vídeo e apresentação
+
+O campo **duração alvo** responde quanto texto cabe no tempo que o vídeo precisa ter e quanto
+cortar, usando a velocidade de leitura medida no histórico daquele modelo e voz. Episódio pronto
+exporta **legendas (.srt) e capítulos** com o tempo de cada trecho, para sincronizar slides sem
+procurar a posição de ouvido.
+
+Uma medição que vale saber antes de tentar dirigir a voz por texto: o campo de **tom** do perfil é
+enviado ao modelo como instrução, mas em 19 gerações reais instruções opostas ("eufórico e
+acelerado" contra "sussurrado e lento") produziram diferença de velocidade, brilho e volume menor
+que a variação entre repetições da mesma instrução. Neste modelo, quem muda o resultado é a
+escolha da voz e o tamanho do trecho — não a instrução.
+
 O modo preserva o texto; ele não concede direito de reproduzir livros ou fanfics. Importe apenas
 obras próprias, em domínio público ou para as quais você tenha autorização adequada.
 
