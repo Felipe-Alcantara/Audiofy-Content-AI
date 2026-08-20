@@ -1006,5 +1006,54 @@ class NivelamentoDeVolumeTest(unittest.TestCase):
             _normalize_levels(_settings(voice_stability="estavel"), [Path("a.wav")], tracker)
 
 
+class ManifestoSemOrfaosTest(unittest.TestCase):
+    """Regerar com uma divisão de trechos diferente cria nomes de segmento novos.
+
+    Os arquivos antigos já eram descartados, mas as ENTRADAS deles continuavam
+    no manifesto: o episódio regerado ficou com 89 entradas para 81 arquivos, e
+    a soma de custos do manifesto passou a contar duas gerações. Encontrado ao
+    auditar uma regeração real.
+    """
+
+    @patch("audiofy.pipeline.openrouter.generation_cost_usd", return_value=0.01)
+    @patch("audiofy.pipeline.openrouter.text_to_speech")
+    def test_entrada_de_divisao_anterior_sai_do_manifesto(self, text_to_speech, _custo):
+        pcm = b"\x00\x00" * 300
+        text_to_speech.return_value = SpeechResult(audio=pcm, generation_id="g1")
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            manifesto = directory / "segments.json"
+            (directory / "segments").mkdir()
+            manifesto.write_text(
+                json.dumps(
+                    {
+                        "version": 2,
+                        "segments": {
+                            "sobra-de-geracao-anterior.wav": {
+                                "fingerprint": "antigo",
+                                "text": "texto de outra divisão",
+                                "cost_usd": 1.23,
+                                "chunk_index": 1,
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            tracker = GenerationTracker(directory, "episodio")
+
+            _synthesize_turns(
+                _settings(),
+                directory,
+                [{"speaker": "ana", "text": "Uma fala nova."}],
+                tracker,
+            )
+
+            entradas = json.loads(manifesto.read_text(encoding="utf-8"))["segments"]
+
+        self.assertNotIn("sobra-de-geracao-anterior.wav", entradas)
+        self.assertEqual(len(entradas), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

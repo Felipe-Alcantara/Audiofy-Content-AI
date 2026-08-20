@@ -1465,6 +1465,16 @@ def _synthesize_turns(
             "Nenhuma fala gerou áudio: o texto não tem conteúdo que o TTS consiga pronunciar."
         )
     _discard_orphan_segments(segments_dir, paths)
+    # As entradas precisam sair junto com os arquivos. Regerar com uma divisão
+    # de trechos diferente cria nomes novos, e as entradas antigas ficavam no
+    # manifesto: um episódio regerado apareceu com 89 entradas para 81 arquivos,
+    # e a soma de custos passou a contar duas gerações como se fosse uma.
+    esperados = {plan["segment"].name for plan in plans}
+    orfas = [nome for nome in entries if nome not in esperados]
+    if orfas:
+        for nome in orfas:
+            entries.pop(nome, None)
+        _save_json(manifest_path, manifest)
     return paths
 
 
