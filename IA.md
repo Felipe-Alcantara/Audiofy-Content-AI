@@ -3475,6 +3475,11 @@ pontuação deprime o número), parte pode ser audível. O timbre está comprova
   geração".
 - O `segments.json` manteve **8 entradas órfãs** da divisão anterior depois que os arquivos foram
   descartados: 89 entradas para 81 arquivos. Só afeta relatório, não a montagem.
+  **Corrigido em `676929f`:** as entradas passam a sair junto com os arquivos, com teste de
+  regressão. A outra imprecisão (custo acumulado entre gerações do mesmo episódio) segue aberta
+  de propósito — mudar aquilo é decisão de semântica, não correção de defeito: hoje o número
+  responde "quanto este episódio custou ao todo", e a alternativa seria responder "quanto a
+  última geração custou". As duas leituras são legítimas e a escolha é do responsável.
 
 **Risco que sobra:** a confirmação final continua sendo auditiva. A medição prova que o timbre
 parou de decair; se ainda incomodar ao ouvir, o próximo eixo a investigar é o ritmo.
