@@ -81,6 +81,20 @@ export function chunkSeverityLabel(chunk) {
   return "sem auditoria";
 }
 
+// Os mesmos rótulos do backend (audio_quality.ISSUE_LABELS): o usuário lê a
+// frase, não o código do problema.
+const QUALITY_LABELS = {
+  queda_de_brilho: "a voz perde brilho do começo ao fim do trecho",
+  voz_abafada: "o trecho é mais abafado que o resto do episódio",
+  volume_baixo: "o trecho é mais baixo que o resto do episódio",
+};
+
+export function qualityIssuesLabel(chunk) {
+  const issues = chunk.quality_issues || [];
+  if (!issues.length) return "";
+  return issues.map((issue) => QUALITY_LABELS[issue] || issue).join("; ");
+}
+
 export function speakerLabel(chunk) {
   if (!chunk.speaker) return "";
   if (chunk.voice) {

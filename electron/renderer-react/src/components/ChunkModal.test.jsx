@@ -30,6 +30,21 @@ const CHUNKS = {
   ],
 };
 
+const CHUNKS_COM_QUALIDADE = {
+  ok: true,
+  audit: { segments: 3, critical: 0, warnings: 0 },
+  quality: { total: 3, com_problema: 2, trechos_com_problema: [2, 3] },
+  chunks: [
+    { chunk_index: 1, chunk_total: 3, file: "001.wav", path: "/d/001.wav", severity: "ok",
+      duration_seconds: 30, quality_issues: [], quality_severity: "ok" },
+    { chunk_index: 2, chunk_total: 3, file: "002.wav", path: "/d/002.wav", severity: "ok",
+      duration_seconds: 30, quality_issues: ["queda_de_brilho"], quality_severity: "atencao",
+      brightness_drop: 0.41 },
+    { chunk_index: 3, chunk_total: 3, file: "003.wav", path: "/d/003.wav", severity: "ok",
+      duration_seconds: 30, quality_issues: ["volume_baixo"], quality_severity: "atencao" },
+  ],
+};
+
 const BASE = {
   "settings-info": () => SETTINGS_INFO,
   status: () => ({ ok: true, anything_running: false, running: [], episodes: [] }),
@@ -105,5 +120,65 @@ describe("ChunkModal", () => {
       <ChunkModal target={null} onClose={() => {}} />
     );
     expect(container.querySelector("dialog")).toBeNull();
+  });
+
+  it("mostra o problema de qualidade de cada trecho, além do silêncio", async () => {
+    mockAudiofy({ ...BASE, "audio-chunks": () => CHUNKS_COM_QUALIDADE });
+
+    renderWithProviders(
+      <ChunkModal
+        target={{ episodeId: "artigo-x", title: "Artigo X", language: "pt-BR" }}
+        onClose={() => {}}
+      />
+    );
+
+    expect(await screen.findByText(/perde brilho/)).toBeInTheDocument();
+    expect(screen.getByText(/mais baixo que o resto/)).toBeInTheDocument();
+    expect(screen.getByText(/2 de 3 trecho/)).toBeInTheDocument();
+  });
+
+  it("refaz só os trechos escolhidos, avisando o custo antes", async () => {
+    const confirmar = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const bridge = mockAudiofy({
+      ...BASE,
+      "audio-chunks": () => CHUNKS_COM_QUALIDADE,
+      "regenerate-chunks": () => ({ ok: true, started: true, chunks: [2, 3],
+        estimated_cost_usd: 0.06 }),
+    });
+
+    renderWithProviders(
+      <ChunkModal
+        target={{ episodeId: "artigo-x", title: "Artigo X", language: "pt-BR" }}
+        onClose={() => {}}
+      />
+    );
+
+    // Os trechos com problema já vêm marcados: é o que o usuário quer refazer.
+    // O <dialog> não abre no jsdom, então o conteúdo fica fora da árvore de
+    // acessibilidade: consulta por texto, como os demais testes deste arquivo.
+    fireEvent.click(await screen.findByText(/Refazer 2 trecho/));
+
+    await waitFor(() => expect(bridge).toHaveBeenCalledWith(
+      ["regenerate-chunks", "custom", "artigo-x", "2,3", "--language=pt-BR"], undefined
+    ));
+    expect(confirmar).toHaveBeenCalled();
+  });
+
+  it("não gasta nada quando o usuário cancela a confirmação", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    const bridge = mockAudiofy({ ...BASE, "audio-chunks": () => CHUNKS_COM_QUALIDADE });
+
+    renderWithProviders(
+      <ChunkModal
+        target={{ episodeId: "artigo-x", title: "Artigo X", language: "pt-BR" }}
+        onClose={() => {}}
+      />
+    );
+
+    fireEvent.click(await screen.findByText(/Refazer 2 trecho/));
+
+    await waitFor(() => expect(bridge).not.toHaveBeenCalledWith(
+      expect.arrayContaining(["regenerate-chunks"]), undefined
+    ));
   });
 });

@@ -39,6 +39,14 @@ export function getGenerationLog(episodeId, language) {
   return callBridge(withLanguage(["generation-log", episodeId], language));
 }
 
+// Refaz apenas os trechos indicados; o resto do episódio já está pago e é
+// reaproveitado pela retomada.
+export function regenerateChunks(source, itemId, chunkIndexes, language) {
+  return callBridge(
+    withLanguage(["regenerate-chunks", source, itemId, chunkIndexes.join(",")], language)
+  );
+}
+
 export function repairEpisode(source, itemId, language) {
   return callBridge(withLanguage(["repair", source, itemId], language));
 }

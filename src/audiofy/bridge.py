@@ -11,6 +11,7 @@
         [--mode=adaptation|verbatim|reflexive] [--voice=<voz>]
         [--background-music=<arquivo>] [--background-volume=0.01..0.25]
         [--stability=natural|estavel]
+    python3 -m audiofy.bridge regenerate-chunks <fonte> <item-id> <2,3,7> [--language=<idioma>]
     python3 -m audiofy.bridge run-generation <fonte> <item-id> [opções]  # uso interno
     python3 -m audiofy.bridge repair <fonte> <item-id>
     python3 -m audiofy.bridge run-repair <fonte> <item-id> [opções]     # uso interno
@@ -286,6 +287,14 @@ def _cmd_audio_chunks(item_id: str, language: str = "") -> dict:
         for segment in (audit or {}).get("segments", [])
         if isinstance(segment, dict) and isinstance(segment.get("file"), str)
     }
+    from .audio_quality import read_quality_report
+
+    quality = read_quality_report(directory) or {}
+    quality_by_file = {
+        segment.get("file"): segment
+        for segment in quality.get("segments", [])
+        if isinstance(segment, dict) and isinstance(segment.get("file"), str)
+    }
     chunks = []
     if segments_directory.is_dir():
         for path in sorted(segments_directory.iterdir()):
@@ -311,6 +320,14 @@ def _cmd_audio_chunks(item_id: str, language: str = "") -> dict:
                     "longest_silence_seconds": finding.get("longest_silence_seconds"),
                     "silence_ratio": finding.get("silence_ratio"),
                     "silences": finding.get("silences", []),
+                    # Silêncio e qualidade sonora são achados diferentes: um
+                    # trecho pode não ter silêncio nenhum e ainda assim sair
+                    # abafado ou decaindo.
+                    "quality_issues": quality_by_file.get(path.name, {}).get("issues", []),
+                    "quality_severity": quality_by_file.get(path.name, {}).get(
+                        "severity", "unknown"
+                    ),
+                    "brightness_drop": quality_by_file.get(path.name, {}).get("brightness_drop"),
                 }
             )
     _add_cumulative_timing(chunks)
@@ -318,6 +335,7 @@ def _cmd_audio_chunks(item_id: str, language: str = "") -> dict:
         "chunks": chunks,
         "audit": audit.get("summary") if audit else None,
         "audited_at": audit.get("audited_at") if audit else None,
+        "quality": quality.get("summary"),
         "source_key": manifest.get("source_key"),
         "generation_mode": manifest.get("generation_mode"),
     }
@@ -688,6 +706,137 @@ def _cmd_run_generation(
             GenerationTracker.mark_launch_failed(directory, str(error))
         raise
     return {"mp3": str(final)}
+
+
+def _parse_chunk_selection(selection: object, disponiveis: set[int]) -> list[int]:
+    """Aceita "2,3" ou [2, 3] e recusa índice que não existe no episódio."""
+    if isinstance(selection, str):
+        bruto = [parte.strip() for parte in selection.split(",") if parte.strip()]
+    elif isinstance(selection, (list, tuple)):
+        bruto = [str(parte).strip() for parte in selection]
+    else:
+        raise ValueError("Informe os trechos a refazer, por exemplo: 2,3,7.")
+    indices: list[int] = []
+    for parte in bruto:
+        try:
+            indice = int(parte)
+        except ValueError as erro:
+            raise ValueError(f"Trecho inválido: {parte!r}.") from erro
+        if indice not in disponiveis:
+            raise ValueError(f"O episódio não tem o trecho {indice}.")
+        if indice not in indices:
+            indices.append(indice)
+    if not indices:
+        raise ValueError("Informe ao menos um trecho a refazer.")
+    return sorted(indices)
+
+
+def _cmd_regenerate_chunks(
+    source_key: str, item_id: str, chunks: object, language: str = ""
+) -> dict:
+    """Refaz apenas os trechos indicados, preservando o resto do episódio.
+
+    Apagar o áudio de um trecho faz a retomada ressintetizá-lo: o restante já
+    está pago e é reaproveitado pelo fingerprint. Medido em produção, refazer
+    dez trechos destoantes custou US$ 0,26 contra ~US$ 2 de uma geração
+    inteira — e nove deles melhoraram, porque a degradação varia entre chamadas.
+
+    As opções de geração vêm do próprio episódio (modo, voz, estabilidade):
+    refazer com opção diferente da original produziria um áudio misturado.
+    """
+    directory = _episode_dir(item_id, language)
+    manifest_path = directory / "segments.json"
+    if not manifest_path.is_file():
+        raise ValueError("Este episódio ainda não foi gerado.")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    entradas = manifest.get("segments", {})
+    por_indice = {
+        entrada.get("chunk_index"): (nome, entrada)
+        for nome, entrada in entradas.items()
+        if isinstance(entrada, dict) and isinstance(entrada.get("chunk_index"), int)
+    }
+    indices = _parse_chunk_selection(chunks, set(por_indice))
+
+    status = GenerationTracker.reconcile(directory)
+    if status and status.get("state") == "rodando":
+        return {"started": False, "reason": "geração já em andamento", "dir": str(directory)}
+
+    generation_mode = (status or {}).get("generation_mode", "adaptation")
+    narration_voice = (status or {}).get("narration_voice")
+    voice_stability = (status or {}).get("voice_stability") or ""
+
+    settings = Settings()
+    settings.require_api_key()
+    from .estimates import estimate_tts_cost
+
+    estimado = 0.0
+    apagados: list[str] = []
+    for indice in indices:
+        nome, entrada = por_indice[indice]
+        texto = str(entrada.get("text") or "")
+        # A duração real do trecho é o melhor preditor do custo de refazê-lo.
+        duracao = float(entrada.get("duration_seconds") or 0) or len(texto) / 14.3
+        estimado += estimate_tts_cost(settings, texto, "", duracao)
+        alvo = directory / "segments" / nome
+        if alvo.is_file():
+            alvo.unlink()
+            apagados.append(nome)
+
+    GenerationTracker.mark_starting(
+        directory,
+        item_id,
+        resume=True,
+        generation_mode=generation_mode,
+        narration_voice=narration_voice,
+        key_source=api_key_source(),
+        voice_stability=voice_stability,
+    )
+    child_args = [
+        sys.executable,
+        "-m",
+        "audiofy.bridge",
+        "run-generation",
+        source_key,
+        item_id,
+        f"--mode={generation_mode}",
+    ]
+    if narration_voice:
+        child_args.append(f"--voice={narration_voice}")
+    if voice_stability:
+        child_args.append(f"--stability={voice_stability}")
+    if language and language != "pt-BR":
+        child_args.append(f"--language={language}")
+
+    from .runtime.process import launch_detached
+
+    try:
+        with (directory / "generation.log").open("a", encoding="utf-8") as log:
+            launch_detached(
+                child_args,
+                cwd=Path(__file__).resolve().parents[2],
+                env={
+                    **os.environ,
+                    "PYTHONPATH": "src",
+                    "PYTHONUTF8": "1",
+                    "PYTHONIOENCODING": "utf-8",
+                    "PYTHONUNBUFFERED": "1",
+                },
+                log_handle=log,
+            )
+    except OSError as error:
+        detalhe = f"Não foi possível iniciar a regeração: {error}"
+        GenerationTracker.mark_launch_failed(directory, detalhe)
+        raise RuntimeError(detalhe) from error
+
+    return {
+        "started": True,
+        "chunks": indices,
+        "removed": apagados,
+        "estimated_cost_usd": round(estimado, 4),
+        "generation_mode": generation_mode,
+        "narration_voice": narration_voice,
+        "dir": str(directory),
+    }
 
 
 def _cmd_repair(source_key: str, item_id: str, language: str = "") -> dict:
@@ -1159,6 +1308,12 @@ def main() -> None:
                 if arg.startswith("--language="):
                     log_lang = arg.split("=", 1)[1]
             result = _cmd_generation_log(rest[0], log_lang)
+        elif command == "regenerate-chunks" and len(rest) >= 3:
+            chunk_lang = ""
+            for arg in rest[3:]:
+                if arg.startswith("--language="):
+                    chunk_lang = arg.split("=", 1)[1]
+            result = _cmd_regenerate_chunks(rest[0], rest[1], rest[2], chunk_lang)
         elif command == "repair" and len(rest) >= 2:
             _, _, _, music, volume, repair_lang, _ = _generation_options(rest[2:])
             result = _cmd_repair(rest[0], rest[1], repair_lang)

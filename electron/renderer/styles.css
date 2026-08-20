@@ -515,7 +515,21 @@ dialog::backdrop { background: rgb(0 0 0 / 72%); }
   list-style: none;
 }
 .chunk-row { display: flex; align-items: center; gap: 10px; }
-.chunk-row .row-main { flex: 1; min-width: 0; }
+.chunk-row .row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+/* A caixa de seleção escolhe o que refazer; sem tamanho próprio ela encolhe
+   junto do texto e vira um alvo de clique pequeno demais. */
+.chunk-pick { display: flex; align-items: center; }
+.chunk-pick input { width: 18px; min-height: 18px; accent-color: var(--accent); }
+.chunk-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.chunk-actions span { flex: 1; min-width: 0; }
 .severity-critical { border-color: var(--danger); background: rgb(127 29 29 / 20%); }
 .severity-warning { border-color: var(--warning); background: rgb(120 53 15 / 18%); }
 

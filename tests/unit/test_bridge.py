@@ -1,6 +1,7 @@
 """Testes do contrato JSON compartilhado pelo Electron e por automações."""
 
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -1083,6 +1084,138 @@ class VoiceStabilityBridgeTest(unittest.TestCase):
         self.assertTrue(resultado["force"])
         self.assertEqual(resultado["voice_stability"], "estavel")
         self.assertIn("--stability=estavel", launch.call_args.args[0])
+
+
+class RegeracaoDeTrechosTest(unittest.TestCase):
+    """Refazer só os trechos ruins custa centavos; regerar tudo custa dólares.
+
+    Medido em produção: 10 trechos destoantes de um episódio de 32 minutos
+    foram refeitos por US$ 0,26 e nove melhoraram, contra ~US$ 2 de uma
+    geração inteira.
+    """
+
+    def _episodio(self, raiz: Path) -> Path:
+        directory = raiz / "episodio"
+        (directory / "segments").mkdir(parents=True)
+        arquivos = {}
+        for indice in (1, 2, 3):
+            nome = f"chunk-{indice:03d}.wav"
+            (directory / "segments" / nome).write_bytes(b"RIFF")
+            arquivos[nome] = {
+                "chunk_index": indice,
+                "text": "palavra " * 50,
+                "voice": "Umbriel",
+            }
+        (directory / "segments.json").write_text(
+            json.dumps({"version": 2, "segments": arquivos}), encoding="utf-8"
+        )
+        (directory / "status.json").write_text(
+            json.dumps(
+                {
+                    "state": "concluido",
+                    "generation_mode": "verbatim",
+                    "narration_voice": "Umbriel",
+                    "voice_stability": "estavel",
+                }
+            ),
+            encoding="utf-8",
+        )
+        return directory
+
+    @patch("audiofy.runtime.process.launch_detached")
+    def test_apaga_somente_os_trechos_pedidos_e_relanca_com_as_mesmas_opcoes(self, launch):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = self._episodio(Path(tmp))
+            with (
+                patch("audiofy.bridge._episode_dir", return_value=directory),
+                patch("audiofy.bridge.Settings") as settings,
+            ):
+                settings.return_value.require_api_key.return_value = "k"
+                resultado = bridge._cmd_regenerate_chunks("custom", "episodio", "2,3")
+
+            restantes = sorted(p.name for p in (directory / "segments").iterdir())
+
+        self.assertTrue(resultado["started"])
+        self.assertEqual(resultado["chunks"], [2, 3])
+        self.assertEqual(restantes, ["chunk-001.wav"])
+        argumentos = launch.call_args.args[0]
+        self.assertIn("--mode=verbatim", argumentos)
+        self.assertIn("--voice=Umbriel", argumentos)
+        self.assertIn("--stability=estavel", argumentos)
+        # Retomada, nunca --force: o resto do episódio já está pago.
+        self.assertNotIn("--force", argumentos)
+
+    @patch("audiofy.runtime.process.launch_detached")
+    def test_estima_o_custo_antes_de_gastar(self, _launch):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = self._episodio(Path(tmp))
+            with (
+                patch("audiofy.bridge._episode_dir", return_value=directory),
+                patch("audiofy.bridge.Settings") as settings,
+            ):
+                settings.return_value.require_api_key.return_value = "k"
+                settings.return_value.tts_model = "google/gemini-3.1-flash-tts-preview"
+                resultado = bridge._cmd_regenerate_chunks("custom", "episodio", "2")
+
+        self.assertGreater(resultado["estimated_cost_usd"], 0)
+
+    def test_recusa_trecho_que_nao_existe(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = self._episodio(Path(tmp))
+            with patch("audiofy.bridge._episode_dir", return_value=directory):
+                with self.assertRaisesRegex(ValueError, "9"):
+                    bridge._cmd_regenerate_chunks("custom", "episodio", "9")
+
+    def test_recusa_enquanto_a_geracao_esta_rodando(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = self._episodio(Path(tmp))
+            (directory / "status.json").write_text(
+                json.dumps({"state": "rodando", "pid": os.getpid()}), encoding="utf-8"
+            )
+            with patch("audiofy.bridge._episode_dir", return_value=directory):
+                resultado = bridge._cmd_regenerate_chunks("custom", "episodio", "2")
+            # Dentro do diretório temporário: fora dele o arquivo já não existe
+            # porque a pasta foi apagada, e o teste passaria por engano.
+            preservado = (directory / "segments" / "chunk-002.wav").is_file()
+
+        self.assertFalse(resultado["started"])
+        self.assertTrue(preservado)
+
+
+class QualidadeNaRevisaoDeTrechosTest(unittest.TestCase):
+    def test_revisao_traz_os_problemas_de_qualidade_de_cada_trecho(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp) / "episodio"
+            (directory / "segments").mkdir(parents=True)
+            (directory / "segments" / "chunk-001.wav").write_bytes(b"RIFF")
+            (directory / "segments.json").write_text(
+                json.dumps({"segments": {"chunk-001.wav": {"chunk_index": 1, "text": "oi"}}}),
+                encoding="utf-8",
+            )
+            (directory / "audio-quality.json").write_text(
+                json.dumps(
+                    {
+                        "summary": {"total": 1, "com_problema": 1, "trechos_com_problema": [1]},
+                        "segments": [
+                            {
+                                "file": "chunk-001.wav",
+                                "chunk_index": 1,
+                                "issues": ["queda_de_brilho"],
+                                "severity": "atencao",
+                                "brightness_drop": 0.4,
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with patch("audiofy.bridge._episode_dir", return_value=directory):
+                resultado = bridge._cmd_audio_chunks("episodio")
+
+        chunk = resultado["chunks"][0]
+        self.assertEqual(chunk["quality_issues"], ["queda_de_brilho"])
+        self.assertEqual(chunk["quality_severity"], "atencao")
+        self.assertEqual(resultado["quality"]["com_problema"], 1)
 
 
 if __name__ == "__main__":

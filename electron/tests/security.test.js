@@ -65,6 +65,16 @@ test("generate aceita música e volume sem liberar argumentos ilimitados", () =>
 // A combinação completa da tela de geração precisa caber na aridade: com o teto
 // antigo (8), leitura fiel em inglês, com música e regeneração forçada era
 // recusada aqui antes mesmo de sair do Electron.
+test("regeneração de trechos passa pelo IPC com e sem idioma", () => {
+  assert.doesNotThrow(() => validateBridgeRequest([
+    "regenerate-chunks", "custom", "episodio", "2,3,7",
+  ]));
+  assert.doesNotThrow(() => validateBridgeRequest([
+    "regenerate-chunks", "custom", "episodio", "2,3,7", "--language=en",
+  ]));
+  assert.throws(() => validateBridgeRequest(["regenerate-chunks", "custom", "episodio"]));
+});
+
 test("generate aceita a combinação completa da interface", () => {
   assert.doesNotThrow(() => validateBridgeRequest([
     "generate", "custom", "livro", "--mode=verbatim", "--voice=Sulafat", "--force",
