@@ -534,10 +534,7 @@ class ForcedGenerationTest(unittest.TestCase):
             root = Path(tmp)
             source = root / "trilha.mp3"
             source.write_bytes(b"audio")
-            with (
-                patch("audiofy.bridge.PROJECT_ROOT", root),
-                patch("audiofy.bridge.STATE_DIR", root / ".audiofy"),
-            ):
+            with patch("audiofy.bridge.STATE_DIR", root / ".audiofy"):
                 relative, name = bridge._cache_background_music(str(source))
                 cached = bridge._cached_background_path(relative)
                 with self.assertRaisesRegex(ValueError, "cache privado"):
@@ -546,6 +543,20 @@ class ForcedGenerationTest(unittest.TestCase):
 
         self.assertEqual(name, "trilha.mp3")
         self.assertTrue(relative.startswith(".audiofy/music/"))
+
+    def test_musica_funciona_com_o_estado_fora_do_clone(self):
+        # Instalado como pacote, AUDIOFY_STATE_DIR aponta para fora do clone.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "trilha.mp3"
+            source.write_bytes(b"audio")
+            with patch("audiofy.bridge.STATE_DIR", root / "estado"):
+                relative, _ = bridge._cache_background_music(str(source))
+                cached = bridge._cached_background_path(relative)
+                self.assertEqual(cached.read_bytes(), b"audio")
+                self.assertEqual(cached.parent, (root / "estado" / "music").resolve())
+
+        self.assertTrue(relative.startswith("estado/music/"))
 
     def test_opcoes_de_musica_limitam_volume(self):
         self.assertEqual(

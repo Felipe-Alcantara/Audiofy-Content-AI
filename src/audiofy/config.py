@@ -21,9 +21,26 @@ from .presenters import Presenter, parse_presenters
 from .profiles import ProfileStore
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = PROJECT_ROOT / "data"
+
+#: Modo de servidor de agente: vale só a chave entregue pelo app, sem `.env`, cofre nem fila.
+SINGLE_KEY_ENV = "AUDIOFY_SINGLE_KEY"
+
+
+def single_key_mode() -> bool:
+    return os.environ.get(SINGLE_KEY_ENV) == "1"
+
+
+def _dir_from_env(name: str, default: Path) -> Path:
+    """Diretório escolhido pela variável de ambiente; vazia ou ausente mantém o clone."""
+    raw = os.environ.get(name, "").strip()
+    return Path(raw).expanduser().resolve() if raw else default
+
+
+# Instalado como pacote, o Audiofy não tem um clone onde gravar: o app que o hospeda
+# aponta os dados e o estado para as pastas dele. Sem as variáveis, vale o clone de sempre.
+DATA_DIR = _dir_from_env("AUDIOFY_DATA_DIR", PROJECT_ROOT / "data")
 EPISODES_DIR = DATA_DIR / "episodes"
-STATE_DIR = PROJECT_ROOT / ".audiofy"  # chaves, perfis e caches locais (gitignored)
+STATE_DIR = _dir_from_env("AUDIOFY_STATE_DIR", PROJECT_ROOT / ".audiofy")  # chaves, perfis, caches
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DOTENV_PROVENANCE_ENV = "AUDIOFY_DOTENV_LOADED_KEYS"
@@ -78,7 +95,7 @@ def _load_dotenv(path: Path) -> frozenset[str]:
     return frozenset(loaded)
 
 
-DOTENV_LOADED_KEYS = _load_dotenv(PROJECT_ROOT / ".env")
+DOTENV_LOADED_KEYS = frozenset() if single_key_mode() else _load_dotenv(PROJECT_ROOT / ".env")
 
 
 def desktop_environment(
@@ -122,6 +139,8 @@ def environment_key_source() -> str | None:
 
 def api_key_source() -> str | None:
     """Informa a origem efetiva da chave sem retornar seu valor."""
+    if single_key_mode():
+        return "ambiente" if os.environ.get("OPENROUTER_API_KEY") else None
     store = key_store()
     if store.prefers_named():
         return store.active_name()
@@ -153,6 +172,9 @@ def api_key_candidates(
         candidates.append((label, candidate))
 
     add(current_label, getattr(settings, "api_key", None))
+    if single_key_mode():
+        # O limite da chave do agente é o teto do gasto: trocar de chave o furaria.
+        return candidates
     add(".env", _dotenv_values(PROJECT_ROOT / ".env").get("OPENROUTER_API_KEY"))
     try:
         for named in key_store().list_keys():
@@ -192,7 +214,11 @@ VOICE_STABILITY_CHOICES = (NATURAL_VOICE, STABLE_VOICE)
 def _default_settings() -> dict:
     profile = profile_store().active()
     return {
-        "api_key": key_store().resolve() or "",
+        "api_key": (
+            os.environ.get("OPENROUTER_API_KEY", "")
+            if single_key_mode()
+            else key_store().resolve() or ""
+        ),
         "profile_name": profile.name,
         "text_provider": _resolved("AUDIOFY_TEXT_PROVIDER", profile.text_provider),
         "subscription_model": _resolved("AUDIOFY_SUBSCRIPTION_MODEL", profile.subscription_model),

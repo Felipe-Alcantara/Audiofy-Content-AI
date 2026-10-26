@@ -246,3 +246,114 @@ class VoiceStabilitySettingsTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             Settings(voice_stability="muito-estavel")
+
+
+class DiretoriosPorAmbienteTest(unittest.TestCase):
+    def test_sem_variavel_vale_o_clone(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(
+                config._dir_from_env("AUDIOFY_DATA_DIR", config.PROJECT_ROOT / "data"),
+                config.PROJECT_ROOT / "data",
+            )
+
+    def test_variavel_vazia_ou_so_espacos_conta_como_ausente(self):
+        with patch.dict(os.environ, {"AUDIOFY_DATA_DIR": "  "}):
+            self.assertEqual(
+                config._dir_from_env("AUDIOFY_DATA_DIR", Path("padrao")), Path("padrao")
+            )
+
+    def test_variavel_vira_caminho_absoluto(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.dict(os.environ, {"AUDIOFY_STATE_DIR": directory}):
+                self.assertEqual(
+                    config._dir_from_env("AUDIOFY_STATE_DIR", Path("padrao")),
+                    Path(directory).resolve(),
+                )
+
+    def test_modulo_importado_com_a_variavel_grava_dentro_dela(self):
+        # DATA_DIR e STATE_DIR são fixados na importação; só um processo novo prova o desvio.
+        import subprocess
+
+        with tempfile.TemporaryDirectory() as directory:
+            dados, estado = Path(directory, "dados"), Path(directory, "estado")
+            ambiente = {
+                **os.environ,
+                "AUDIOFY_DATA_DIR": str(dados),
+                "AUDIOFY_STATE_DIR": str(estado),
+                "PYTHONPATH": str(Path(config.__file__).parents[1]),
+                "PYTHONUTF8": "1",
+            }
+            saida = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    "from audiofy import config as c; "
+                    "print(c.EPISODES_DIR); print(c.key_store().path); print(c.DATA_DIR)",
+                ],
+                env=ambiente,
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.split("\n")
+            self.assertEqual(Path(saida[0]), dados.resolve() / "episodes")
+            self.assertEqual(Path(saida[1]), estado.resolve() / "keys.json")
+
+
+class ChaveUnicaTest(unittest.TestCase):
+    """O servidor de agente só usa a chave que o app entregou: sem cofre, .env nem fila."""
+
+    def _settings(self, chave):
+        from audiofy.config import Settings
+
+        return Settings(api_key=chave)
+
+    def test_fila_de_chaves_so_tem_a_atual(self):
+        settings = self._settings("sk-or-v1-atual")
+        with (
+            patch.dict(os.environ, {config.SINGLE_KEY_ENV: "1"}),
+            patch.object(
+                config, "_dotenv_values", return_value={"OPENROUTER_API_KEY": "sk-or-v1-env"}
+            ),
+            patch.object(config, "key_store") as cofre,
+        ):
+            cofre.return_value.list_keys.return_value = [
+                Mock(name="reserva", key="sk-or-v1-reserva")
+            ]
+            candidatas = config.api_key_candidates(settings, current_label="agente")
+        self.assertEqual(
+            [(rotulo, c.api_key) for rotulo, c in candidatas], [("agente", "sk-or-v1-atual")]
+        )
+
+    def test_sem_o_modo_a_fila_continua_com_as_reservas(self):
+        settings = self._settings("sk-or-v1-atual")
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch.object(
+                config, "_dotenv_values", return_value={"OPENROUTER_API_KEY": "sk-or-v1-env"}
+            ),
+            patch.object(config, "key_store") as cofre,
+        ):
+            cofre.return_value.list_keys.return_value = []
+            candidatas = config.api_key_candidates(settings)
+        self.assertEqual([c.api_key for _, c in candidatas], ["sk-or-v1-atual", "sk-or-v1-env"])
+
+    def test_chave_vem_so_do_ambiente_mesmo_com_cofre_nomeado_ativo(self):
+        with (
+            patch.dict(
+                os.environ, {config.SINGLE_KEY_ENV: "1", "OPENROUTER_API_KEY": "sk-or-v1-app"}
+            ),
+            patch.object(config, "key_store") as cofre,
+        ):
+            cofre.return_value.resolve.return_value = "sk-or-v1-do-cofre"
+            cofre.return_value.prefers_named.return_value = True
+            self.assertEqual(config._default_settings()["api_key"], "sk-or-v1-app")
+            self.assertEqual(config.api_key_source(), "ambiente")
+
+    def test_sem_chave_no_ambiente_nao_ha_chave(self):
+        with (
+            patch.dict(os.environ, {config.SINGLE_KEY_ENV: "1"}, clear=True),
+            patch.object(config, "key_store") as cofre,
+        ):
+            cofre.return_value.resolve.return_value = "sk-or-v1-do-cofre"
+            self.assertEqual(config._default_settings()["api_key"], "")
+            self.assertIsNone(config.api_key_source())

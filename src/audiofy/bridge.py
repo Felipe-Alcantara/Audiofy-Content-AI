@@ -45,7 +45,6 @@ from pathlib import Path
 from .artifacts import resolve_final_audio
 from .config import (
     EPISODES_DIR,
-    PROJECT_ROOT,
     STATE_DIR,
     Settings,
     api_key_source,
@@ -476,13 +475,15 @@ def _cache_background_music(value: str) -> tuple[str, str]:
             os.replace(temporary, target)
         finally:
             temporary.unlink(missing_ok=True)
-    return target.relative_to(PROJECT_ROOT).as_posix(), source.name
+    # Relativo ao pai do estado: no clone é a raiz do projeto, como sempre foi, e com
+    # AUDIOFY_STATE_DIR o caminho gravado continua válido fora do clone.
+    return target.relative_to(STATE_DIR.parent).as_posix(), source.name
 
 
 def _cached_background_path(value: str) -> Path:
     """Aceita no worker apenas um arquivo previamente copiado para o cache privado."""
     cache_directory = (STATE_DIR / "music").resolve()
-    candidate = (PROJECT_ROOT / value).resolve()
+    candidate = (STATE_DIR.parent / value).resolve()
     if (
         candidate.parent != cache_directory
         or candidate.suffix.lower() not in _BACKGROUND_AUDIO_EXTENSIONS
