@@ -4,6 +4,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 import wave
 from contextlib import redirect_stdout
@@ -72,6 +73,20 @@ def _segment_path(directory: Path, index: int, total: int) -> Path:
             "conteudo", directory.name, "adaptation", index, total, "ana", "wav"
         )
     )
+
+
+def _esperar_threads_da_sintese(prazo=5.0):
+    """Espera as falas que o pipeline deixa em voo quando a geração falha.
+
+    Ao falhar, a síntese paralela faz ``shutdown(wait=False, cancel_futures=True)`` de propósito:
+    quem já começou termina em segundo plano. No teste isso deixa uma fala gravando no diretório
+    temporário enquanto o cleanup o apaga, e de vez em quando ele falha com "Directory not empty".
+    Registre como cleanup *depois* do que apaga o diretório: eles rodam na ordem inversa.
+    """
+    atual = threading.current_thread()
+    for thread in threading.enumerate():
+        if thread is not atual and thread.name.startswith("ThreadPoolExecutor"):
+            thread.join(prazo)
 
 
 class ResumableSynthesisTest(unittest.TestCase):
@@ -559,6 +574,7 @@ class TrechoSemAudioTest(unittest.TestCase):
         self.directory = Path(self._tmp.name)
         self.tracker = GenerationTracker(self.directory, "episodio")
         self.addCleanup(self._tmp.cleanup)
+        self.addCleanup(_esperar_threads_da_sintese)  # antes de apagar o diretório
 
     def _turns(self, quantidade):
         return [{"speaker": "ana", "text": f"fala {n}"} for n in range(1, quantidade + 1)]
