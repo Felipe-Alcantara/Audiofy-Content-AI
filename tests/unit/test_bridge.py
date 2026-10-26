@@ -1170,6 +1170,41 @@ class RegeracaoDeTrechosTest(unittest.TestCase):
 
         self.assertGreater(resultado["estimated_cost_usd"], 0)
 
+    @patch("audiofy.runtime.process.launch_detached")
+    def test_recusa_acima_do_teto_sem_apagar_nem_lancar_nada(self, launch):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = self._episodio(Path(tmp))
+            with (
+                patch("audiofy.bridge._episode_dir", return_value=directory),
+                patch("audiofy.bridge.Settings") as settings,
+            ):
+                settings.return_value.require_api_key.return_value = "k"
+                settings.return_value.tts_model = "google/gemini-3.1-flash-tts-preview"
+                with self.assertRaisesRegex(ValueError, "teto"):
+                    bridge._cmd_regenerate_chunks(
+                        "custom", "episodio", "1,2,3", max_cost_usd=0.0001
+                    )
+            preservados = sorted(p.name for p in (directory / "segments").iterdir())
+
+        self.assertEqual(preservados, ["chunk-001.wav", "chunk-002.wav", "chunk-003.wav"])
+        launch.assert_not_called()
+
+    @patch("audiofy.runtime.process.launch_detached")
+    def test_teto_folgado_deixa_refazer(self, _launch):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = self._episodio(Path(tmp))
+            with (
+                patch("audiofy.bridge._episode_dir", return_value=directory),
+                patch("audiofy.bridge.Settings") as settings,
+            ):
+                settings.return_value.require_api_key.return_value = "k"
+                settings.return_value.tts_model = "google/gemini-3.1-flash-tts-preview"
+                resultado = bridge._cmd_regenerate_chunks(
+                    "custom", "episodio", "2", max_cost_usd=5.0
+                )
+
+        self.assertTrue(resultado["started"])
+
     def test_recusa_trecho_que_nao_existe(self):
         with tempfile.TemporaryDirectory() as tmp:
             directory = self._episodio(Path(tmp))

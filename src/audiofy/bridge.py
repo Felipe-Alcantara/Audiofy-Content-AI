@@ -755,7 +755,11 @@ def _cmd_export_markers(item_id: str, language: str = "") -> dict:
 
 
 def _cmd_regenerate_chunks(
-    source_key: str, item_id: str, chunks: object, language: str = ""
+    source_key: str,
+    item_id: str,
+    chunks: object,
+    language: str = "",
+    max_cost_usd: float | None = None,
 ) -> dict:
     """Refaz apenas os trechos indicados, preservando o resto do episódio.
 
@@ -793,17 +797,24 @@ def _cmd_regenerate_chunks(
     from .estimates import estimate_tts_cost
 
     estimado = 0.0
-    apagados: list[str] = []
     for indice in indices:
-        nome, entrada = por_indice[indice]
+        entrada = por_indice[indice][1]
         texto = str(entrada.get("text") or "")
         # A duração real do trecho é o melhor preditor do custo de refazê-lo.
         duracao = float(entrada.get("duration_seconds") or 0) or len(texto) / 14.3
         estimado += estimate_tts_cost(settings, texto, "", duracao)
-        alvo = directory / "segments" / nome
+    # Antes de apagar: recusar depois deixaria o episódio sem os trechos e sem refazê-los.
+    if max_cost_usd is not None and estimado > max_cost_usd:
+        raise ValueError(
+            f"Refazer estes trechos custaria cerca de US$ {estimado:.2f}, acima do teto de "
+            f"US$ {max_cost_usd:.2f}. Nada foi apagado nem gasto."
+        )
+    apagados: list[str] = []
+    for indice in indices:
+        alvo = directory / "segments" / por_indice[indice][0]
         if alvo.is_file():
             alvo.unlink()
-            apagados.append(nome)
+            apagados.append(por_indice[indice][0])
 
     GenerationTracker.mark_starting(
         directory,
