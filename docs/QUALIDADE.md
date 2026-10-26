@@ -41,6 +41,7 @@ API de rede, esses três controles passam a ser obrigatórios antes de expô-la.
 | Dados/documentação | parser JSON + links Markdown | JSON válidos e links internos existentes |
 | Dependências | `pip-audit` + `npm audit` | nenhuma vulnerabilidade conhecida moderada ou superior |
 | Git | `git diff --check` | nenhum erro de whitespace |
+| Pacote e servidor MCP | `scripts/verify_mcp_package.py` (manual) | wheel instalado num venv limpo, sem o clone, atende as 14 ferramentas |
 
 `python scripts/check_quality.py --quick` pula apenas as auditorias que dependem da rede. A CI
 repete os controles em Python 3.10/3.12 e Node 18, as versões mínimas relevantes do projeto.
@@ -93,8 +94,9 @@ a amostra e o custo usados na confirmação.
 
 ## Dependências e atualização
 
-Dependências diretas ficam fixadas em `requirements.txt` e `electron/package-lock.json`.
-Ferramentas de desenvolvimento ficam em `requirements-dev.txt`. O Dependabot propõe atualizações
+Dependências diretas ficam fixadas em `requirements-core.txt` (o núcleo, que o wheel também declara),
+`requirements.txt` (núcleo mais o Akita) e `electron/package-lock.json`.
+Ferramentas de desenvolvimento, e o SDK `mcp` dos testes do servidor, ficam em `requirements-dev.txt`. O Dependabot propõe atualizações
 semanais de Python/npm e mensais das actions; cada proposta passa pela régua completa antes de ser
 aceita.
 

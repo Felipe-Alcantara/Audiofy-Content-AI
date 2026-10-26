@@ -30,6 +30,7 @@
 - [🔑 Chaves, perfis e modelos](#-chaves-perfis-e-modelos)
 - [🎛️ Apresentadores e vozes](#️-apresentadores-e-vozes)
 - [💰 Custo em tempo real](#-custo-em-tempo-real)
+- [🔌 Servidor MCP para agentes](#-servidor-mcp-para-agentes)
 - [✅ Qualidade e testes](#-qualidade-e-testes)
 - [⚠️ Limites atuais](#-limites-atuais)
 - [🛡️ Segurança](#️-segurança)
@@ -70,6 +71,7 @@ no núcleo.
 Audiofy-Content-AI/
 ├── 📁 .github/                  # CI, Dependabot e template de pull request
 ├── 📁 docs/
+│   ├── MCP.md                   # Servidor MCP: ferramentas, teto de gasto e instalação
 │   ├── PLANO-TECNICO.md         # Arquitetura e decisões do projeto
 │   └── QUALIDADE.md             # Régua automatizada e verificações manuais
 ├── 📁 src/
@@ -80,6 +82,7 @@ Audiofy-Content-AI/
 │       ├── narration.py         # Segmentação literal + direção prosódica
 │       ├── pipeline.py          # Adaptação ou leitura fiel → áudio
 │       ├── bridge.py            # Interface JSON (Electron e automações)
+│       ├── mcp_server.py        # Servidor MCP (agentes), sobre as funções da bridge
 │       ├── setup.py             # Diagnóstico e instalação compartilhados
 │       ├── security.py          # Validações de IDs e URLs públicas
 │       ├── tui.py               # Menu navegável questionary + Rich
@@ -91,8 +94,9 @@ Audiofy-Content-AI/
 ├── 📁 tests/                    # Testes Python e Node
 ├── 📁 data/                     # Episódios e conteúdo local
 ├── start_app.py                 # Porta de entrada interativa
-├── pyproject.toml               # Lint, formato e cobertura
-├── requirements.txt             # Dependências de execução fixadas
+├── pyproject.toml               # Pacote instalável, lint, formato e cobertura
+├── requirements.txt             # Dependências de execução fixadas (núcleo + Akita)
+├── requirements-core.txt        # Núcleo, sem git: é o que o wheel declara
 ├── requirements-dev.txt         # Ferramentas de desenvolvimento fixadas
 ├── CONTRIBUTING.md              # Fluxo para contribuições
 ├── SECURITY.md                  # Canal privado e escopo de segurança
@@ -590,6 +594,24 @@ cartões e listas — atualiza ao abrir a aba e pelo botão "🔄 Atualizar".
 
 Dados carregados de `metrics.json` de cada episódio (ausentes ou corrompidos são ignorados).
 
+## 🔌 Servidor MCP para agentes
+
+O `audiofy-mcp` deixa um agente (Claude Code, Codex, Gemini CLI ou o canvas do Felixo AI Core)
+narrar texto como podcast ou leitura fiel. Ele instala como pacote (`pip install "audiofy[mcp]"`),
+sem clone, git ou Node, e expõe 14 ferramentas em português sobre as mesmas funções da bridge.
+
+O que o diferencia de usar a bridge à mão é o limite do que um agente pode fazer sozinho:
+
+- **Estimativa antes de gastar:** `ver_conteudo` devolve a faixa de custo de cada modo.
+- **Teto que a fila de chaves não fura:** `gerar_episodio` compara o *topo* da faixa com o que
+  resta no limite da chave e recusa antes de gastar; só vale a chave que o app entregou.
+- **Arquivos só nas pastas liberadas:** `adicionar_arquivo` recusa qualquer caminho fora de
+  `AUDIOFY_ALLOWED_DIRS`.
+- **Sem o que é de humano:** chat, chaves, perfis e instalação não existem no servidor.
+
+Ferramentas, variáveis, registro em cada CLI e o funcionamento do teto estão em
+[docs/MCP.md](docs/MCP.md).
+
 ## ✅ Qualidade e testes
 
 Prepare o ambiente de desenvolvimento uma vez:
@@ -625,6 +647,12 @@ xvfb-run -a node scripts/verify_app_ui.js        # sem display (CI, servidor)
 Ele reprova quando alguma aba estoura horizontalmente ou quando o console registra erro. Aceita
 `--out=<pasta>` para as capturas e `--widths=600,380` para outras larguras.
 
+Mudanças no pacote ou no servidor MCP pedem a prova do artefato, e não só da lógica em memória:
+
+```bash
+python scripts/verify_mcp_package.py   # constrói o wheel, instala num venv limpo e fala por stdio
+```
+
 Para conferir se um episódio gerado soa consistente — a queixa típica é "parece que troca de voz
 no meio" —, meça em vez de opinar:
 
@@ -656,7 +684,8 @@ Responsividade foi verificada em 600 px e 380 px, incluindo os controles da leit
   guardam ID e custo individual no manifesto para auditoria posterior.
 - Nomes de modelos e vozes mudam com o catálogo do OpenRouter; tudo é configurável via `.env`.
 - O texto pode ser muito maior que a janela do modelo e não recebe teto de caracteres do
-  aplicativo; a geração depende de disco, memória, tempo e créditos disponíveis.
+  aplicativo (o servidor MCP limita o texto enviado por agente a 5 MiB); a geração depende de
+  disco, memória, tempo e créditos disponíveis.
 - A importação por URL não acessa intranets ou serviços locais; nesses casos, cole o texto
   manualmente para preservar a fronteira de segurança.
 
@@ -674,6 +703,9 @@ Responsividade foi verificada em 600 px e 380 px, incluindo os controles da leit
   mas exibem estimativa e banner global de custo. O abort ativo preserva os artefatos concluídos;
   como uma requisição já entregue ao provedor ainda pode ser cobrada, o custo passa a aproximado.
 - O Electron usa CSP, sandbox, navegação bloqueada, allowlist de IPC e confinamento de caminhos.
+- O servidor MCP usa só a chave entregue pelo app (sem `.env`, cofre ou fila de chaves), lê
+  arquivos apenas nas pastas liberadas e recusa gerar quando o topo da estimativa passa do limite
+  da chave; detalhes em [docs/MCP.md](docs/MCP.md).
 
 Reporte vulnerabilidades pelo processo privado descrito em [SECURITY.md](SECURITY.md), sem abrir
 uma issue pública com detalhes exploráveis.

@@ -26,6 +26,13 @@ O caminho recomendado é `python3 start_app.py`. A interface deve manter menu
 interativo, validação de entradas, navegação externa bloqueada no Electron, CSP
 restritiva, `contextIsolation` e acessibilidade nas telas.
 
+## Uso por agentes
+
+Quem prefere pedir a um agente (Claude Code, Codex, Gemini CLI ou o canvas do Felixo AI Core) em vez
+de usar o menu instala o pacote com o extra `[mcp]` e registra o `audiofy-mcp`. O servidor mostra a
+estimativa antes de gastar, recusa gerar acima do limite da chave e só lê arquivos nas pastas que a
+pessoa liberar. Ferramentas, variáveis e o funcionamento do teto estão em [MCP.md](MCP.md).
+
 ## Relação com o núcleo
 
 Esta branch adapta apresentação, configuração e políticas públicas. O processamento,
