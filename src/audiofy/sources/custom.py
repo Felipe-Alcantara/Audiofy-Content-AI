@@ -155,9 +155,7 @@ class CustomSource(ContentSource):
             raise ValueError("O conteúdo não pode ser vazio.")
         meta, _ = self._parse(path)
         lines = "".join(
-            f"{key}: {value}\n"
-            for key, value in meta.items()
-            if key != "content-format"
+            f"{key}: {value}\n" for key, value in meta.items() if key != "content-format"
         )
         with path.open("w", encoding="utf-8", newline="") as output:
             output.write(f"---\n{lines}content-format: exact-v1\n---\n{text}")

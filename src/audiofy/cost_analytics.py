@@ -250,9 +250,9 @@ def format_analytics_report(analytics: CostAnalytics) -> str:
         "",
         "⏱️  DURAÇÃO",
         f"  Média por episódio: {analytics.average_duration_minutes:.1f}m ({analytics.average_duration_seconds:.0f}s)",
-        f"  Percentil 50%: {analytics.percentile_duration_seconds(50):.0f}s ({analytics.percentile_duration_seconds(50)/60:.1f}m)",
-        f"  Percentil 75%: {analytics.percentile_duration_seconds(75):.0f}s ({analytics.percentile_duration_seconds(75)/60:.1f}m)",
-        f"  Percentil 90%: {analytics.percentile_duration_seconds(90):.0f}s ({analytics.percentile_duration_seconds(90)/60:.1f}m)",
+        f"  Percentil 50%: {analytics.percentile_duration_seconds(50):.0f}s ({analytics.percentile_duration_seconds(50) / 60:.1f}m)",
+        f"  Percentil 75%: {analytics.percentile_duration_seconds(75):.0f}s ({analytics.percentile_duration_seconds(75) / 60:.1f}m)",
+        f"  Percentil 90%: {analytics.percentile_duration_seconds(90):.0f}s ({analytics.percentile_duration_seconds(90) / 60:.1f}m)",
     ]
 
     models = analytics.cost_by_model()
@@ -283,20 +283,24 @@ def format_analytics_report(analytics: CostAnalytics) -> str:
     est_cost_10min = analytics.estimate_total_cost(600)
     est_cost_30min = analytics.estimate_total_cost(1800)
     est_cost_1h = analytics.estimate_total_cost(3600)
-    lines.extend([
-        f"  10 minutos: US$ {est_cost_10min:.4f}",
-        f"  30 minutos: US$ {est_cost_30min:.4f}",
-        f"  1 hora: US$ {est_cost_1h:.4f}",
-        "",
-    ])
+    lines.extend(
+        [
+            f"  10 minutos: US$ {est_cost_10min:.4f}",
+            f"  30 minutos: US$ {est_cost_30min:.4f}",
+            f"  1 hora: US$ {est_cost_1h:.4f}",
+            "",
+        ]
+    )
 
     est_1000 = analytics.estimate_total_cost_by_words(1000)
     est_5000 = analytics.estimate_total_cost_by_words(5000)
-    lines.extend([
-        f"  1.000 palavras: US$ {est_1000:.4f}",
-        f"  5.000 palavras: US$ {est_5000:.4f}",
-        "",
-    ])
+    lines.extend(
+        [
+            f"  1.000 palavras: US$ {est_1000:.4f}",
+            f"  5.000 palavras: US$ {est_5000:.4f}",
+            "",
+        ]
+    )
 
     lines.append("└──────────────────────────────────────────────────────────┘")
 
@@ -330,7 +334,11 @@ def analytics_summary(analytics: CostAnalytics) -> dict:
         "cost_by_model": analytics.cost_by_model(),
         "cost_by_profile": analytics.cost_by_profile(),
         "weeks": [
-            {"week": week, "cost_usd": cost_weeks.get(week, 0.0), "episodes": episode_weeks.get(week, 0)}
+            {
+                "week": week,
+                "cost_usd": cost_weeks.get(week, 0.0),
+                "episodes": episode_weeks.get(week, 0),
+            }
             for week in weeks
         ],
         "estimates": {
