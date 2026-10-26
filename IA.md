@@ -3573,3 +3573,85 @@ estouro de layout e sem erro de console.
 **Risco que sobra:** os limiares de qualidade foram calibrados com dois episódios de um modelo e
 duas vozes. Episódio de voz muito diferente pode precisar de ajuste — o utilitário aceita o limite
 por parâmetro, e os números de calibração estão no código, ao lado do limiar.
+
+## 2026-10-26 — Servidor MCP para agentes e pacote instalável
+
+Task do Notion "Audiofy Content AI/MCP — servidor MCP sobre a bridge para agentes narrarem texto
+como podcast ou audiolivro". O pedido: um agente (Claude Code, Codex, Gemini CLI ou o canvas do
+Felixo AI Core) narra texto como podcast ou leitura fiel, vendo a estimativa antes de gastar e sem
+poder furar o limite da chave. Decisões do Felipe nesta rodada: escopo completo (inclusive AI
+Core), texto pela assinatura **opcional**, chave sem limite **gera com aviso** e a Release pública
+sai se a verificação passar. As duas últimas diferem da recomendação inicial e foram seguidas.
+
+**1. O servidor é uma borda, não um segundo motor** (`mcp_server.py`, 14 ferramentas em
+português, stdio). Chama as funções da bridge em processo, sem subprocess. Para isso, `add-text`,
+`add-url`, `add-file`, `notebooklm` e `balance` saíram de dentro de `main()` e viraram `_cmd_*`,
+com testes de caracterização que passavam antes e depois. O módulo não se chama `mcp.py` como a
+task propunha: dentro de `src/audiofy/` ele sombrearia o pacote `mcp` do SDK para qualquer script
+rodado daquela pasta.
+
+**2. O teto olha o topo da faixa, não o centro.** `gerar_episodio` compara
+`EpisodeEstimate.cost_max_usd` com `limit_remaining` de `/api/v1/key`. A estimativa já errou para
+menos (US$ 1,32 estimados, US$ 1,71 cobrados em 19/08), então comparar o valor central deixaria
+passar justamente o caso medido. Sem conseguir confirmar o limite, **recusa**. `refazer_trechos`
+ganhou `max_cost_usd` na bridge para conferir **antes de apagar** os áudios; antes a estimativa só
+aparecia depois de apagar e lançar o worker. Chave sem limite gera com aviso (decisão do Felipe).
+
+**3. Chave única no modo agente** (`AUDIOFY_SINGLE_KEY=1`, definido por `audiofy-mcp`): sem
+`.env`, sem cofre e sem fila de chaves. Medido por teste que, sem o modo, a fila ainda troca de
+chave quando uma recebe 402 e, com o modo, a chamada de texto e a de voz tentam uma vez só. Nada é
+retomado sozinho: a retomada automática é do Electron, não da bridge.
+
+**4. Dados e estado fora do clone.** `AUDIOFY_DATA_DIR` e `AUDIOFY_STATE_DIR`, com o clone como
+padrão (menu e desktop não mudam). Achado no caminho: `_cache_background_music` fazia
+`relative_to(PROJECT_ROOT)` e quebraria com o estado fora do clone (reproduzido com teste que
+falhava); passou a usar o pai do `STATE_DIR`, que no clone é a raiz e grava o mesmo caminho.
+
+**5. Pacote.** `[project]` com layout `src`, comandos `audiofy-bridge` e `audiofy-mcp`, extras
+`[mcp]` (SDK 2.3) e `[akita]` (mesmo commit do `requirements.txt`, conferido por teste). As sete
+dependências de núcleo foram para `requirements-core.txt`, que o `requirements.txt` inclui e o
+`pyproject.toml` lê, para haver uma lista só. A versão sobe para **0.3.0** (o projeto já estava
+em 0.2.0; a task supunha 0.1.0). O wheel tem 47 arquivos, só `audiofy`, sem `data/`, `electron/`
+nem testes.
+
+**6. `adicionar_arquivo` só lê nas pastas liberadas** (`AUDIOFY_ALLOWED_DIRS`). Resolve `..` e
+atalhos antes de conferir, responde igual exista o arquivo ou não (o agente não sonda o disco) e,
+sem a variável, não lê nada. Texto de até 5 MiB e arquivo de até 50 MiB.
+
+**7. Um `print` solto corrompia o protocolo.** Medido com o SDK 2.3 no Windows: o desvio do
+descritor 1 que o SDK tenta não valeu e a linha chegou ao cliente como JSON-RPC inválido. Hoje
+nenhum caminho em processo imprime (o pipeline roda no worker, com a saída no log), mas durante cada
+chamada o stdout agora aponta para o stderr, com contagem para chamadas simultâneas.
+
+**8. `pypdf` 6.15.0 → 6.21.2.** O `pip-audit` apontava 22 vulnerabilidades, quase todas negação de
+serviço por PDF malicioso. O servidor deixa um agente escolher o arquivo que o `pypdf` lê.
+
+**9. O que não foi feito no Felixo AI Core, e por quê.** O `main` público do AI Core não tem
+catálogo de MCP (`app/resources` só traz `skills`) e `AgentPreset` não tem `mcpIds`; o motor do
+catálogo é a task `3fa91f95` ("Entrada") e o assistente de instalação depende da decisão de
+Python/uv (`40191f95`, "Em breve") e do tipo `wheel`. Inventar esses campos seria decidir por
+outra task. A entrada `audiofy` ficou em `docs/MCP.md`, no formato proposto, e o preset Narrador, a
+entrada validada e o assistente viraram tasks.
+
+**Validação:** 573 testes Python no começo, 643 agora, `ruff` 0.16.2 e `pip-audit` limpos. Cinco
+mutações em regras críticas (teto pelo valor central, arquivo fora das pastas, fila de chaves,
+limite esgotado, limite não confirmado) foram todas detectadas, e a contagem de stdout também.
+`scripts/verify_mcp_package.py` constrói o wheel, instala num venv limpo, fora do clone, e fala por
+stdio: 14 ferramentas, dados em `AUDIOFY_DATA_DIR`, arquivo fora das pastas recusado, geração
+recusada sem confirmar o limite e o worker em segundo plano subindo a partir do pacote (57 s).
+Nas CLIs, com configuração efêmera e chave falsa: **Claude Code** e **Codex** chamaram
+`adicionar_texto`, `ver_conteudo` e `consultar_saldo` com sucesso (estimativa máxima de US$ 0,03
+para 80 palavras; saldo "Chave recusada: HTTP 401"); no **Gemini CLI** o servidor aparece como
+`Connected` em `gemini mcp list`, mas a chamada das ferramentas não foi testada, porque a CLI não
+tem autenticação para o modo não interativo nesta máquina.
+
+**Risco que sobra:** (a) nada foi gerado com uma chave real, então a mensagem "Conectado; restam
+US$ X" e uma narração de ponta a ponta pelo servidor não foram vistas; (b) a conferência do teto
+não reserva saldo entre gerações simultâneas, e o limite da chave no OpenRouter é a barreira final;
+(c) o texto pela assinatura roda uma CLI dentro de outra com o ambiente herdado, e o que cada CLI
+repassa a um servidor stdio não foi medido; (d) o wheel fixa as sete dependências de núcleo, mas o
+SDK `mcp` é uma faixa e não há arquivo de requisitos com hash; (e) o repositório público ainda
+versiona 711 arquivos de `data/` (732 MB, inclusive texto e áudio de um livro de terceiros); (f) o
+`npm audit` do Electron reprova (`electron`, `brace-expansion`, `extract-zip`) desde antes desta
+mudança, e o CI da `main` estava vermelho desde 20/08 por isso e pela formatação de dois arquivos,
+que esta entrada também corrige.
