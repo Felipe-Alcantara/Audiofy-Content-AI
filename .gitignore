@@ -8,6 +8,9 @@ Padrão de qualidade - Felixo System Design/
 __pycache__/
 *.pyc
 .venv/
+build/
+dist/
+*.egg-info/
 .coverage
 coverage.xml
 htmlcov/

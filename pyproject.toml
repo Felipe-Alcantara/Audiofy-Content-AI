@@ -1,3 +1,40 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "audiofy"
+description = "Transforma texto, URL ou arquivo em podcast ou audiolivro, com custo medido."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Felipe Martin" }]
+dynamic = ["version", "dependencies"]
+
+[project.optional-dependencies]
+# O servidor MCP para agentes (`audiofy-mcp`).
+mcp = ["mcp>=2.3,<3"]
+# A fonte do blog do Akita vem de um repositório Git, então só entra com git instalado.
+# Mesmo commit de requirements.txt (um teste confere).
+akita = [
+    "akita-articles @ git+https://github.com/Felipe-Alcantara/akita-articles@5fab889f6db8312298c0ce0fd8d4b7355b20231e",
+]
+
+[project.scripts]
+audiofy-bridge = "audiofy.bridge:main"
+audiofy-mcp = "audiofy.mcp_server:main"
+
+[project.urls]
+Repository = "https://github.com/Felipe-Alcantara/Audiofy-Content-AI"
+
+[tool.setuptools.dynamic]
+version = { attr = "audiofy.__version__" }
+dependencies = { file = ["requirements-core.txt"] }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.ruff]
 target-version = "py310"
 line-length = 100
