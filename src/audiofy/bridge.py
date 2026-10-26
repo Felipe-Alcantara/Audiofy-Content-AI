@@ -1310,6 +1310,62 @@ def _cmd_tts_catalog() -> dict:
     }
 
 
+def _cmd_add_text(title: str, text: str, url: str = "") -> dict:
+    from .sources.custom import CustomSource
+
+    return {"item_id": CustomSource().add_text(title, text, url), "source": "custom"}
+
+
+def _cmd_add_url(url: str) -> dict:
+    from .sources.custom import CustomSource
+
+    return {"item_id": CustomSource().add_url(url), "source": "custom"}
+
+
+def _cmd_add_file(path: str) -> dict:
+    from .file_extraction import extract_file
+    from .sources.custom import CustomSource
+
+    extraction = extract_file(Path(path))
+    if extraction.needs_fallback:
+        return {
+            "added": False,
+            "needs_fallback": True,
+            "reason": extraction.reason,
+            "title": extraction.title,
+        }
+    # Guarda a origem para permitir reextrair depois, quando a extração melhorar,
+    # sem reenviar o arquivo (o que duplicaria).
+    item_id = CustomSource().add_text(
+        extraction.title, extraction.text, source_file=str(Path(path).resolve())
+    )
+    return {
+        "added": True,
+        "item_id": item_id,
+        "source": "custom",
+        "title": extraction.title,
+        "method": extraction.method,
+        "words": len(extraction.text.split()),
+    }
+
+
+def _cmd_notebooklm(source_key: str, item_id: str) -> dict:
+    from .config import profile_store
+    from .export import export_notebooklm_pack
+
+    item = get_source(source_key).get_item(item_id)
+    return {
+        "pack": str(export_notebooklm_pack(item, source_key, profile_store().active().language))
+    }
+
+
+def _cmd_balance() -> dict:
+    from .providers.openrouter import check_api_key
+
+    valid, detail = check_api_key(Settings())
+    return {"valid": valid, "detail": detail}
+
+
 def main() -> None:
     args = sys.argv[1:]
     try:
@@ -1383,53 +1439,14 @@ def main() -> None:
         elif command == "costs":
             result = _cmd_costs()
         elif command == "notebooklm" and len(rest) >= 2:
-            from .export import export_notebooklm_pack
-
-            item = get_source(rest[0]).get_item(rest[1])
-            from .config import profile_store as _ps
-
-            result = {"pack": str(export_notebooklm_pack(item, rest[0], _ps().active().language))}
+            result = _cmd_notebooklm(rest[0], rest[1])
         elif command == "add-url" and rest:
-            from .sources.custom import CustomSource
-
-            item_id = CustomSource().add_url(rest[0])
-            result = {"item_id": item_id, "source": "custom"}
+            result = _cmd_add_url(rest[0])
         elif command == "add-text":
-            from .sources.custom import CustomSource
-
             payload = json.loads(sys.stdin.read())
-            item_id = CustomSource().add_text(
-                payload["title"], payload["text"], payload.get("url", "")
-            )
-            result = {"item_id": item_id, "source": "custom"}
+            result = _cmd_add_text(payload["title"], payload["text"], payload.get("url", ""))
         elif command == "add-file" and rest:
-            from .file_extraction import extract_file
-            from .sources.custom import CustomSource
-
-            extraction = extract_file(Path(rest[0]))
-            if extraction.needs_fallback:
-                result = {
-                    "added": False,
-                    "needs_fallback": True,
-                    "reason": extraction.reason,
-                    "title": extraction.title,
-                }
-            else:
-                # Guarda a origem para permitir reextrair depois, quando a
-                # extração melhorar, sem reenviar o arquivo (o que duplicaria).
-                item_id = CustomSource().add_text(
-                    extraction.title,
-                    extraction.text,
-                    source_file=str(Path(rest[0]).resolve()),
-                )
-                result = {
-                    "added": True,
-                    "item_id": item_id,
-                    "source": "custom",
-                    "title": extraction.title,
-                    "method": extraction.method,
-                    "words": len(extraction.text.split()),
-                }
+            result = _cmd_add_file(rest[0])
         elif command == "reextract-file" and rest:
             result = _cmd_reextract_file(rest[0])
         elif command == "chat":
@@ -1478,10 +1495,7 @@ def main() -> None:
             key_store().remove(rest[0])
             result = {"removed": rest[0]}
         elif command == "balance":
-            from .providers.openrouter import check_api_key
-
-            ok_flag, detail = check_api_key(Settings())
-            result = {"valid": ok_flag, "detail": detail}
+            result = _cmd_balance()
         elif command == "profiles-list":
             from dataclasses import asdict as _asdict
 
