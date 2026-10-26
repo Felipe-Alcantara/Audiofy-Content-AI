@@ -9,6 +9,7 @@ from contextlib import redirect_stdout
 from dataclasses import asdict
 from io import StringIO
 from pathlib import Path
+from threading import Event, Thread
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -436,6 +437,45 @@ class FerramentasLeituraTest(unittest.TestCase):
             resposta = mcp_server.consultar_saldo()
         self.assertFalse(resposta["conectado"])
         self.assertFalse(resposta["ffmpeg_encontrado"])
+
+
+class ProtecaoDoStdoutTest(unittest.TestCase):
+    """Um print solto no stdout corromperia o protocolo stdio com o agente."""
+
+    def test_print_solto_vai_para_o_stderr_e_o_stdout_volta_depois(self):
+        saida, erro = StringIO(), StringIO()
+        with patch("sys.stdout", saida), patch("sys.stderr", erro):
+            with mcp_server._stdout_no_stderr():
+                print("lixo")
+            print("depois")
+        self.assertEqual(erro.getvalue(), "lixo\n")
+        self.assertEqual(saida.getvalue(), "depois\n")
+
+    def test_stdout_so_volta_quando_a_ultima_chamada_simultanea_termina(self):
+        saida, erro = StringIO(), StringIO()
+        a_dentro, b_dentro, a_saiu = Event(), Event(), Event()
+
+        def chamada_a():
+            with mcp_server._stdout_no_stderr():
+                a_dentro.set()
+                b_dentro.wait(5)
+            a_saiu.set()
+
+        def chamada_b():
+            a_dentro.wait(5)
+            with mcp_server._stdout_no_stderr():
+                b_dentro.set()
+                a_saiu.wait(5)
+                print("de b")  # a já saiu, mas b continua dentro: ainda protegido
+
+        with patch("sys.stdout", saida), patch("sys.stderr", erro):
+            threads = [Thread(target=chamada_a), Thread(target=chamada_b)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(10)
+            self.assertIs(sys.stdout, saida)
+        self.assertEqual((saida.getvalue(), erro.getvalue()), ("", "de b\n"))
 
 
 @unittest.skipIf(Client is None, SEM_SDK)

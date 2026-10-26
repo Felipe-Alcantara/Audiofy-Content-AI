@@ -15,10 +15,13 @@ de chave única antes de ``config`` ler o ambiente.
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import os
 import re
 import shutil
+import sys
+import threading
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
@@ -453,13 +456,41 @@ _FERRAMENTAS = (
 )
 
 
+_stdout_lock = threading.Lock()
+_stdout_em_uso = 0
+_stdout_original = None
+
+
+@contextlib.contextmanager
+def _stdout_no_stderr():
+    """Um print solto no stdout corromperia o protocolo stdio (medido no SDK 2.3 no Windows).
+
+    O transporte já guarda o buffer real do stdout, então trocar ``sys.stdout`` não o afeta.
+    A contagem evita que uma chamada devolva o stdout enquanto outra, em outra thread, ainda
+    roda.
+    """
+    global _stdout_em_uso, _stdout_original
+    with _stdout_lock:
+        if _stdout_em_uso == 0:
+            _stdout_original, sys.stdout = sys.stdout, sys.stderr
+        _stdout_em_uso += 1
+    try:
+        yield
+    finally:
+        with _stdout_lock:
+            _stdout_em_uso -= 1
+            if _stdout_em_uso == 0:
+                sys.stdout = _stdout_original
+
+
 def _com_recusas(funcao):
     from mcp.server.mcpserver.exceptions import ToolError
 
     @functools.wraps(funcao)
     def executar(*args, **kwargs):
         try:
-            return funcao(*args, **kwargs)
+            with _stdout_no_stderr():
+                return funcao(*args, **kwargs)
         except (ValueError, LookupError, RuntimeError, OSError) as erro:
             # Falha prevista: a mensagem segue ao agente, sem chave. O resto é falha real e o
             # SDK mostra só "Error executing tool", deixando o detalhe no log do servidor.
